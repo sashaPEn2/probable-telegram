@@ -14,6 +14,7 @@ export interface CustomUser {
   scientific_interests: string[]; // Научные интересы
   created_at: string;
   telegram_username?: string;
+  telegram_user_id?: number;
   avatar_url?: string;
   password?: string;
 }
