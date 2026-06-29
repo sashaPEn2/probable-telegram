@@ -1,5 +1,6 @@
 import {
   CustomUser,
+
   Publication,
   Certificate,
   ResearchProject,
@@ -20,6 +21,19 @@ import {
 } from '../types';
 
 const STORAGE_KEY = 'fem_bseu_portal_db_v1';
+
+async function notifyTelegram(record_book_id: string, title: string, message: string, type: Notification['type']): Promise<void> {
+  try {
+    await fetch('/api/telegram/notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ record_book_id, title, message, type })
+    });
+  } catch {
+    // Silent fail for client-only environments / local dev
+  }
+}
+
 const CURRENT_USER_KEY = 'fem_bseu_current_user_v1';
 
 export interface PortalDatabase {
@@ -203,17 +217,20 @@ export function loginUser(
     };
     db.users.push(user);
     
-    db.notifications.push({
+    const notif = {
       id: 'notif_' + Date.now(),
       user_record_book: user.record_book_id,
       title: 'Добро пожаловать в Цифровой портал ФЭМ!',
       message: `Вы зарегистрированы в системе с ролью «${getRoleTitle(user.role)}». Заполните научное портфолио!`,
-      type: 'info',
+      type: 'info' as const,
       is_read: false,
       created_at: new Date().toISOString()
-    });
+    };
+    db.notifications.push(notif);
+    notifyTelegram(user.record_book_id, notif.title, notif.message, notif.type);
 
     savePortalDB(db);
+
   } else {
     user.last_name = trimmedLast;
     user.first_name = trimmedFirst;
@@ -617,17 +634,20 @@ export function placeMerchOrder(user: CustomUser, item: MerchItem): { success: b
   dbItem.stock -= 1;
   
   // Уведомление пользователю
-  db.notifications.push({
+  const notif = {
     id: 'notif_' + Date.now(),
     user_record_book: user.record_book_id,
     title: 'Заказ сувенира оформлен',
     message: `Вы обменяли ${item.points} баллов на «${item.name}». Получить сувенир можно в деканате (Корпус 4, каб. 314) у зам. декана.`,
-    type: 'success',
+    type: 'success' as const,
     is_read: false,
     created_at: new Date().toISOString()
-  });
+  };
+  db.notifications.push(notif);
+  notifyTelegram(user.record_book_id, notif.title, notif.message, notif.type);
 
   savePortalDB(db);
+
   return { success: true, message: 'Заказ успешно оформлен! Инструкции отправлены в уведомления.' };
 }
 
@@ -682,18 +702,21 @@ export function addMemberToSnil(snilId: string, recordBook: string): { success: 
   db.snils[snilIndex].member_record_books.push(recordBook);
   
   // Send notification to student
-  db.notifications.push({
+  const notif = {
     id: 'notif_' + Date.now(),
     user_record_book: recordBook,
     title: 'Вы приняты в СНИЛ',
     message: `Поздравляем! Руководитель СНИЛ «${db.snils[snilIndex].name}» добавил вас в список участников.`,
-    type: 'success',
+    type: 'success' as const,
     is_read: false,
     created_at: new Date().toISOString()
-  });
+  };
+  db.notifications.push(notif);
+  notifyTelegram(recordBook, notif.title, notif.message, notif.type);
   
   savePortalDB(db);
   return { success: true, message: 'Студент успешно добавлен' };
+
 }
 
 export function removeMemberFromSnil(snilId: string, recordBook: string): void {
@@ -726,3 +749,4 @@ export function createSnilApplication(snilId: string, snilName: string, studentR
   db.snil_applications.push(newApp);
   savePortalDB(db);
 }
+
