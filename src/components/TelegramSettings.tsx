@@ -66,8 +66,12 @@ export const TelegramSettings: React.FC<TelegramSettingsProps> = ({ user, onUpda
       <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl text-xs text-blue-700 dark:text-blue-300 space-y-2">
         <div className="flex items-start space-x-2">
           <Info className="w-4 h-4 mt-0.5 shrink-0" />
-          <p>Чтобы получать уведомления, напишите боту в Telegram команду <span className="font-mono bg-blue-100 dark:bg-blue-800 px-1 rounded">/start</span>. Он пришлет ваш Chat ID.</p>
+          <p>Чтобы получать уведомления, укажите ваш Telegram Chat ID. Его можно получить следующими способами:</p>
         </div>
+        <ul className="list-disc pl-6 space-y-1 text-[11px] text-blue-600 dark:text-blue-400">
+          <li>Напишите вашему боту в Telegram команду <span className="font-mono bg-blue-100 dark:bg-blue-800 px-1 rounded">/start</span> (если он запущен на сервере с поддержкой команд).</li>
+          <li><strong>Если сайт запущен на Vercel (Serverless):</strong> бот в безрежимном (Serverless) формате не принимает сообщения. Вы можете моментально узнать свой ID через публичных ботов, например: <a href="https://t.me/GetMyChatIdBot" target="_blank" rel="noopener noreferrer" className="underline font-bold hover:text-blue-800">@GetMyChatIdBot</a> или <a href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer" className="underline font-bold hover:text-blue-800">@userinfobot</a>.</li>
+        </ul>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-2">
