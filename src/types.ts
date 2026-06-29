@@ -6,13 +6,26 @@ export interface CustomUser {
   first_name: string;
   middle_name?: string;
   role: UserRole;
+  managed_snil_id?: string; // ID СНИЛ для руководителя
   group: string; // Например: ДГХ-1, ДЭУ-2
   course: number; // 1-4
+  faculty: string; // Факультет
   department: string; // Кафедра
   scientific_interests: string[]; // Научные интересы
   created_at: string;
   telegram_username?: string;
   avatar_url?: string;
+  password?: string;
+}
+
+export interface Announcement {
+  id: string;
+  snil_id: string;
+  author_name: string;
+  title: string;
+  content: string;
+  created_at: string;
+  is_urgent?: boolean;
 }
 
 export interface Publication {
@@ -55,7 +68,6 @@ export interface ResearcherPortfolio {
   conferences_count: number;
   certificates: Certificate[];
   research_projects: ResearchProject[];
-  h_index: number;
   total_publications: number;
   total_reports: number;
   rating_points: number;
@@ -104,6 +116,15 @@ export interface ScientificEvent {
 }
 
 export type ApplicationStatus = 'черновик' | 'подана' | 'на_рассмотрении' | 'принята' | 'отклонена';
+
+export interface SnilApplication {
+  id: string;
+  student_record_book: string;
+  snil_id: string;
+  snil_name: string;
+  status: ApplicationStatus;
+  created_at: string;
+}
 
 export interface ResearchApplication {
   id: string;
@@ -159,23 +180,6 @@ export interface GalleryItem {
   type: 'photo' | 'video';
 }
 
-export interface MerchItem {
-  id: string;
-  name: string;
-  price: number;
-  image_url: string;
-  description: string;
-}
-
-export interface MerchOrder {
-  id: string;
-  user_record_book: string;
-  item_id: string;
-  item_name: string;
-  status: 'ожидает' | 'выдан' | 'отменен';
-  created_at: string;
-}
-
 export interface Notification {
   id: string;
   user_record_book: string;
@@ -185,6 +189,27 @@ export interface Notification {
   is_read: boolean;
   created_at: string;
   link?: string;
+}
+
+export interface MerchItem {
+  id: string;
+  name: string;
+  points: number;
+  image?: string;
+  stock: number;
+  description: string;
+}
+
+export interface MerchOrder {
+  id: string;
+  userId: string;
+  userName: string;
+  userRecordBook: string;
+  itemId: string;
+  itemName: string;
+  points: number;
+  status: 'pending' | 'ready' | 'received';
+  createdAt: string;
 }
 
 export interface NIRSReport {

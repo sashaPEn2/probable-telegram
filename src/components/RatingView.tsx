@@ -42,24 +42,24 @@ export const RatingView: React.FC<RatingViewProps> = ({ db, user }) => {
     <div className="space-y-8 pb-12">
       
       {/* Баннер рейтинга */}
-      <div className="bg-gradient-to-r from-brand-blue via-blue-900 to-amber-900 rounded-3xl p-8 sm:p-10 text-white shadow-xl border border-brand-gold/30 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative overflow-hidden">
-        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-brand-gold/20 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="bg-gradient-to-r from-[#0a2a5e] via-blue-900 to-amber-900 rounded-3xl p-8 sm:p-10 text-white shadow-xl border border-[#d4af37]/30 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative overflow-hidden">
+        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-[#d4af37]/20 rounded-full blur-3xl pointer-events-none"></div>
 
         <div className="space-y-2 relative z-10 max-w-2xl">
-          <div className="inline-flex items-center space-x-2 text-brand-gold text-xs font-bold uppercase tracking-wider font-mono">
+          <div className="inline-flex items-center space-x-2 text-[#d4af37] text-xs font-bold uppercase tracking-wider font-mono">
             <Trophy className="w-4 h-4" />
             <span>Лидеры НИРС БГЭУ</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Рейтинг исследовательской активности <span className="text-brand-gold">ФЭМ</span></h2>
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Рейтинг исследовательской активности <span className="text-[#d4af37]">ФЭМ</span></h2>
           <p className="text-blue-100 text-xs sm:text-sm leading-relaxed opacity-90">
             Формируется на основе верифицированного электронного портфолио: статьи в журналах ВАК, тезисы докладов, победы в конкурсах лабораторий СНИЛ и дипломы СНО.
           </p>
         </div>
 
-        <div className="bg-slate-900/80 p-5 rounded-2xl border border-brand-gold/40 text-center relative z-10 w-full lg:w-auto">
-          <p className="text-[10px] font-mono text-cyan-300 uppercase">Стипендиальный фонд ФЭМ</p>
-          <p className="text-lg font-bold text-white mt-1">Топ-10 исследователей</p>
-          <p className="text-xs text-blue-200 mt-0.5">Рекомендуются к надбавкам деканата</p>
+        <div className="bg-slate-900/80 p-5 rounded-2xl border border-[#d4af37]/40 text-center relative z-10 w-full lg:w-auto">
+          <p className="text-[10px] font-mono text-amber-300 uppercase">Стипендиальный фонд ФЭМ</p>
+          <p className="text-lg font-bold text-white mt-1">Топ-5 исследователей</p>
+          <p className="text-xs text-blue-200 mt-0.5">Рекомендуются к начислению 250 баллов</p>
         </div>
       </div>
 
@@ -71,7 +71,7 @@ export const RatingView: React.FC<RatingViewProps> = ({ db, user }) => {
             <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-extrabold text-lg flex items-center justify-center mb-3 shadow">
               🥈 2
             </div>
-            <h3 className="font-bold text-lg text-brand-blue dark:text-blue-300">{top3[1].user.last_name} {top3[1].user.first_name}</h3>
+            <h3 className="font-bold text-lg text-[#0a2a5e] dark:text-blue-300">{top3[1].user.last_name} {top3[1].user.first_name}</h3>
             <p className="text-xs text-slate-400 font-mono mt-0.5">{top3[1].user.group} • Курс {top3[1].user.course}</p>
             <div className="mt-4 px-4 py-1.5 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-300 font-mono font-bold text-sm border border-blue-100 dark:border-blue-900">
               {top3[1].ratingPoints} баллов
@@ -80,17 +80,17 @@ export const RatingView: React.FC<RatingViewProps> = ({ db, user }) => {
           </div>
 
           {/* 1 место */}
-          <div className="bg-gradient-to-b from-amber-50 to-white dark:from-amber-950/10 dark:to-slate-900 rounded-3xl border-2 border-brand-gold p-8 shadow-xl flex flex-col items-center text-center relative -mt-2 transition-all">
+          <div className="bg-gradient-to-b from-amber-50 to-white dark:from-amber-950/10 dark:to-slate-900 rounded-3xl border-2 border-[#d4af37] p-8 shadow-xl flex flex-col items-center text-center relative -mt-2 transition-all">
             <div className="absolute top-3 right-3 animate-bounce">
-              <Flame className="w-6 h-6 text-cyan-500" />
+              <Flame className="w-6 h-6 text-amber-500" />
             </div>
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-brand-gold to-cyan-500 text-brand-blue font-extrabold text-2xl flex items-center justify-center mb-4 shadow-lg">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#d4af37] to-amber-500 text-[#0a2a5e] font-extrabold text-2xl flex items-center justify-center mb-4 shadow-lg">
               👑 1
             </div>
-            <span className="text-[10px] font-bold uppercase text-brand-gold tracking-wider">Лучший исследователь</span>
-            <h3 className="font-black text-xl text-brand-blue dark:text-blue-100 mt-1">{top3[0].user.last_name} {top3[0].user.first_name}</h3>
+            <span className="text-[10px] font-bold uppercase text-amber-700 dark:text-amber-500 tracking-wider">Лучший исследователь</span>
+            <h3 className="font-black text-xl text-[#0a2a5e] dark:text-blue-100 mt-1">{top3[0].user.last_name} {top3[0].user.first_name}</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-0.5">{top3[0].user.group} • Курс {top3[0].user.course}</p>
-            <div className="mt-4 px-6 py-2 rounded-2xl bg-brand-blue text-brand-gold font-mono font-extrabold text-base shadow">
+            <div className="mt-4 px-6 py-2 rounded-2xl bg-[#0a2a5e] text-[#d4af37] font-mono font-extrabold text-base shadow">
               {top3[0].ratingPoints} баллов
             </div>
             <p className="text-xs text-slate-600 dark:text-slate-300 mt-4 font-medium">{top3[0].user.department}</p>
@@ -101,7 +101,7 @@ export const RatingView: React.FC<RatingViewProps> = ({ db, user }) => {
             <div className="w-12 h-12 rounded-full bg-amber-800/20 text-amber-900 dark:text-amber-500 font-extrabold text-lg flex items-center justify-center mb-3 shadow">
               🥉 3
             </div>
-            <h3 className="font-bold text-lg text-brand-blue dark:text-blue-300">{top3[2].user.last_name} {top3[2].user.first_name}</h3>
+            <h3 className="font-bold text-lg text-[#0a2a5e] dark:text-blue-300">{top3[2].user.last_name} {top3[2].user.first_name}</h3>
             <p className="text-xs text-slate-400 font-mono mt-0.5">{top3[2].user.group} • Курс {top3[2].user.course}</p>
             <div className="mt-4 px-4 py-1.5 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-300 font-mono font-bold text-sm border border-blue-100 dark:border-blue-900">
               {top3[2].ratingPoints} баллов
@@ -113,8 +113,8 @@ export const RatingView: React.FC<RatingViewProps> = ({ db, user }) => {
 
       {/* Панель фильтрации */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-wrap items-center justify-between gap-4 transition-colors">
-        <div className="flex items-center space-x-2 text-xs font-bold text-brand-blue dark:text-blue-300 uppercase font-mono">
-          <Filter className="w-4 h-4 text-brand-gold" />
+        <div className="flex items-center space-x-2 text-xs font-bold text-[#0a2a5e] dark:text-blue-300 uppercase font-mono">
+          <Filter className="w-4 h-4 text-[#d4af37]" />
           <span>Фильтры таблицы:</span>
         </div>
 
@@ -155,14 +155,13 @@ export const RatingView: React.FC<RatingViewProps> = ({ db, user }) => {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs sm:text-sm">
             <thead>
-              <tr className="bg-brand-blue dark:bg-blue-950 text-white font-mono text-[11px] uppercase tracking-wider border-b border-blue-800 dark:border-blue-900">
+              <tr className="bg-[#0a2a5e] dark:bg-blue-950 text-white font-mono text-[11px] uppercase tracking-wider border-b border-blue-800 dark:border-blue-900">
                 <th className="py-4 px-6 w-16 text-center">Место</th>
                 <th className="py-4 px-6">Студент-исследователь</th>
                 <th className="py-4 px-4 text-center">Группа</th>
-                <th className="py-4 px-4 text-center">h-индекс</th>
                 <th className="py-4 px-4 text-center">Публикации</th>
                 <th className="py-4 px-4 text-center">Доклады</th>
-                <th className="py-4 px-6 text-right font-bold text-brand-gold">Рейтинг БГЭУ</th>
+                <th className="py-4 px-6 text-right font-bold text-[#d4af37]">Рейтинг БГЭУ</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -171,22 +170,21 @@ export const RatingView: React.FC<RatingViewProps> = ({ db, user }) => {
                 const pos = idx + 1;
 
                 return (
-                  <tr key={item.user.record_book_id} className={`hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-colors ${isMe ? 'bg-amber-50 dark:bg-amber-900/10 font-bold border-l-4 border-brand-gold' : ''}`}>
+                  <tr key={item.user.record_book_id} className={`hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-colors ${isMe ? 'bg-amber-50 dark:bg-amber-900/10 font-bold border-l-4 border-[#d4af37]' : ''}`}>
                     <td className="py-3.5 px-6 text-center font-mono font-bold dark:text-slate-300">
                       {pos === 1 ? '🥇' : pos === 2 ? '🥈' : pos === 3 ? '🥉' : pos}
                     </td>
                     <td className="py-3.5 px-6">
                       <div className="flex items-center space-x-2">
-                        <span className="text-brand-blue dark:text-blue-300 font-semibold">{item.user.last_name} {item.user.first_name}</span>
-                        {isMe && <span className="text-[9px] bg-brand-gold text-brand-blue px-1.5 py-0.5 rounded font-mono font-extrabold uppercase">Вы</span>}
+                        <span className="text-[#0a2a5e] dark:text-blue-300 font-semibold">{item.user.last_name} {item.user.first_name}</span>
+                        {isMe && <span className="text-[9px] bg-[#d4af37] text-[#0a2a5e] px-1.5 py-0.5 rounded font-mono font-extrabold uppercase">Вы</span>}
                       </div>
                       <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate max-w-xs font-normal">{item.user.department}</p>
                     </td>
                     <td className="py-3.5 px-4 text-center font-mono text-slate-600 dark:text-slate-400">{item.user.group}</td>
-                    <td className="py-3.5 px-4 text-center font-mono font-bold text-indigo-700 dark:text-indigo-400">{item.hIndex}</td>
                     <td className="py-3.5 px-4 text-center font-mono text-slate-700 dark:text-slate-400">{item.totalPubs}</td>
                     <td className="py-3.5 px-4 text-center font-mono text-slate-700 dark:text-slate-400">{item.totalReports}</td>
-                    <td className="py-3.5 px-6 text-right font-mono font-black text-base text-brand-blue dark:text-brand-gold">
+                    <td className="py-3.5 px-6 text-right font-mono font-black text-base text-[#0a2a5e] dark:text-[#d4af37]">
                       {item.ratingPoints}
                     </td>
                   </tr>

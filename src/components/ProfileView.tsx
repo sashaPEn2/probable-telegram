@@ -20,7 +20,13 @@ import {
   GraduationCap,
   TrendingUp,
   Activity,
-  Loader2
+  Loader2,
+  Megaphone,
+  UserPlus,
+  BarChart3,
+  Search,
+  X,
+  FlaskConical
 } from 'lucide-react';
 import {
   AreaChart,
@@ -30,8 +36,12 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend
+  Legend,
+  BarChart,
+  Bar,
+  Cell
 } from 'recharts';
+import { addAnnouncement, deleteAnnouncement, addMemberToSnil, removeMemberFromSnil, getPortalDB } from '../services/storage';
 
 interface ProfileViewProps {
   db: PortalDatabase;
@@ -46,16 +56,26 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onUpdateUser,
   onRefresh
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'pubs' | 'apps' | 'tasks' | 'interests' | 'certs'>('overview');
+  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'pubs' | 'apps' | 'tasks' | 'interests' | 'certs' | 'snil_mgmt'>('overview');
   const pdfTemplateRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isGeneratingApplication, setIsGeneratingApplication] = useState(false);
-  const [isGeneratingAvatar, setIsGeneratingAvatar] = useState(false);
   const snoApplicationRef = useRef<HTMLDivElement>(null);
+  const reportRef = useRef<HTMLDivElement>(null);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+
+  // SNIL Management State
+  const [annTitle, setAnnTitle] = useState('');
+  const [annContent, setAnnContent] = useState('');
+  const [isAnnUrgent, setIsAnnUrgent] = useState(false);
+  const [studentRecordBookToAdd, setStudentRecordBookToAdd] = useState('');
+  const [mgmtMessage, setMgmtMessage] = useState({ text: '', type: '' });
   
-  const myPubs = useMemo(() => db.publications.filter(p => p.user_record_book === user.record_book_id), [db.publications, user.record_book_id]);
-  const myApps = useMemo(() => db.applications.filter(a => a.student_record_book === user.record_book_id), [db.applications, user.record_book_id]);
-  const myCerts = useMemo(() => db.certificates.filter(c => c.user_record_book === user.record_book_id), [db.certificates, user.record_book_id]);
+  const myPubs = useMemo(() => (db.publications || []).filter(p => p.user_record_book === user.record_book_id), [db.publications, user.record_book_id]);
+  const myApps = useMemo(() => (db.applications || []).filter(a => a.student_record_book === user.record_book_id), [db.applications, user.record_book_id]);
+  const myCerts = useMemo(() => (db.certificates || []).filter(c => c.user_record_book === user.record_book_id), [db.certificates, user.record_book_id]);
+  const mySnilMembership = useMemo(() => (db.snils || []).find(s => s.member_record_books.includes(user.record_book_id)), [db.snils, user.record_book_id]);
+  const mySnilApps = useMemo(() => (db.snil_applications || []).filter(a => a.student_record_book === user.record_book_id), [db.snil_applications, user.record_book_id]);
   
   const activityData = useMemo(() => {
     const months = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
@@ -97,36 +117,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   // Форма добавления интереса
   const [newInterest, setNewInterest] = useState('');
 
-  const myTasks = db.tasks.filter(t => t.assigned_to_record_book === user.record_book_id);
+  const myTasks = useMemo(() => (db.tasks || []).filter(t => t.assigned_to_record_book === user.record_book_id), [db.tasks, user.record_book_id]);
   const stats = calculateResearcherStats(user.record_book_id);
-
-  const generateAvatar = async () => {
-    setIsGeneratingAvatar(true);
-    try {
-      const response = await fetch('/api/avatar/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          prompt: 'Professional 3D student avatar, scholarly, elegant, research-focused',
-          userInterests: `${user.last_name} ${user.first_name}, ${user.department}`
-        }),
-      });
-      
-      const data = await response.json();
-      if (data.imageUrl) {
-        const updated = { ...user, avatar_url: data.imageUrl };
-        const dbUser = db.users.find(u => u.record_book_id === user.record_book_id);
-        if (dbUser) dbUser.avatar_url = data.imageUrl;
-        localStorage.setItem('fem_bseu_portal_db_v1', JSON.stringify(db));
-        onUpdateUser(updated);
-        onRefresh();
-      }
-    } catch (err) {
-      console.error('Avatar generation error:', err);
-    } finally {
-      setIsGeneratingAvatar(false);
-    }
-  };
 
   const handleAddPublication = (e: React.FormEvent) => {
     e.preventDefault();
@@ -193,6 +185,65 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     if (dbUser) dbUser.scientific_interests = updated.scientific_interests;
     localStorage.setItem('fem_bseu_portal_db_v1', JSON.stringify(db));
     onUpdateUser(updated);
+  };
+
+  const mySnil = useMemo(() => {
+    if (user.role !== 'snil_head' || !user.managed_snil_id) return null;
+    return db.snils.find(s => s.id === user.managed_snil_id);
+  }, [db.snils, user.managed_snil_id, user.role]);
+
+  const mySnilAnnouncements = useMemo(() => {
+    if (!mySnil) return [];
+    return (db.announcements || []).filter(a => a.snil_id === mySnil.id).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }, [db.announcements, mySnil]);
+
+  const mySnilMembers = useMemo(() => {
+    if (!mySnil) return [];
+    return (db.users || []).filter(u => (mySnil.member_record_books || []).includes(u.record_book_id));
+  }, [db.users, mySnil]);
+
+  const handleAddAnn = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!mySnil || !annTitle.trim() || !annContent.trim()) return;
+    addAnnouncement({
+      snil_id: mySnil.id,
+      author_name: `${user.last_name} ${user.first_name}`,
+      title: annTitle,
+      content: annContent,
+      is_urgent: isAnnUrgent
+    });
+    setAnnTitle('');
+    setAnnContent('');
+    setIsAnnUrgent(false);
+    onRefresh();
+  };
+
+  const handleAddMember = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!mySnil || !studentRecordBookToAdd.trim()) return;
+    const result = addMemberToSnil(mySnil.id, studentRecordBookToAdd.trim());
+    setMgmtMessage({ text: result.message, type: result.success ? 'success' : 'error' });
+    if (result.success) setStudentRecordBookToAdd('');
+    setTimeout(() => setMgmtMessage({ text: '', type: '' }), 3000);
+    onRefresh();
+  };
+
+  const generateSnilReport = async () => {
+    if (!reportRef.current || !mySnil) return;
+    setIsGeneratingReport(true);
+    try {
+      const canvas = await html2canvas(reportRef.current, { scale: 2, useCORS: true });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgWidth = pdf.internal.pageSize.getWidth();
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      pdf.save(`Отчет_СНИЛ_${mySnil.name}_${new Date().toLocaleDateString()}.pdf`);
+    } catch (error) {
+      console.error('Report generation error:', error);
+    } finally {
+      setIsGeneratingReport(false);
+    }
   };
 
   const exportPortfolioToPdf = async () => {
@@ -280,30 +331,18 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     <div className="space-y-8 pb-12">
       
       {/* Профиль карточка исследователя */}
-      <div className="bg-gradient-to-r from-brand-blue via-blue-900 to-slate-900 rounded-3xl p-8 sm:p-10 text-white shadow-xl border border-brand-gold/40 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
-        <div className="absolute -top-20 -right-20 w-72 h-72 bg-brand-gold/15 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="bg-gradient-to-r from-[#0a2a5e] via-blue-900 to-slate-900 rounded-3xl p-8 sm:p-10 text-white shadow-xl border border-[#d4af37]/40 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
+        <div className="absolute -top-20 -right-20 w-72 h-72 bg-[#d4af37]/15 rounded-full blur-3xl pointer-events-none"></div>
 
         <div className="flex items-center space-x-6 relative z-10">
-          <div className="w-20 sm:w-24 h-20 sm:h-24 rounded-3xl bg-gradient-to-tr from-brand-gold to-cyan-500 p-1 flex-shrink-0 shadow-xl relative group">
-            <div className="w-full h-full bg-brand-blue rounded-[22px] flex items-center justify-center text-3xl font-extrabold text-brand-gold overflow-hidden">
-              {user.avatar_url ? (
-                <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-              ) : (
-                <>{user.first_name[0]}{user.last_name[0]}</>
-              )}
+          <div className="w-20 sm:w-24 h-20 sm:h-24 rounded-3xl bg-gradient-to-tr from-[#d4af37] to-amber-500 p-1 flex-shrink-0 shadow-xl">
+            <div className="w-full h-full bg-[#0a2a5e] rounded-[22px] flex items-center justify-center text-3xl font-extrabold text-[#d4af37]">
+              {user.first_name[0]}{user.last_name[0]}
             </div>
-            <button 
-              onClick={generateAvatar}
-              disabled={isGeneratingAvatar}
-              className="absolute -bottom-2 -right-2 p-2 rounded-xl bg-brand-gold text-brand-blue shadow-lg hover:scale-110 transition-all border border-brand-blue/20"
-              title="Сгенерировать AI-аватар"
-            >
-              {isGeneratingAvatar ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-            </button>
           </div>
           <div className="space-y-1">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="px-3 py-0.5 rounded-full bg-brand-gold text-brand-blue font-bold text-xs uppercase tracking-wider">
+              <span className="px-3 py-0.5 rounded-full bg-[#d4af37] text-[#0a2a5e] font-bold text-xs uppercase tracking-wider">
                 Зачётка № {user.record_book_id}
               </span>
               <span className="text-xs font-mono bg-blue-950 px-2 py-0.5 rounded text-blue-300">
@@ -311,7 +350,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               </span>
             </div>
             <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight">{user.last_name} {user.first_name}</h1>
-            <p className="text-blue-200 text-xs sm:text-sm opacity-90 truncate max-w-xl">{user.department}</p>
+            <p className="text-blue-200 text-xs sm:text-sm opacity-90 truncate max-w-xl">{user.faculty} • {user.department}</p>
           </div>
         </div>
 
@@ -335,7 +374,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <button
             onClick={exportPortfolioToPdf}
             disabled={isExporting}
-            className="w-full md:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-brand-gold to-cyan-500 text-brand-blue font-extrabold text-sm shadow-xl hover:brightness-110 flex items-center justify-center space-x-2 transition-all group disabled:opacity-70 disabled:cursor-not-allowed"
+            className="w-full md:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-[#d4af37] to-amber-500 text-[#0a2a5e] font-extrabold text-sm shadow-xl hover:brightness-110 flex items-center justify-center space-x-2 transition-all group disabled:opacity-70 disabled:cursor-not-allowed"
           >
             {isExporting ? (
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -413,20 +452,20 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           className="w-[800px] p-12 bg-white text-[#0f172a] font-sans"
           style={{ fontFamily: 'Inter, system-ui, sans-serif', backgroundColor: '#ffffff' }}
         >
-          <div className="flex items-center justify-between pb-6 mb-8" style={{ borderBottom: '2px solid var(--color-brand-blue)' }}>
+          <div className="flex items-center justify-between pb-6 mb-8" style={{ borderBottom: '2px solid #0a2a5e' }}>
             <div>
-              <h1 className="text-2xl font-black uppercase tracking-tighter" style={{ color: 'var(--color-brand-blue)' }}>SNO.PORTAL</h1>
+              <h1 className="text-2xl font-black uppercase tracking-tighter" style={{ color: '#0a2a5e' }}>SNO.PORTAL</h1>
               <p className="text-xs font-bold text-[#64748b]">БЕЛОРУССКИЙ ГОСУДАРСТВЕННЫЙ ЭКОНОМИЧЕСКИЙ УНИВЕРСИТЕТ</p>
             </div>
             <div className="text-right">
               <p className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-widest">Электронный документ</p>
-              <p className="text-xs font-black text-brand-gold">ФАКУЛЬТЕТ ЭКОНОМИКИ И МЕНЕДЖМЕНТА</p>
+              <p className="text-xs font-black text-[#d4af37]">ФАКУЛЬТЕТ ЭКОНОМИКИ И МЕНЕДЖМЕНТА</p>
             </div>
           </div>
 
           <div className="mb-10">
             <h2 className="text-3xl font-black text-[#0f172a] mb-2 uppercase tracking-tight">ЭЛЕКТРОННОЕ ПОРТФОЛИО ИССЛЕДОВАТЕЛЯ</h2>
-            <div className="h-1.5 w-24 rounded-full" style={{ backgroundColor: 'var(--color-brand-gold)' }}></div>
+            <div className="h-1.5 w-24 rounded-full" style={{ backgroundColor: '#d4af37' }}></div>
           </div>
 
           <div className="grid grid-cols-3 gap-8 mb-10">
@@ -446,37 +485,37 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 </div>
               </div>
               <div>
-                <p className="text-[10px] font-black text-[#94a3b8] uppercase tracking-widest mb-1">Кафедра / Подразделение</p>
-                <p className="text-sm font-bold text-[#334155]">{user.department}</p>
+                <p className="text-[10px] font-black text-[#94a3b8] uppercase tracking-widest mb-1">Факультет / Кафедра</p>
+                <p className="text-sm font-bold text-[#334155]">{user.faculty} / {user.department}</p>
               </div>
             </div>
             <div className="rounded-2xl p-6 border border-[#f1f5f9]" style={{ backgroundColor: '#f8fafc' }}>
-              <p className="text-[10px] font-black uppercase tracking-widest mb-4 text-center" style={{ color: 'var(--color-brand-blue)' }}>Научный статус</p>
+              <p className="text-[10px] font-black uppercase tracking-widest mb-4 text-center" style={{ color: '#0a2a5e' }}>Научный статус</p>
               <div className="space-y-3">
                 <div className="flex justify-between items-center pb-2" style={{ borderBottom: '1px solid #e2e8f0' }}>
-                  <span className="text-[10px] font-bold text-[#64748b] uppercase">Индекс Хирша</span>
-                  <span className="text-sm font-black text-brand-blue">{stats.hIndex}</span>
+                  <span className="text-[10px] font-bold text-[#64748b] uppercase">Публикации</span>
+                  <span className="text-sm font-black text-[#0a2a5e]">{myPubs.length}</span>
                 </div>
                 <div className="flex justify-between items-center pb-2" style={{ borderBottom: '1px solid #e2e8f0' }}>
-                  <span className="text-[10px] font-bold text-[#64748b] uppercase">Публикации</span>
-                  <span className="text-sm font-black text-brand-blue">{myPubs.length}</span>
+                  <span className="text-[10px] font-bold text-[#64748b] uppercase">Доклады</span>
+                  <span className="text-sm font-black text-[#0a2a5e]">{myApps.length}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-bold text-[#64748b] uppercase">Рейтинг ФЭМ</span>
-                  <span className="text-sm font-black text-brand-gold">{stats.ratingPoints}</span>
+                  <span className="text-sm font-black text-[#d4af37]">{stats.ratingPoints}</span>
                 </div>
               </div>
             </div>
           </div>
 
           <div className="mb-10">
-            <h3 className="text-lg font-black text-[#1e293b] mb-4 pl-3 uppercase tracking-tight" style={{ borderLeft: '4px solid var(--color-brand-blue)' }}>Список опубликованных научных работ</h3>
+            <h3 className="text-lg font-black text-[#1e293b] mb-4 pl-3 uppercase tracking-tight" style={{ borderLeft: '4px solid #0a2a5e' }}>Список опубликованных научных работ</h3>
             <div className="space-y-4">
               {myPubs.length > 0 ? myPubs.map((p, idx) => (
                 <div key={p.id} className="p-4 rounded-xl border border-[#f1f5f9]" style={{ backgroundColor: '#f8fafc' }}>
                   <div className="flex justify-between items-start mb-1">
                     <p className="text-sm font-bold text-[#1e293b] leading-tight">
-                      <span className="mr-2" style={{ color: 'var(--color-brand-blue)' }}>{idx + 1}.</span> {p.title}
+                      <span className="mr-2" style={{ color: '#0a2a5e' }}>{idx + 1}.</span> {p.title}
                     </p>
                     <span className="text-[9px] font-black text-[#94a3b8] uppercase ml-4 flex-shrink-0">{p.year} г.</span>
                   </div>
@@ -518,13 +557,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </div>
 
           <div className="mb-10">
-            <h3 className="text-lg font-black text-[#1e293b] mb-4 pl-3 uppercase tracking-tight" style={{ borderLeft: '4px solid var(--color-brand-blue)' }}>Достижения и сертификаты</h3>
+            <h3 className="text-lg font-black text-[#1e293b] mb-4 pl-3 uppercase tracking-tight" style={{ borderLeft: '4px solid #0a2a5e' }}>Достижения и сертификаты</h3>
             <div className="space-y-4">
               {myCerts.length > 0 ? myCerts.map((c, idx) => (
                 <div key={c.id} className="p-4 rounded-xl border border-[#f1f5f9]" style={{ backgroundColor: '#f8fafc' }}>
                   <div className="flex justify-between items-start mb-1">
                     <p className="text-sm font-bold text-[#1e293b] leading-tight">
-                      <span className="mr-2" style={{ color: 'var(--color-brand-blue)' }}>{idx + 1}.</span> {c.title}
+                      <span className="mr-2" style={{ color: '#0a2a5e' }}>{idx + 1}.</span> {c.title}
                     </p>
                     <span className="text-[9px] font-black text-[#94a3b8] uppercase ml-4 flex-shrink-0">{new Date(c.issue_date).getFullYear()} г.</span>
                   </div>
@@ -556,12 +595,16 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         </div>
       </div>
 
-      {/* Дашборд показателей (5 карточек) */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <DashStat title="Индекс Хирша" value={stats.hIndex} desc="h-index в базе" highlight />
-        <DashStat title="Публикации" value={myPubs.length} desc={`${stats.totalPubs} верифицировано`} />
+      {/* Дашборд показателей (4 карточки) */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <DashStat title="Публикации" value={myPubs.length} desc={`${stats.totalPubs} верифицировано`} highlight />
         <DashStat title="Доклады" value={myApps.length} desc="конференции БГЭУ" />
-        <DashStat title="Баллы рейтинга" value={stats.ratingPoints} desc="рейтинг ФЭМ" highlight />
+        <DashStat 
+          title="СНИЛ" 
+          value={mySnilMembership ? 'Участник' : (mySnilApps.length > 0 ? 'Заявка' : 'Нет')} 
+          desc={mySnilMembership ? mySnilMembership.name : (mySnilApps[0]?.snil_name || 'Не зачислен')} 
+          highlight={!!mySnilMembership}
+        />
         <DashStat title="Задачи СНИЛ" value={myTasks.length} desc="поручения" />
       </div>
 
@@ -657,6 +700,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         <SubTabBtn active={activeSubTab === 'apps'} onClick={() => setActiveSubTab('apps')} icon={<FileText className="w-5 h-5" />} label="Заявки" count={myApps.length} />
         <SubTabBtn active={activeSubTab === 'tasks'} onClick={() => setActiveSubTab('tasks')} icon={<Briefcase className="w-5 h-5" />} label="Задачи" count={myTasks.length} />
         <SubTabBtn active={activeSubTab === 'interests'} onClick={() => setActiveSubTab('interests')} icon={<Sparkles className="w-5 h-5" />} label="Интересы" count={user.scientific_interests.length} />
+        {user.role === 'snil_head' && (
+          <SubTabBtn active={activeSubTab === 'snil_mgmt'} onClick={() => setActiveSubTab('snil_mgmt')} icon={<ShieldAlert className="w-5 h-5" />} label="Управление СНИЛ" />
+        )}
       </div>
 
       {/* Вкладка 1: Публикации портфолио */}
@@ -664,15 +710,15 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-sm space-y-6 transition-colors">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
             <div>
-              <h3 className="text-xl font-bold text-brand-blue dark:text-blue-300 flex items-center space-x-2">
-                <GraduationCap className="w-6 h-6 text-brand-gold" />
+              <h3 className="text-xl font-bold text-[#0a2a5e] dark:text-blue-300 flex items-center space-x-2">
+                <GraduationCap className="w-6 h-6 text-[#d4af37]" />
                 <span>Электронный реестр публикаций исследователя</span>
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Все труды автоматически отправляются координатору науки ФЭМ для верификации</p>
             </div>
             <button
               onClick={() => setShowAddPub(!showAddPub)}
-              className="px-4 py-2 rounded-xl bg-brand-blue text-brand-gold font-bold text-xs shadow hover:bg-blue-900 transition-colors flex items-center space-x-1 self-start"
+              className="px-4 py-2 rounded-xl bg-[#0a2a5e] text-[#d4af37] font-bold text-xs shadow hover:bg-blue-900 transition-colors flex items-center space-x-1 self-start"
             >
               <Plus className="w-4 h-4" /> <span>Добавить труд</span>
             </button>
@@ -822,56 +868,78 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         </div>
       )}
 
-      {/* Вкладка 3: Заявки на события */}
+      {/* Вкладка 3: Заявки на события и СНИЛ */}
       {activeSubTab === 'apps' && (
-        <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-            <div>
-              <h3 className="text-xl font-bold text-[#0a2a5e] flex items-center space-x-2">
-                <FileText className="w-6 h-6 text-[#d4af37]" />
-                <span>Мои заявки на участие в конференциях</span>
-              </h3>
-              <p className="text-xs text-slate-500 mt-1">Отслеживайте статус поданных докладов и тезисов</p>
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-sm space-y-8 animate-fadeIn transition-colors">
+          <div className="space-y-6">
+            <h3 className="text-xl font-bold text-[#0a2a5e] dark:text-blue-300 flex items-center space-x-2">
+              <FlaskConical className="w-6 h-6 text-[#d4af37]" />
+              <span>Заявления на вступление в СНИЛ</span>
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {mySnilApps.length === 0 ? (
+                <p className="text-sm text-slate-400 text-center py-8 col-span-2 italic bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">У вас нет активных заявлений в СНИЛ.</p>
+              ) : (
+                mySnilApps.map(app => (
+                  <div key={app.id} className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 shadow-sm flex justify-between items-center group hover:border-[#0a2a5e] transition-all">
+                    <div>
+                      <h4 className="font-black text-[#0a2a5e] dark:text-white uppercase text-[10px] tracking-widest mb-1">СНИЛ «{app.snil_name}»</h4>
+                      <p className="text-[10px] text-slate-400">Подано: {new Date(app.created_at).toLocaleDateString()}</p>
+                    </div>
+                    <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                      app.status === 'принята' ? 'bg-green-100 text-green-700' : 
+                      app.status === 'отклонена' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
+                    }`}>
+                      {app.status}
+                    </span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
-          {myApps.length === 0 ? (
-            <div className="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-              <FileText className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-              <p className="text-slate-500 text-sm">Вы ещё не подавали заявок на конференции.</p>
-              <p className="text-xs text-slate-400 mt-1">Выберите мероприятие в календаре событий для подачи работы.</p>
-            </div>
-          ) : (
+          <div className="space-y-6 border-t border-slate-100 dark:border-slate-800 pt-8">
+            <h3 className="text-xl font-bold text-[#0a2a5e] dark:text-blue-300 flex items-center space-x-2">
+              <FileText className="w-6 h-6 text-[#d4af37]" />
+              <span>Мои заявки на участие в конференциях</span>
+            </h3>
             <div className="space-y-4">
-              {myApps.map(ap => (
-                <div key={ap.id} className="p-5 rounded-2xl border border-slate-200 bg-white shadow-sm hover:border-blue-400 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center space-x-2 text-[10px] font-mono text-slate-400 uppercase">
-                      <span>{new Date(ap.created_at).toLocaleDateString()}</span>
-                      <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                      <span>ID: {ap.id.slice(-8)}</span>
-                    </div>
-                    <h4 className="font-bold text-[#0a2a5e]">{ap.event_title}</h4>
-                    <p className="text-xs text-slate-600 font-medium">Тема: «{ap.topic}»</p>
-                  </div>
-                  <div className="flex flex-col items-end gap-2">
-                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                      ap.status === 'принята' ? 'bg-green-100 text-green-700' : 
-                      ap.status === 'отклонена' ? 'bg-red-100 text-red-700' : 
-                      'bg-amber-100 text-amber-700'
-                    }`}>
-                      {ap.status}
-                    </span>
-                    {ap.review_comment && (
-                      <p className="text-[10px] text-slate-400 italic text-right max-w-[200px]">
-                        "{ap.review_comment}"
-                      </p>
-                    )}
-                  </div>
+              {myApps.length === 0 ? (
+                <div className="text-center py-12 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 transition-colors">
+                  <FileText className="w-10 h-10 text-slate-300 dark:text-slate-700 mx-auto mb-2" />
+                  <p className="text-slate-500 dark:text-slate-400 text-sm">Вы ещё не подавали заявок на конференции.</p>
                 </div>
-              ))}
+              ) : (
+                myApps.map(ap => (
+                  <div key={ap.id} className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 shadow-sm hover:border-blue-400 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-2 text-[10px] font-mono text-slate-400 uppercase">
+                        <span>{new Date(ap.created_at).toLocaleDateString()}</span>
+                        <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                        <span>ID: {ap.id.slice(-8)}</span>
+                      </div>
+                      <h4 className="font-bold text-[#0a2a5e] dark:text-blue-200">{ap.event_title}</h4>
+                      <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">Тема: «{ap.topic}»</p>
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                      <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                        ap.status === 'принята' ? 'bg-green-100 text-green-700' : 
+                        ap.status === 'отклонена' ? 'bg-red-100 text-red-700' : 
+                        'bg-amber-100 text-amber-700'
+                      }`}>
+                        {ap.status}
+                      </span>
+                      {ap.review_comment && (
+                        <p className="text-[10px] text-slate-400 italic text-right max-w-[200px]">
+                          "{ap.review_comment}"
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
-          )}
+          </div>
         </div>
       )}
 
@@ -900,6 +968,286 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Вкладка 5: Управление СНИЛ (для руководителей) */}
+      {activeSubTab === 'snil_mgmt' && mySnil && (
+        <div className="space-y-8 animate-fadeIn">
+          
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            {/* Left Column: Forms */}
+            <div className="lg:col-span-2 space-y-8">
+              
+              {/* Announcements Form */}
+              <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 shadow-sm space-y-6">
+                <div className="flex items-center space-x-3 text-[#0a2a5e] dark:text-blue-300">
+                  <Megaphone className="w-6 h-6" />
+                  <h3 className="text-xl font-black uppercase tracking-tight">Разместить объявление</h3>
+                </div>
+                
+                <form onSubmit={handleAddAnn} className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Заголовок объявления</label>
+                    <input 
+                      type="text" 
+                      required 
+                      placeholder="Например: Срочное собрание СНИЛ"
+                      value={annTitle}
+                      onChange={e => setAnnTitle(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-sm focus:outline-none focus:border-blue-500 transition-all dark:text-white"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Содержание</label>
+                    <textarea 
+                      required 
+                      rows={4}
+                      placeholder="Текст сообщения для участников вашей лаборатории..."
+                      value={annContent}
+                      onChange={e => setAnnContent(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-sm focus:outline-none focus:border-blue-500 transition-all dark:text-white"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <label className="flex items-center space-x-2 cursor-pointer group">
+                      <input 
+                        type="checkbox" 
+                        checked={isAnnUrgent}
+                        onChange={e => setIsAnnUrgent(e.target.checked)}
+                        className="w-5 h-5 rounded border-slate-300 text-[#0a2a5e] focus:ring-[#0a2a5e]"
+                      />
+                      <span className="text-xs font-bold text-slate-600 dark:text-slate-400 group-hover:text-[#0a2a5e] transition-colors">Отметить как срочное</span>
+                    </label>
+                    <button type="submit" className="px-8 py-3 bg-[#0a2a5e] text-[#d4af37] font-black text-xs uppercase tracking-widest rounded-xl hover:bg-blue-900 shadow-lg transition-all active:scale-95">
+                      Опубликовать
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* Announcements List */}
+              <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 shadow-sm space-y-6">
+                <h3 className="text-lg font-black text-[#0a2a5e] dark:text-blue-300 uppercase tracking-tight">Ваши публикации</h3>
+                <div className="space-y-4">
+                  {mySnilAnnouncements.length === 0 ? (
+                    <p className="text-sm text-slate-400 text-center py-8">Вы еще не размещали объявлений.</p>
+                  ) : (
+                    mySnilAnnouncements.map(ann => (
+                      <div key={ann.id} className={`p-5 rounded-2xl border ${ann.is_urgent ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700'} flex justify-between items-start gap-4`}>
+                        <div className="space-y-1">
+                          <div className="flex items-center space-x-2">
+                            {ann.is_urgent && <span className="px-2 py-0.5 rounded bg-amber-200 text-amber-800 text-[9px] font-black uppercase">Срочно</span>}
+                            <span className="text-[10px] font-bold text-slate-400">{new Date(ann.created_at).toLocaleDateString()}</span>
+                          </div>
+                          <h4 className="font-bold text-[#0a2a5e] dark:text-white">{ann.title}</h4>
+                          <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">{ann.content}</p>
+                        </div>
+                        <button 
+                          onClick={() => {
+                            deleteAnnouncement(ann.id);
+                            onRefresh();
+                          }}
+                          className="p-2 text-slate-400 hover:text-red-500 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column: Members and Stats */}
+            <div className="space-y-8">
+              
+              {/* Add Member Card */}
+              <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 shadow-sm space-y-6">
+                <div className="flex items-center space-x-3 text-[#0a2a5e] dark:text-blue-300">
+                  <UserPlus className="w-6 h-6" />
+                  <h3 className="text-lg font-black uppercase tracking-tight">Добавить участника</h3>
+                </div>
+                
+                <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                  Введите номер зачетной книжки студента, подавшего заявление, чтобы добавить его в состав вашей СНИЛ.
+                </p>
+
+                <form onSubmit={handleAddMember} className="space-y-3">
+                  <input 
+                    type="text" 
+                    required 
+                    placeholder="Номер зачётки (8 цифр)"
+                    value={studentRecordBookToAdd}
+                    onChange={e => setStudentRecordBookToAdd(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-sm focus:outline-none focus:border-blue-500 transition-all dark:text-white font-mono"
+                  />
+                  {mgmtMessage.text && (
+                    <div className={`text-[10px] font-bold px-3 py-2 rounded-lg ${mgmtMessage.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                      {mgmtMessage.text}
+                    </div>
+                  )}
+                  <button type="submit" className="w-full py-3.5 bg-[#d4af37] text-[#0a2a5e] font-black text-xs uppercase tracking-widest rounded-xl hover:brightness-110 shadow-lg transition-all active:scale-95">
+                    Добавить в состав
+                  </button>
+                </form>
+              </div>
+
+              {/* Members List */}
+              <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 shadow-sm space-y-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-black text-[#0a2a5e] dark:text-blue-300 uppercase tracking-tight">Участники</h3>
+                  <span className="text-xs font-black bg-blue-100 dark:bg-blue-900/50 text-blue-700 px-2 py-1 rounded-lg">{mySnilMembers.length}</span>
+                </div>
+                <div className="max-h-80 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
+                  {mySnilMembers.length === 0 ? (
+                    <p className="text-xs text-slate-400 text-center py-4">В вашей СНИЛ пока нет участников.</p>
+                  ) : (
+                    mySnilMembers.map(member => (
+                      <div key={member.record_book_id} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 rounded-lg bg-[#0a2a5e] text-[#d4af37] flex items-center justify-center text-[10px] font-black">
+                            {member.first_name[0]}{member.last_name[0]}
+                          </div>
+                          <div>
+                            <p className="text-[11px] font-black text-slate-700 dark:text-slate-200 leading-tight">{member.last_name} {member.first_name[0]}.</p>
+                            <p className="text-[9px] font-mono text-slate-400">{member.record_book_id}</p>
+                          </div>
+                        </div>
+                        <button 
+                          onClick={() => {
+                            removeMemberFromSnil(mySnil.id, member.record_book_id);
+                            onRefresh();
+                          }}
+                          className="p-1.5 text-slate-300 hover:text-red-500 transition-colors"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Report Generation */}
+              <div className="bg-gradient-to-br from-[#0a2a5e] to-blue-900 rounded-3xl p-8 text-white shadow-xl space-y-6 border border-[#d4af37]/30">
+                <BarChart3 className="w-10 h-10 text-[#d4af37]" />
+                <div className="space-y-2">
+                  <h3 className="text-xl font-black uppercase tracking-tight">Отчетность СНИЛ</h3>
+                  <p className="text-xs text-blue-200/70 leading-relaxed">
+                    Сгенерируйте официальный отчет об активности вашей лаборатории за текущий период для подачи в деканат.
+                  </p>
+                </div>
+                <button 
+                  onClick={generateSnilReport}
+                  disabled={isGeneratingReport}
+                  className="w-full py-4 bg-[#d4af37] text-[#0a2a5e] font-black text-xs uppercase tracking-[0.2em] rounded-xl hover:brightness-110 shadow-lg transition-all active:scale-95 flex items-center justify-center space-x-2"
+                >
+                  {isGeneratingReport ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                  <span>{isGeneratingReport ? 'Подготовка...' : 'Сформировать отчет'}</span>
+                </button>
+              </div>
+
+            </div>
+          </div>
+
+          {/* Hidden Report Template */}
+          <div style={{ position: 'fixed', left: '-10000px', top: 0, pointerEvents: 'none' }}>
+            <div ref={reportRef} className="w-[800px] p-12 bg-white text-slate-900 font-sans" style={{ backgroundColor: '#ffffff' }}>
+              {/* Branded Banner */}
+              <div className="bg-[#0a2a5e] p-8 rounded-3xl text-white flex justify-between items-center mb-10 border-b-4 border-[#d4af37]">
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2 text-[#d4af37] text-[10px] font-black uppercase tracking-widest">
+                    <FlaskConical className="w-5 h-5" />
+                    <span>SSO Portal • FEM BSEU</span>
+                  </div>
+                  <h1 className="text-3xl font-black uppercase tracking-tighter">ОТЧЕТ АКТИВНОСТИ СНИЛ</h1>
+                  <p className="text-sm font-bold text-blue-200 opacity-80 uppercase tracking-widest">Информационно-аналитическая система SNO.PORTAL</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[40px] font-black text-[#d4af37] leading-none mb-1">2026</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-blue-300">Семестр II</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-10 mb-10">
+                <div className="space-y-4">
+                  <h2 className="text-lg font-black text-[#0a2a5e] border-l-4 border-[#d4af37] pl-3 uppercase">О лаборатории</h2>
+                  <div className="space-y-2">
+                    <p className="text-xs font-bold text-slate-400 uppercase">Наименование:</p>
+                    <p className="text-lg font-black text-slate-800">СНИЛ «{mySnil.name}»</p>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-xs font-bold text-slate-400 uppercase">Руководитель:</p>
+                    <p className="text-sm font-bold text-slate-700">{mySnil.head_name}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-xs font-bold text-slate-400 uppercase">Кафедра:</p>
+                    <p className="text-sm font-bold text-slate-700">{mySnil.department}</p>
+                  </div>
+                </div>
+                
+                <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 flex flex-col justify-center items-center space-y-4">
+                  <p className="text-xs font-black text-[#0a2a5e] uppercase tracking-widest">Статистика участников</p>
+                  <div className="text-5xl font-black text-[#d4af37]">{mySnilMembers.length}</div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Активных исследователей</p>
+                </div>
+              </div>
+
+              <div className="space-y-6 mb-10">
+                <h2 className="text-lg font-black text-[#0a2a5e] border-l-4 border-[#d4af37] pl-3 uppercase">Показатели эффективности</h2>
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div className="p-4 rounded-2xl bg-blue-50 border border-blue-100">
+                    <p className="text-[10px] font-bold text-blue-600 uppercase mb-1">Публикации</p>
+                    <p className="text-2xl font-black text-[#0a2a5e]">14</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-amber-50 border border-amber-100">
+                    <p className="text-[10px] font-bold text-amber-600 uppercase mb-1">Доклады</p>
+                    <p className="text-2xl font-black text-[#0a2a5e]">28</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-green-50 border border-green-100">
+                    <p className="text-[10px] font-bold text-green-600 uppercase mb-1">Проекты</p>
+                    <p className="text-2xl font-black text-[#0a2a5e]">3</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-6 mb-10">
+                <h2 className="text-lg font-black text-[#0a2a5e] border-l-4 border-[#d4af37] pl-3 uppercase">Недавние объявления</h2>
+                <div className="space-y-3">
+                  {mySnilAnnouncements.slice(0, 3).map(ann => (
+                    <div key={ann.id} className="p-4 rounded-2xl border border-slate-100 bg-slate-50">
+                      <div className="flex justify-between mb-1">
+                        <p className="text-xs font-bold text-slate-800">{ann.title}</p>
+                        <p className="text-[9px] font-mono text-slate-400">{new Date(ann.created_at).toLocaleDateString()}</p>
+                      </div>
+                      <p className="text-[10px] text-slate-500 line-clamp-2">{ann.content}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-auto pt-10 border-t border-slate-100 flex justify-between items-end">
+                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                  <p>Документ сформирован системой SNO.PORTAL</p>
+                  <p>Дата генерации: {new Date().toLocaleString()}</p>
+                </div>
+                <div className="flex space-x-12">
+                  <div className="text-center">
+                    <div className="w-24 h-12 border-b border-slate-300 mb-1"></div>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase">Руководитель</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="w-24 h-12 border-b border-slate-300 mb-1"></div>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase">Печать СНИЛ</p>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
         </div>
       )}
 

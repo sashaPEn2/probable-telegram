@@ -12,7 +12,11 @@ import {
   GalleryItem,
   Notification,
   NIRSReport,
-  UserRole
+  UserRole,
+  MerchItem,
+  MerchOrder,
+  Announcement,
+  SnilApplication
 } from '../types';
 
 const STORAGE_KEY = 'fem_bseu_portal_db_v1';
@@ -31,7 +35,10 @@ export interface PortalDatabase {
   gallery: GalleryItem[];
   notifications: Notification[];
   reports: NIRSReport[];
-  merch_orders: MerchOrder[];
+  merch: MerchItem[];
+  orders: MerchOrder[];
+  announcements: Announcement[];
+  snil_applications: SnilApplication[];
 }
 
 const INITIAL_DB: PortalDatabase = {
@@ -47,40 +54,85 @@ const INITIAL_DB: PortalDatabase = {
   gallery: [],
   notifications: [],
   reports: [],
-  merch_orders: []
+  merch: [],
+  orders: [],
+  announcements: [],
+  snil_applications: []
 };
 
-export const MERCH_ITEMS: MerchItem[] = [
-  { id: 'm1', name: 'Пластиковая ручка СНО', price: 50, image_url: 'https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=400&auto=format&fit=crop&q=60', description: 'Классическая синяя ручка с логотипом СНО ФЭМ.' },
-  { id: 'm2', name: 'Металлическая ручка Premium', price: 150, image_url: 'https://images.unsplash.com/photo-1562240020-ce31ccb0fa7d?w=400&auto=format&fit=crop&q=60', description: 'Тяжелая металлическая ручка в подарочном футляре.' },
-  { id: 'm3', name: 'Брелок «День бел науки»', price: 80, image_url: 'https://images.unsplash.com/photo-1619115171439-06c15c81aa8c?w=400&auto=format&fit=crop&q=60', description: 'Лимитированная серия ко Дню белорусской науки.' },
-  { id: 'm4', name: 'Брелок СНО стандартный', price: 60, image_url: 'https://images.unsplash.com/photo-1582142839970-2b9e04b60f65?w=400&auto=format&fit=crop&q=60', description: 'Фирменный брелок с гербом факультета.' }
-];
-
 export const DEPARTMENTS = [
-  'Кафедра экономики и управления предприятиями',
-  'Кафедра менеджмента',
+  'Кафедра экономики промышленных предприятий',
   'Кафедра национальной экономики и государственного управления',
-  'Кафедра экономической теории',
-  'Кафедра экономики труда и бизнес-администрирования'
+  'Кафедра организации и управления',
+  'Кафедра экономики АПК и природопользования'
 ];
 
-export const GROUPS = ['ДЭУ-1', 'ДЭУ-2', 'ДЭУ-3', 'ДГХ-1', 'ДГХ-2', 'ДМН-1', 'ДМН-2', 'ДМК-1', 'ДЭТ-1'];
+export const FACULTIES = ['ФЭМ'];
+
+export const GROUPS_BY_COURSE: Record<number, string[]> = {
+  1: [
+    '26 DKKS 1', '26 DKKS 2', '26 DKP 1', '26 DKP 2', '26 DK E', '26 DK T', 
+    '26 DKH 1', '26 DKH 2', '26 DKU', '26 DKR'
+  ],
+  2: [
+    '25 DKKS 1', '25 DKKS 2', '25 DKP 1', '25 DKP 2', '25 DK E', '25 DK T', 
+    '25 DKA 1', '25 DKA 2', '25 DKU', '25 DKR'
+  ],
+  3: [
+    '24 DKKS 1', '24 DKKS 2', '24 DKP 1', '24 DKP 2', '24 DK E', '24 DK T', 
+    '24 DKA 1', '24 DKA 2', '24 DKU', '24 DKR'
+  ],
+  4: [
+    '23 DKKS 1', '23 DKKS 2', '23 DKP 1', '23 DKP 2', '23 DK E', '23 DK T', 
+    '23 DKA 1', '23 DKA 2', '23 DKU', '23 DKR'
+  ]
+};
+
+export const GROUPS = Object.values(GROUPS_BY_COURSE).flat();
 
 export function getPortalDB(): PortalDatabase {
+  // Always check for migration/seeding needs
+  seedFacultyStarterTemplate();
+
   const data = localStorage.getItem(STORAGE_KEY);
   if (!data) {
-    seedFacultyStarterTemplate();
-    const seeded = localStorage.getItem(STORAGE_KEY);
-    return seeded ? JSON.parse(seeded) : INITIAL_DB;
+    return INITIAL_DB;
   }
   try {
-    const db = JSON.parse(data);
+    const db = JSON.parse(data) as PortalDatabase;
+    
+    // Ensure all collections exist (for backward compatibility with older local storage)
+    const collections: (keyof PortalDatabase)[] = [
+      'users', 'publications', 'certificates', 'projects', 'snils', 'events', 
+      'applications', 'news', 'tasks', 'gallery', 'notifications', 'reports', 
+      'merch', 'orders', 'announcements', 'snil_applications'
+    ];
+    
+    let updated = false;
+    collections.forEach(key => {
+      if (!db[key]) {
+        (db as any)[key] = [];
+        updated = true;
+      }
+    });
+
+    if (updated) {
+      if (db.merch.length === 0) {
+        db.merch.push(
+          { id: 'm1', name: 'Пластиковая ручка СНО ФЭМ', points: 20, stock: 100, description: 'Классическая синяя ручка с логотипом СНО ФЭМ.' },
+          { id: 'm2', name: 'Металлическая ручка Premium', points: 50, stock: 20, description: 'Элегантная металлическая ручка для важных научных записей.' },
+          { id: 'm3', name: 'Брелок СНО «День бел. науки»', points: 35, stock: 50, description: 'Лимитированная серия ко Дню белорусской науки.' },
+          { id: 'm4', name: 'Брелок СНО стандартный', points: 30, stock: 80, description: 'Фирменный акриловый брелок с символикой факультета.' }
+        );
+      }
+      savePortalDB(db);
+    }
+
     // Если база есть, но пустая (например после очистки кэша), тоже сидим
     if (db.news.length === 0 && db.events.length === 0) {
       seedFacultyStarterTemplate();
       const reseeded = localStorage.getItem(STORAGE_KEY);
-      return reseeded ? JSON.parse(reseeded) : INITIAL_DB;
+      return reseeded ? JSON.parse(reseeded) : db;
     }
     return db;
   } catch {
@@ -111,7 +163,22 @@ export function setCurrentUser(user: CustomUser | null): void {
 }
 
 // Аутентификация по номеру зачётки + Фамилия + Имя
-export function loginUser(recordBook: string, lastName: string, firstName: string, group: string = 'ДЭУ-1'): CustomUser {
+function getCourseFromGroup(group: string): number {
+  if (group.startsWith('26')) return 1;
+  if (group.startsWith('25')) return 2;
+  if (group.startsWith('24')) return 3;
+  if (group.startsWith('23')) return 4;
+  return 1; // Default
+}
+
+export function loginUser(
+  recordBook: string, 
+  lastName: string, 
+  firstName: string, 
+  group: string = '26 DKKS 1',
+  faculty: string = 'ФЭМ',
+  department: string = DEPARTMENTS[0]
+): CustomUser {
   const db = getPortalDB();
   const trimmedId = recordBook.trim();
   const trimmedLast = lastName.trim();
@@ -120,9 +187,7 @@ export function loginUser(recordBook: string, lastName: string, firstName: strin
   let user = db.users.find(u => u.record_book_id.toLowerCase() === trimmedId.toLowerCase());
 
   if (!user) {
-    // Если пользователя нет в базе — регистрируем как Студента-исследователя
-    // Если в базе вообще нет пользователей, первый вошедший может стать Админом
-    const isFirstUserInSystem = db.users.length <= 1; // Учитываем координатора из сида
+    const isFirstUserInSystem = db.users.length <= 1;
     
     user = {
       record_book_id: trimmedId,
@@ -130,14 +195,14 @@ export function loginUser(recordBook: string, lastName: string, firstName: strin
       first_name: trimmedFirst,
       role: isFirstUserInSystem ? 'admin' : 'student',
       group: group,
-      course: 2,
-      department: DEPARTMENTS[0],
+      course: getCourseFromGroup(group),
+      faculty: faculty,
+      department: department,
       scientific_interests: ['Экономика знаний', 'Цифровые инновации', 'Финансовый менеджмент'],
       created_at: new Date().toISOString()
     };
     db.users.push(user);
     
-    // Создаем приветственное уведомление
     db.notifications.push({
       id: 'notif_' + Date.now(),
       user_record_book: user.record_book_id,
@@ -150,7 +215,6 @@ export function loginUser(recordBook: string, lastName: string, firstName: strin
 
     savePortalDB(db);
   } else {
-    // Обновляем ФИО на случай опечатки ранее
     user.last_name = trimmedLast;
     user.first_name = trimmedFirst;
     savePortalDB(db);
@@ -190,9 +254,8 @@ export function updateUserRole(recordBook: string, newRole: UserRole): boolean {
   return true;
 }
 
-// Вычисление рейтинга и индекса Хирша
+// Вычисление рейтинга
 export function calculateResearcherStats(recordBook: string): {
-  hIndex: number;
   totalPubs: number;
   totalReports: number;
   conferencesCount: number;
@@ -206,12 +269,6 @@ export function calculateResearcherStats(recordBook: string): {
   const totalPubs = pubs.length;
   const totalReports = apps.length;
   const conferencesCount = new Set(apps.map(a => a.event_id)).size;
-
-  // Простой расчет индекса Хирша (симуляция по количеству статей)
-  let hIndex = 0;
-  if (totalPubs >= 4) hIndex = 3;
-  else if (totalPubs >= 2) hIndex = 2;
-  else if (totalPubs >= 1) hIndex = 1;
 
   // Баллы рейтинга ФЭМ БГЭУ
   // Статья = 15 баллов, Тезисы = 8 баллов, Доклад = 10 баллов, Диплом 1 степени = 30 баллов
@@ -230,7 +287,7 @@ export function calculateResearcherStats(recordBook: string): {
     else points += 5;
   });
 
-  return { hIndex, totalPubs, totalReports, conferencesCount, ratingPoints: points };
+  return { totalPubs, totalReports, conferencesCount, ratingPoints: points };
 }
 
 // Генерация стартового шаблона ФЭМ (по запросу администратора, чтобы не было пустой базы при первом просмотре)
@@ -243,8 +300,6 @@ export function seedFacultyStarterTemplate(): void {
     db = { ...INITIAL_DB };
   }
   
-  if (db.news && db.news.length > 0) return; // Уже есть данные
-
   // Инициализируем массивы если они undefined
   db.users = db.users || [];
   db.news = db.news || [];
@@ -258,6 +313,109 @@ export function seedFacultyStarterTemplate(): void {
   db.certificates = db.certificates || [];
   db.projects = db.projects || [];
   db.reports = db.reports || [];
+  db.merch = db.merch || [];
+  db.orders = db.orders || [];
+  db.announcements = db.announcements || [];
+  db.snil_applications = db.snil_applications || [];
+
+  if (db.news && db.news.length > 0) {
+    // Migration: ensure new SNILs are present and old ones are gone
+    const currentSnils = db.snils;
+    const snilNames = currentSnils.map(s => s.name);
+    const requiredSnils = ['«ЭКОС»', '«Инноватика»', '«Агроэкономика»', '«Макровижен»'];
+    const snilLeaderAgro = currentSnils.find(s => s.id === 'snil_agroeconomics')?.head_name || '';
+    const hasSupervisors = db.users.some(u => u.role === 'snil_head');
+    const hasCorrectSnils = requiredSnils.every(name => snilNames.includes(name)) && 
+                           currentSnils.length === 4 && 
+                           snilLeaderAgro.includes('Соболь') &&
+                           hasSupervisors;
+    
+    if (!hasCorrectSnils) {
+      db.snils = []; // Reset SNILs to force new ones below
+      db.users = db.users.filter(u => u.role !== 'snil_head'); // Reset supervisors
+    } else {
+      return; // Already have news and SNILs/Supervisors are correct
+    }
+  }
+
+  if (db.merch.length === 0) {
+    db.merch.push(
+      { id: 'm1', name: 'Пластиковая ручка СНО ФЭМ', points: 20, stock: 100, description: 'Классическая синяя ручка с логотипом СНО ФЭМ.' },
+      { id: 'm2', name: 'Металлическая ручка Premium', points: 50, stock: 20, description: 'Элегантная металлическая ручка для важных научных записей.' },
+      { id: 'm3', name: 'Брелок СНО «День бел. науки»', points: 35, stock: 50, description: 'Лимитированная серия ко Дню белорусской науки.' },
+      { id: 'm4', name: 'Брелок СНО стандартный', points: 30, stock: 80, description: 'Фирменный акриловый брелок с символикой факультета.' }
+    );
+  }
+
+  // Создаем руководителей СНИЛ
+  const supervisors: CustomUser[] = [
+    {
+      record_book_id: '88800101',
+      last_name: 'Заставновская',
+      first_name: 'Анастасия',
+      middle_name: 'Владимировна',
+      role: 'snil_head',
+      managed_snil_id: 'snil_ekos',
+      group: 'СНИЛ ЭКОС',
+      course: 4,
+      faculty: 'ФЭМ',
+      department: 'Кафедра экономики АПК и природопользования',
+      scientific_interests: ['Экономика природопользования'],
+      created_at: new Date().toISOString(),
+      password: 'snil'
+    },
+    {
+      record_book_id: '88800102',
+      last_name: 'Давыдова',
+      first_name: 'Ольга',
+      middle_name: 'Григорьевна',
+      role: 'snil_head',
+      managed_snil_id: 'snil_innovatika',
+      group: 'СНИЛ Инноватика',
+      course: 4,
+      faculty: 'ФЭМ',
+      department: 'Кафедра экономики промышленных предприятий',
+      scientific_interests: ['Инновации'],
+      created_at: new Date().toISOString(),
+      password: 'snil'
+    },
+    {
+      record_book_id: '88800103',
+      last_name: 'Соболь',
+      first_name: 'Кирилл',
+      middle_name: 'Николаевич',
+      role: 'snil_head',
+      managed_snil_id: 'snil_agroeconomics',
+      group: 'СНИЛ Агроэкономика',
+      course: 4,
+      faculty: 'ФЭМ',
+      department: 'Кафедра экономики АПК и природопользования',
+      scientific_interests: ['Агроэкономика'],
+      created_at: new Date().toISOString(),
+      password: 'snil'
+    },
+    {
+      record_book_id: '88800104',
+      last_name: 'Точко',
+      first_name: 'Анна',
+      middle_name: 'Николаевна',
+      role: 'snil_head',
+      managed_snil_id: 'snil_macrovision',
+      group: 'СНИЛ Макровижен',
+      course: 4,
+      faculty: 'ФЭМ',
+      department: 'Кафедра национальной экономики и государственного управления',
+      scientific_interests: ['Макроэкономика'],
+      created_at: new Date().toISOString(),
+      password: 'snil'
+    }
+  ];
+
+  supervisors.forEach(s => {
+    if (!db.users.some(u => u.record_book_id === s.record_book_id)) {
+      db.users.push(s);
+    }
+  });
 
   const adminUser = getCurrentUser() || {
     record_book_id: '99900011',
@@ -309,21 +467,78 @@ export function seedFacultyStarterTemplate(): void {
     created_at: new Date().toISOString()
   });
 
-  // Лаборатория СНИЛ
-  db.snils.push({
-    id: 'snil_1',
-    name: 'СНИЛ «Цифровая экономика и бизнес-аналитика»',
-    head_record_book: adminUser.record_book_id,
-    head_name: 'доц. Петров А.В.',
-    department: 'Кафедра экономики и управления предприятиями',
-    description: 'Исследование больших данных, моделирование бизнес-процессов предприятий Республики Беларусь, внедрение искусственного интеллекта в экономику.',
-    research_directions: ['Big Data в экономике', 'Интеллектуальные системы управления', 'Цифровая трансформация предприятий'],
-    member_record_books: [adminUser.record_book_id],
-    is_active: true,
-    created_at: new Date().toISOString(),
-    achievements: ['Победитель конкурса «Лучшая СНИЛ БГЭУ 2024»', '3 гранта Министерства образования РБ'],
-    is_best_snil_nominee: true
-  });
+  // СНИЛ ФЭМ БГЭУ (4 Лаборатории)
+  db.snils = [
+    {
+      id: 'snil_ekos',
+      name: '«ЭКОС»',
+      head_record_book: '88800101',
+      head_name: 'к.э.н., доцент Заставновская Анастасия Владимировна',
+      department: 'Кафедра экономики АПК и природопользования',
+      description: 'Исследование проблем экономики природопользования и устойчивого развития аграрного сектора. Руководитель: к.э.н., доцент кафедры экономики АПК и природопользования.',
+      research_directions: ['Экономика природопользования', 'Устойчивое развитие АПК'],
+      member_record_books: Array.from({ length: 25 }, (_, i) => `student_ekos_${i + 1}`),
+      is_active: true,
+      created_at: new Date().toISOString(),
+      achievements: ['Разработка методики оценки эко-эффективности'],
+      is_best_snil_nominee: false
+    },
+    {
+      id: 'snil_innovatika',
+      name: '«Инноватика»',
+      head_record_book: '88800102',
+      head_name: 'старший преподаватель Давыдова Ольга Григорьевна',
+      department: 'Кафедра экономики промышленных предприятий',
+      description: 'Изучение инновационных процессов в промышленности и механизмов управления инновационным развитием. Руководитель: старший преподаватель кафедры экономики промышленных предприятий.',
+      research_directions: ['Управление инновациями', 'Промышленная политика', 'Цифровые инновации'],
+      member_record_books: Array.from({ length: 30 }, (_, i) => `student_innov_${i + 1}`),
+      is_active: true,
+      created_at: new Date().toISOString(),
+      achievements: ['Лучшая СНИЛ БГЭУ 2026 (ГКК)', 'Патент на систему управления инновациями'],
+      is_best_snil_nominee: true
+    },
+    {
+      id: 'snil_agroeconomics',
+      name: '«Агроэкономика»',
+      head_record_book: '88800103',
+      head_name: 'к.э.н., доцент Соболь Кирилл Николаевич',
+      department: 'Кафедра экономики АПК и природопользования',
+      description: 'Научные исследования в области экономики агропромышленного комплекса и сельских территорий. Руководитель: к.э.н., доцент кафедры экономики АПК и природопользования.',
+      research_directions: ['Аграрная экономика', 'Развитие сельских территорий'],
+      member_record_books: Array.from({ length: 25 }, (_, i) => `student_agro_${i + 1}`),
+      is_active: true,
+      created_at: new Date().toISOString(),
+      achievements: ['Грант на исследование экспорта АПК'],
+      is_best_snil_nominee: false
+    },
+    {
+      id: 'snil_macrovision',
+      name: '«Макровижен»',
+      head_record_book: '88800104',
+      head_name: 'Точко Анна Николаевна, Маркидонова А. В.',
+      department: 'Кафедра национальной экономики и государственного управления',
+      description: 'Макроэкономическое прогнозирование и анализ инструментов государственного управления. Руководители: старшие преподаватели кафедры национальной экономики и государственного управления.',
+      research_directions: ['Макроэкономика', 'Государственное управление'],
+      member_record_books: Array.from({ length: 30 }, (_, i) => `student_macro_${i + 1}`),
+      is_active: true,
+      created_at: new Date().toISOString(),
+      achievements: ['Лучший аналитический обзор 2023'],
+      is_best_snil_nominee: false
+    }
+  ];
+
+  // Начальные объявления
+  if (db.announcements.length === 0) {
+    db.announcements.push({
+      id: 'ann_1',
+      snil_id: 'snil_innovatika',
+      author_name: 'Давыдова Ольга Григорьевна',
+      title: 'Собрание СНИЛ «Инноватика»',
+      content: 'Уважаемые участники СНИЛ, собрание состоится в четверг в 14:00 в ауд. 402. Будем обсуждать подготовку к Декаде науки.',
+      created_at: new Date().toISOString(),
+      is_urgent: true
+    });
+  }
 
   // Галерея
   db.gallery.push({
@@ -368,4 +583,146 @@ export function generateIcsCalendar(event: ScientificEvent): void {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+}
+
+export function placeMerchOrder(user: CustomUser, item: MerchItem): { success: boolean; message: string } {
+  const db = getPortalDB();
+  const stats = calculateResearcherStats(user.record_book_id);
+  
+  // Проверка баллов
+  if (stats.ratingPoints < item.points) {
+    return { success: false, message: 'Недостаточно баллов рейтинга для обмена.' };
+  }
+
+  // Проверка наличия
+  const dbItem = db.merch.find(i => i.id === item.id);
+  if (!dbItem || dbItem.stock <= 0) {
+    return { success: false, message: 'К сожалению, товар закончился на складе.' };
+  }
+
+  // Создание заказа
+  const order: MerchOrder = {
+    id: 'ord_' + Date.now(),
+    userId: user.record_book_id,
+    userRecordBook: user.record_book_id,
+    userName: `${user.last_name} ${user.first_name}`,
+    itemId: item.id,
+    itemName: item.name,
+    points: item.points,
+    status: 'pending',
+    createdAt: new Date().toISOString()
+  };
+
+  db.orders.push(order);
+  dbItem.stock -= 1;
+  
+  // Уведомление пользователю
+  db.notifications.push({
+    id: 'notif_' + Date.now(),
+    user_record_book: user.record_book_id,
+    title: 'Заказ сувенира оформлен',
+    message: `Вы обменяли ${item.points} баллов на «${item.name}». Получить сувенир можно в деканате (Корпус 4, каб. 314) у зам. декана.`,
+    type: 'success',
+    is_read: false,
+    created_at: new Date().toISOString()
+  });
+
+  savePortalDB(db);
+  return { success: true, message: 'Заказ успешно оформлен! Инструкции отправлены в уведомления.' };
+}
+
+export function updateUserPassword(recordBook: string, newPassword: string): { success: boolean; message: string } {
+  const db = getPortalDB();
+  const userIndex = db.users.findIndex(u => u.record_book_id === recordBook);
+  
+  if (userIndex === -1) {
+    return { success: false, message: 'Пользователь не найден.' };
+  }
+
+  db.users[userIndex].password = newPassword;
+  
+  // Also update current session if it's the same user
+  const currentUser = getCurrentUser();
+  if (currentUser && currentUser.record_book_id === recordBook) {
+    currentUser.password = newPassword;
+    sessionStorage.setItem('current_portal_user', JSON.stringify(currentUser));
+  }
+
+  savePortalDB(db);
+  return { success: true, message: 'Пароль успешно изменен.' };
+}
+
+export function addAnnouncement(announcement: Omit<Announcement, 'id' | 'created_at'>): void {
+  const db = getPortalDB();
+  const newAnn: Announcement = {
+    ...announcement,
+    id: 'ann_' + Date.now(),
+    created_at: new Date().toISOString()
+  };
+  db.announcements.push(newAnn);
+  savePortalDB(db);
+}
+
+export function deleteAnnouncement(id: string): void {
+  const db = getPortalDB();
+  db.announcements = db.announcements.filter(a => a.id !== id);
+  savePortalDB(db);
+}
+
+export function addMemberToSnil(snilId: string, recordBook: string): { success: boolean; message: string } {
+  const db = getPortalDB();
+  const snilIndex = db.snils.findIndex(s => s.id === snilId);
+  
+  if (snilIndex === -1) return { success: false, message: 'СНИЛ не найден' };
+  
+  if (db.snils[snilIndex].member_record_books.includes(recordBook)) {
+    return { success: false, message: 'Студент уже является участником' };
+  }
+  
+  db.snils[snilIndex].member_record_books.push(recordBook);
+  
+  // Send notification to student
+  db.notifications.push({
+    id: 'notif_' + Date.now(),
+    user_record_book: recordBook,
+    title: 'Вы приняты в СНИЛ',
+    message: `Поздравляем! Руководитель СНИЛ «${db.snils[snilIndex].name}» добавил вас в список участников.`,
+    type: 'success',
+    is_read: false,
+    created_at: new Date().toISOString()
+  });
+  
+  savePortalDB(db);
+  return { success: true, message: 'Студент успешно добавлен' };
+}
+
+export function removeMemberFromSnil(snilId: string, recordBook: string): void {
+  const db = getPortalDB();
+  const snilIndex = db.snils.findIndex(s => s.id === snilId);
+  if (snilIndex !== -1) {
+    db.snils[snilIndex].member_record_books = db.snils[snilIndex].member_record_books.filter(id => id !== recordBook);
+    savePortalDB(db);
+  }
+}
+
+export function createSnilApplication(snilId: string, snilName: string, studentRecordBook: string): void {
+  const db = getPortalDB();
+  db.snil_applications = db.snil_applications || [];
+  
+  // Check if already exists
+  if (db.snil_applications.some(a => a.snil_id === snilId && a.student_record_book === studentRecordBook)) {
+    return;
+  }
+  
+  const newApp: SnilApplication = {
+    id: 'snil_app_' + Date.now(),
+    student_record_book: studentRecordBook,
+    snil_id: snilId,
+    snil_name: snilName,
+    status: 'подана',
+    created_at: new Date().toISOString()
+  };
+  
+  db.snil_applications.push(newApp);
+  savePortalDB(db);
 }

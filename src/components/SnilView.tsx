@@ -1,8 +1,9 @@
 import React, { useState, useRef } from 'react';
-import { PortalDatabase } from '../services/storage';
+import { PortalDatabase, createSnilApplication } from '../services/storage';
 import { CustomUser, SNIL, ResearchTask } from '../types';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   FlaskConical, 
   Award, 
@@ -16,7 +17,15 @@ import {
   BookOpen,
   Briefcase,
   Download,
-  Loader2
+  Loader2,
+  Trophy,
+  Microscope,
+  User,
+  CheckCircle,
+  FileText,
+  Sparkles,
+  ChevronRight,
+  X
 } from 'lucide-react';
 
 interface SnilViewProps {
@@ -34,456 +43,351 @@ export const SnilView: React.FC<SnilViewProps> = ({
   onClearSelectedSnil,
   onRefresh
 }) => {
-  const [activeSnil, setActiveSnil] = useState<SNIL>(
-    selectedSnilId ? db.snils.find(s => s.id === selectedSnilId) || db.snils[0] : db.snils[0]
-  );
-  
-  const [showTaskForm, setShowTaskForm] = useState(false);
+  const [activeSnil, setActiveSnil] = useState<SNIL | null>(null);
   const [isGeneratingApplication, setIsGeneratingApplication] = useState(false);
   const snilApplicationRef = useRef<HTMLDivElement>(null);
   
-  const [taskTitle, setTaskTitle] = useState('');
-  const [taskDesc, setTaskDesc] = useState('');
-  const [taskAssignee, setTaskAssignee] = useState('');
-  const [taskDeadline, setTaskDeadline] = useState('');
+  const snils = db.snils || [];
+  const userSnil = snils.find(s => user && s.member_record_books.includes(user.record_book_id));
+  const userApplications = db.snil_applications || [];
+  const myPendingApp = user ? userApplications.find(a => a.student_record_book === user.record_book_id && a.status !== 'отклонена') : null;
 
-  const isHead = user && (user.record_book_id === activeSnil?.head_record_book || user.role === 'coordinator' || user.role === 'admin');
-  const isMember = user && activeSnil?.member_record_books.includes(user.record_book_id);
+  const handleJoinRequest = (snil: SNIL) => {
+    if (!user) return;
+    if (snil.member_record_books.includes(user.record_book_id)) return;
 
-  const snilTasks = activeSnil ? db.tasks.filter(t => t.snil_id === activeSnil.id) : [];
-
-  const handleJoinRequest = () => {
-    if (!user || !activeSnil) return;
-    if (activeSnil.member_record_books.includes(user.record_book_id)) return;
-
-    activeSnil.member_record_books.push(user.record_book_id);
-    db.notifications.push({
+    snil.member_record_books.push(user.record_book_id);
+    const notifications = db.notifications || [];
+    notifications.push({
       id: 'notif_' + Date.now(),
-      user_record_book: activeSnil.head_record_book,
+      user_record_book: snil.head_record_book,
       title: 'Новый участник в лаборатории СНИЛ!',
-      message: `Студент ${user.last_name} ${user.first_name} вступил в состав «${activeSnil.name}»`,
+      message: `Студент ${user.last_name} ${user.first_name} вступил в состав «${snil.name}»`,
       type: 'info',
       is_read: false,
       created_at: new Date().toISOString()
     });
+    db.notifications = notifications;
 
     localStorage.setItem('fem_bseu_portal_db_v1', JSON.stringify(db));
     onRefresh();
   };
 
-  const handleCreateTask = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!taskTitle.trim() || !activeSnil) return;
-
-    const assigneeUser = db.users.find(u => u.record_book_id === taskAssignee) || user!;
-
-    const newTask: ResearchTask = {
-      id: 'task_' + Date.now(),
-      snil_id: activeSnil.id,
-      snil_name: activeSnil.name,
-      title: taskTitle,
-      description: taskDesc,
-      assigned_to_record_book: assigneeUser.record_book_id,
-      assigned_to_name: `${assigneeUser.last_name} ${assigneeUser.first_name}`,
-      deadline: taskDeadline || new Date(Date.now() + 86400000 * 7).toISOString().split('T')[0],
-      status: 'в_работе',
-      created_at: new Date().toISOString()
-    };
-
-    db.tasks.unshift(newTask);
-    db.notifications.push({
-      id: 'notif_' + Date.now(),
-      user_record_book: assigneeUser.record_book_id,
-      title: 'Новое исследовательское задание в СНИЛ',
-      message: `Руководитель назначил вам задачу: «${taskTitle}» (дополнительные баллы рейтинга)`,
-      type: 'warning',
-      is_read: false,
-      created_at: new Date().toISOString()
-    });
-
-    localStorage.setItem('fem_bseu_portal_db_v1', JSON.stringify(db));
-    setTaskTitle('');
-    setTaskDesc('');
-    setShowTaskForm(false);
-    onRefresh();
-  };
-
-  const handleCompleteTask = (taskId: string) => {
-    const task = db.tasks.find(t => t.id === taskId);
-    if (!task) return;
-    task.status = 'выполнена';
-    task.result_file_name = 'Аналитический_отчет_ФЭМ.pdf';
-    localStorage.setItem('fem_bseu_portal_db_v1', JSON.stringify(db));
-    onRefresh();
-  };
-
-  const generateSnilApplication = async () => {
-    if (!snilApplicationRef.current || !activeSnil || !user) return;
+  const generateSnilApplication = async (snil: SNIL) => {
+    if (!snilApplicationRef.current || !user) return;
+    setActiveSnil(snil);
     setIsGeneratingApplication(true);
     
-    try {
-      const canvas = await html2canvas(snilApplicationRef.current, {
-        scale: 3,
-        useCORS: true,
-        backgroundColor: '#ffffff'
-      });
-      
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const imgWidth = pdfWidth;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-      pdf.save(`Заявление_СНИЛ_${activeSnil.name.replace(/\s+/g, '_')}_${user.last_name}.pdf`);
-      
-      // Notify laboratory head
-      db.notifications.push({
-        id: 'notif_' + Date.now(),
-        user_record_book: activeSnil.head_record_book,
-        title: 'Сформировано заявление на вступление',
-        message: `Студент ${user.last_name} подготовил заявление на вступление в вашу СНИЛ «${activeSnil.name}»`,
-        type: 'info',
-        is_read: false,
-        created_at: new Date().toISOString()
-      });
-      localStorage.setItem('fem_bseu_portal_db_v1', JSON.stringify(db));
-      onRefresh();
+    // We need to wait for the state update and ref rendering if we were using it for live capture, 
+    // but here we can just use a timeout or better yet, a dedicated generation function.
+    setTimeout(async () => {
+      try {
+        const canvas = await html2canvas(snilApplicationRef.current!, {
+          scale: 3,
+          useCORS: true,
+          backgroundColor: '#ffffff'
+        });
+        
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const imgWidth = pdfWidth;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        
+        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+        pdf.save(`Заявление_СНИЛ_${snil.name.replace(/\s+/g, '_')}_${user.last_name}.pdf`);
+        
+        // Record the application in the system
+        createSnilApplication(snil.id, snil.name, user.record_book_id);
 
-    } catch (error) {
-      console.error('SNIL Application PDF Error:', error);
-    } finally {
-      setIsGeneratingApplication(false);
-    }
+        const notifications = db.notifications || [];
+        notifications.push({
+          id: 'notif_' + Date.now(),
+          user_record_book: snil.head_record_book,
+          title: 'Сформировано заявление на вступление',
+          message: `Студент ${user.last_name} подготовил заявление на вступление в вашу СНИЛ «${snil.name}»`,
+          type: 'info',
+          is_read: false,
+          created_at: new Date().toISOString()
+        });
+        db.notifications = notifications;
+        localStorage.setItem('fem_bseu_portal_db_v1', JSON.stringify(db));
+        onRefresh();
+
+      } catch (error) {
+        console.error('SNIL Application PDF Error:', error);
+      } finally {
+        setIsGeneratingApplication(false);
+      }
+    }, 100);
   };
 
-  if (db.snils.length === 0) {
-    return (
-      <div className="text-center py-20 bg-white rounded-3xl border p-8">
-        <FlaskConical className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-        <p className="text-slate-500 font-medium">Студенческих лабораторий пока не создано.</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-8 pb-12">
+    <div className="space-y-12 pb-24">
       
-      {/* Шапка раздела */}
-      <div className="bg-gradient-to-r from-[#0a2a5e] to-teal-900 rounded-3xl p-8 text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-lg border border-[#d4af37]/30">
-        <div className="space-y-2">
-          <div className="flex items-center space-x-2 text-[#d4af37] text-xs font-bold uppercase tracking-wider font-mono">
-            <FlaskConical className="w-4 h-4" />
-            <span>Студенческие научно-исследовательские лаборатории</span>
+      {/* Header Section */}
+      <div className="relative bg-[#0a2a5e] rounded-[2.5rem] p-8 sm:p-14 overflow-hidden shadow-2xl border border-[#d4af37]/30">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-[#d4af37]/10 rounded-full -mr-32 -mt-32 blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/10 rounded-full -ml-16 -mb-16 blur-3xl"></div>
+        
+        <div className="relative z-10 space-y-6">
+          <div className="flex items-center space-x-3 text-[#d4af37] text-xs font-black uppercase tracking-[0.3em] font-mono">
+            <FlaskConical className="w-6 h-6" />
+            <span>Научный потенциал ФЭМа</span>
           </div>
-          <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight">СНИЛ факультета <span className="text-[#d4af37]">ФЭМ</span> БГЭУ</h2>
-          <p className="text-blue-100 text-xs sm:text-sm max-w-2xl leading-relaxed">
-            Прикладные исследования экономики Беларуси, выполнение госбюджетных тем, подготовка конкурсных работ на республиканский уровень.
+          <h2 className="text-4xl sm:text-6xl font-black tracking-tight text-white leading-tight">СНИЛ ФЭМа БГЭУ</h2>
+          <p className="text-blue-100/70 text-sm sm:text-lg max-w-3xl leading-relaxed font-medium">
+            Студенческие научно-исследовательские лаборатории — это интеллектуальные центры ФЭМа, где студенты и преподаватели создают будущее экономики Беларуси через инновации, аналитику и прикладные разработки.
           </p>
         </div>
-
-        {/* Выбор СНИЛ */}
-        <div className="w-full md:w-auto">
-          <label className="block text-[10px] font-mono uppercase text-blue-200 mb-1">Выбрать лабораторию:</label>
-          <select
-            value={activeSnil?.id}
-            onChange={(e) => {
-              const f = db.snils.find(s => s.id === e.target.value);
-              if (f) setActiveSnil(f);
-            }}
-            className="w-full md:w-72 bg-slate-900/90 border border-[#d4af37]/50 rounded-xl px-4 py-2.5 text-sm font-semibold text-white focus:outline-none"
-          >
-            {db.snils.map(sn => (
-              <option key={sn.id} value={sn.id}>{sn.name}</option>
-            ))}
-          </select>
-        </div>
       </div>
 
-      {activeSnil && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Профиль СНИЛ (Левые 2 колонки) */}
-          <div className="lg:col-span-2 space-y-6">
-            
-            <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm space-y-6">
-              <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 pb-6">
-                <div>
-                  <span className="text-xs font-bold text-teal-700 bg-teal-50 px-2.5 py-1 rounded-lg border border-teal-200 font-mono">
-                    {activeSnil.department}
-                  </span>
-                  <h3 className="text-2xl font-extrabold text-[#0a2a5e] mt-3">{activeSnil.name}</h3>
-                  <p className="text-slate-500 text-xs mt-1">Руководитель СНИЛ: <strong className="text-slate-800">{activeSnil.head_name}</strong></p>
+      {/* Instructions Section */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800 rounded-3xl p-8"
+      >
+        <div className="flex items-start space-x-4">
+          <div className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm flex-shrink-0 border border-blue-200 dark:border-blue-700">
+            <FileText className="w-6 h-6 text-[#0a2a5e] dark:text-blue-400" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-xl font-black text-[#0a2a5e] dark:text-white uppercase tracking-tight">Как вступить в СНИЛ ФЭМ?</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2 text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">
+                  <span className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">1</span>
+                  <span>Выбор и заявление</span>
                 </div>
-
-                {activeSnil.is_best_snil_nominee && (
-                  <div className="flex items-center space-x-1.5 px-3 py-1.5 bg-gradient-to-r from-[#d4af37] to-amber-500 text-[#0a2a5e] rounded-xl font-bold text-xs shadow">
-                    <Award className="w-4 h-4" />
-                    <span>Номинант «Лучшая СНИЛ БГЭУ»</span>
-                  </div>
-                )}
+                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+                  Выберите интересующую вас лабораторию ниже и нажмите кнопку <b>«Скачать заявление (PDF)»</b>. Файл будет автоматически заполнен вашими данными из личного кабинета.
+                </p>
               </div>
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2 text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">
+                  <span className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">2</span>
+                  <span>Подпись и подача</span>
+                </div>
+                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+                  Распечатайте документ, поставьте свою подпись и принесите его на кафедру руководителю СНИЛ (указан в карточке лаборатории).
+                </p>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2 text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">
+                  <span className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">3</span>
+                  <span>Активация</span>
+                </div>
+                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+                  После того как руководитель подпишет ваше заявление, он добавит вас в состав СНИЛ через свою панель управления. Вы получите уведомление!
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </motion.div>
 
-              <div>
-                <h4 className="text-xs font-bold uppercase text-slate-400 mb-2 font-mono">Направления исследований</h4>
-                <div className="flex flex-wrap gap-2">
-                  {activeSnil.research_directions.map((dir, i) => (
-                    <span key={i} className="px-3 py-1.5 rounded-xl bg-blue-50 text-blue-900 text-xs font-medium border border-blue-100">
-                      🔬 {dir}
+      {/* Announcements Section */}
+      {db.announcements && db.announcements.length > 0 && (
+        <div className="space-y-6">
+          <div className="flex items-center space-x-3 text-xs font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
+            <Sparkles className="w-5 h-5" />
+            <span>Важные объявления СНИЛ</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {db.announcements.map((ann) => {
+              const snil = snils.find(s => s.id === ann.snil_id);
+              return (
+                <motion.div 
+                  key={ann.id}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className={`p-6 rounded-3xl border ${ann.is_urgent ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm'}`}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <span className="text-[10px] font-black uppercase tracking-widest px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-500">
+                      СНИЛ {snil?.name || 'Лаборатория'}
                     </span>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <h4 className="text-xs font-bold uppercase text-slate-400 mb-2 font-mono">Описание деятельности</h4>
-                <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-line">{activeSnil.description}</p>
-              </div>
-
-              <div>
-                <h4 className="text-xs font-bold uppercase text-slate-400 mb-2 font-mono">Ключевые достижения</h4>
-                <ul className="space-y-2">
-                  {activeSnil.achievements.map((ach, idx) => (
-                    <li key={idx} className="flex items-center space-x-2 text-xs sm:text-sm text-slate-800 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-                      <Award className="w-4 h-4 text-[#d4af37] flex-shrink-0" />
-                      <span>{ach}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Вступление в состав */}
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-                <div className="flex items-center space-x-2 text-xs text-slate-500 font-mono">
-                  <Users className="w-4 h-4 text-slate-400" />
-                  <span>В составе лаборатории: <strong>{activeSnil.member_record_books.length} студентов</strong></span>
-                </div>
-
-                {isMember ? (
-                  <span className="px-4 py-2 rounded-xl bg-green-100 text-green-800 font-bold text-xs flex items-center space-x-1">
-                    <CheckCircle2 className="w-4 h-4" /> <span>Вы состоите в СНИЛ</span>
-                  </span>
-                ) : (
-                  <div className="flex items-center space-x-3">
-                    {user && (
-                      <button
-                        onClick={generateSnilApplication}
-                        disabled={isGeneratingApplication}
-                        className="px-4 py-2.5 rounded-xl border-2 border-blue-600 text-blue-600 font-bold text-xs hover:bg-blue-50 transition-all flex items-center space-x-2 disabled:opacity-50"
-                        title="Сгенерировать официальное заявление для подписи"
-                      >
-                        {isGeneratingApplication ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Download className="w-4 h-4" />
-                        )}
-                        <span>{isGeneratingApplication ? 'Генерация...' : 'Заявление (PDF)'}</span>
-                      </button>
-                    )}
-                    <button
-                      onClick={handleJoinRequest}
-                      disabled={!user}
-                      className="px-5 py-2.5 rounded-xl bg-[#0a2a5e] text-[#d4af37] font-bold text-xs shadow hover:bg-blue-900 transition-all"
-                    >
-                      {user ? 'Подать заявку' : 'Войдите для вступления'}
-                    </button>
+                    <span className="text-[10px] font-bold text-slate-400">{new Date(ann.created_at).toLocaleDateString('ru-RU')}</span>
                   </div>
-                )}
-              </div>
-            </div>
+                  <h4 className="text-lg font-black text-[#0a2a5e] dark:text-white mb-2 leading-tight">{ann.title}</h4>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 font-medium leading-relaxed">{ann.content}</p>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
-            {/* Скрытый шаблон для заявления СНИЛ */}
-            <div 
-              style={{ 
-                position: 'fixed', 
-                left: '-10000px', 
-                top: 0, 
-                pointerEvents: 'none',
-                zIndex: -300
-              }}
+      {/* Grid of SNILs */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-10">
+        {snils.map((snil) => {
+          const isMember = user && snil.member_record_books.includes(user.record_book_id);
+          return (
+            <motion.div 
+              key={snil.id}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-2xl transition-all overflow-hidden flex flex-col group relative"
             >
-              <div 
-                ref={snilApplicationRef} 
-                className="w-[800px] p-[100px] bg-white text-black font-serif"
-                style={{ fontFamily: 'Times New Roman, serif', backgroundColor: '#ffffff', minHeight: '1100px', color: '#000000' }}
-              >
-                <div className="ml-auto w-1/2 text-sm space-y-1 mb-20" style={{ marginLeft: 'auto', width: '50%', marginBottom: '5rem' }}>
-                  <p>Руководителю СНИЛ</p>
-                  <p>«{activeSnil.name}»</p>
-                  <p>{activeSnil.head_name}</p>
-                  <p className="pt-2" style={{ paddingTop: '0.5rem' }}>студента(ки) {user?.course} курса, группы {user?.group}</p>
-                  <p className="font-bold" style={{ fontWeight: 'bold' }}>{user?.last_name} {user?.first_name} {user?.middle_name || ''}</p>
-                </div>
+              {/* Card Decoration */}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 dark:bg-blue-900/10 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700"></div>
 
-                <div className="text-center mb-12" style={{ textAlign: 'center', marginBottom: '3rem' }}>
-                  <h2 className="text-2xl font-bold uppercase tracking-widest" style={{ fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: '1.5rem' }}>ЗАЯВЛЕНИЕ</h2>
-                </div>
-
-                <div className="text-lg leading-relaxed text-justify mb-20 px-4" style={{ fontSize: '1.125rem', lineHeight: '1.625', textAlign: 'justify', marginBottom: '5rem', paddingLeft: '1rem', paddingRight: '1rem' }}>
-                  <p>
-                    Прошу включить меня в состав участников Студенческой научно-исследовательской лаборатории (СНИЛ) «{activeSnil.name}» факультета экономики и менеджмента БГЭУ.
-                  </p>
-                  <p className="mt-6" style={{ marginTop: '1.5rem' }}>
-                    Намерен(а) принимать активное участие в научно-исследовательской работе лаборатории по направлениям: 
-                    <span className="italic" style={{ fontStyle: 'italic' }}> {activeSnil.research_directions.join(', ')}</span>.
-                  </p>
-                  <p className="mt-6" style={{ marginTop: '1.5rem' }}>
-                    Обязуюсь соблюдать внутренний регламент работы СНИЛ и своевременно выполнять порученные научно-исследовательские задания.
-                  </p>
-                </div>
-
-                <div className="flex justify-between items-end mt-40 px-4" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '10rem', paddingLeft: '1rem', paddingRight: '1rem' }}>
-                  <div className="text-lg pb-1 w-40 text-center" style={{ fontSize: '1.125rem', borderBottom: '1px solid #000000', width: '10rem', textAlign: 'center' }}>
-                    {new Date().toLocaleDateString('ru-RU')}
+              <div className="p-8 sm:p-10 pb-4 relative z-10">
+                <div className="flex items-start justify-between mb-6">
+                  <div className="w-14 h-14 bg-blue-50 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center text-[#0a2a5e] dark:text-blue-300 border border-blue-100 dark:border-blue-800 group-hover:rotate-6 transition-transform">
+                    <Microscope className="w-7 h-7" />
                   </div>
-                  <div className="text-lg pb-1 w-48 text-center relative" style={{ fontSize: '1.125rem', borderBottom: '1px solid #000000', width: '12rem', textAlign: 'center', position: 'relative' }}>
-                    <span className="text-[10px] absolute -bottom-5 left-0 right-0 text-center uppercase font-sans" style={{ fontSize: '10px', position: 'absolute', bottom: '-1.25rem', left: 0, right: 0, textAlign: 'center', textTransform: 'uppercase', color: '#9ca3af' }}>Подпись</span>
-                  </div>
+                  {snil.is_best_snil_nominee && (
+                    <div className="flex items-center space-x-2 bg-amber-50 dark:bg-amber-900/30 px-4 py-2 rounded-xl border border-amber-200 dark:border-amber-800 shadow-sm">
+                      <Trophy className="w-4 h-4 text-[#d4af37]" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-[#d4af37]">Лучшая СНИЛ 2026</span>
+                    </div>
+                  )}
                 </div>
 
-                <div className="mt-32 pt-10 border-t text-[10px] font-sans italic text-center" style={{ marginTop: '8rem', paddingTop: '2.5rem', borderTop: '1px solid #f3f4f6', fontSize: '10px', fontStyle: 'italic', textAlign: 'center', color: '#d1d5db' }}>
-                  Сформировано в SNO.PORTAL • Кафедра {activeSnil.department} • {new Date().toLocaleString('ru-RU')}
+                <div className="space-y-2">
+                  <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-[0.25em]">
+                    {snil.department}
+                  </p>
+                  <h3 className="text-2xl sm:text-3xl font-black text-[#0a2a5e] dark:text-white leading-tight">
+                    СНИЛ {snil.name}
+                  </h3>
                 </div>
               </div>
-            </div>
 
-            {/* Блок задач СНИЛ */}
-            <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm space-y-6">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                <div>
-                  <h3 className="text-lg font-bold text-[#0a2a5e] flex items-center space-x-2">
-                    <Briefcase className="w-5 h-5 text-[#d4af37]" />
-                    <span>Исследовательские задачи СНИЛ</span>
-                  </h3>
-                  <p className="text-xs text-slate-500">Практические поручения от руководителя (статьи, расчёты, гранты)</p>
+              <div className="p-8 sm:p-10 pt-0 space-y-8 flex-1 relative z-10">
+                <p className="text-slate-600 dark:text-slate-400 text-sm sm:text-base leading-relaxed font-medium line-clamp-4">
+                  {snil.description}
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex items-center space-x-3 text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                    <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-700 flex items-center justify-center shadow-sm">
+                      <User className="w-5 h-5 text-[#d4af37]" />
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Руководитель:</p>
+                      <p className="text-[11px] font-bold leading-tight">{snil.head_name}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-3 text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                    <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-700 flex items-center justify-center shadow-sm">
+                      <Users className="w-5 h-5 text-blue-500" />
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Участников:</p>
+                      <p className="text-[11px] font-bold">{snil.member_record_books.length} исследователей</p>
+                    </div>
+                  </div>
                 </div>
 
-                {isHead && (
+                <div className="space-y-3">
+                  <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Направления:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {snil.research_directions.map((dir, i) => (
+                      <span key={i} className="text-[10px] font-bold px-3 py-1.5 bg-blue-50/50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg border border-blue-100/50 dark:border-blue-900/50">
+                        {dir}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-8 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 mt-auto flex flex-col sm:flex-row gap-3">
+                {isMember ? (
+                  <div className="w-full py-4 rounded-2xl bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 font-black text-xs uppercase tracking-[0.2em] flex items-center justify-center space-x-2 border border-green-200 dark:border-green-900">
+                    <CheckCircle className="w-5 h-5" />
+                    <span>Вы в составе «{snil.name}»</span>
+                  </div>
+                ) : myPendingApp && myPendingApp.snil_id === snil.id ? (
+                  <div className="w-full py-4 rounded-2xl bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 font-black text-xs uppercase tracking-[0.2em] flex items-center justify-center space-x-2 border border-amber-200 dark:border-amber-900">
+                    <Clock className="w-5 h-5" />
+                    <span>Заявление подано</span>
+                  </div>
+                ) : (
                   <button
-                    onClick={() => setShowTaskForm(!showTaskForm)}
-                    className="px-3.5 py-1.5 rounded-xl bg-[#0a2a5e] text-[#d4af37] font-bold text-xs flex items-center space-x-1 hover:bg-blue-900"
+                    onClick={() => generateSnilApplication(snil)}
+                    disabled={!user || isGeneratingApplication || !!userSnil || !!myPendingApp}
+                    className="w-full py-4 rounded-2xl bg-[#0a2a5e] dark:bg-blue-600 text-[#d4af37] dark:text-white font-black text-xs uppercase tracking-[0.2em] shadow-lg hover:brightness-110 transition-all flex items-center justify-center space-x-2 active:scale-95 disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed"
+                    title={userSnil ? "Вы уже состоите в другой СНИЛ" : myPendingApp ? "У вас есть активное заявление в другую СНИЛ" : ""}
                   >
-                    <Plus className="w-4 h-4" /> <span>Поставить задачу</span>
+                    {isGeneratingApplication && activeSnil?.id === snil.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Download className="w-5 h-5" />
+                    )}
+                    <span>Скачать заявление (PDF)</span>
                   </button>
                 )}
               </div>
+            </motion.div>
+          );
+        })}
+      </div>
 
-              {/* Форма постановки задачи */}
-              {showTaskForm && (
-                <form onSubmit={handleCreateTask} className="p-6 bg-slate-50 rounded-2xl border border-blue-200 space-y-4 animate-fadeIn">
-                  <h4 className="font-bold text-sm text-[#0a2a5e]">Постановка новой исследовательской задачи</h4>
-                  <div>
-                    <input
-                      type="text"
-                      placeholder="Название задачи (например: Сбор статистики по инновациям РБ)..."
-                      required
-                      value={taskTitle}
-                      onChange={e => setTaskTitle(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <textarea
-                      rows={3}
-                      placeholder="Детальное описание и требования..."
-                      value={taskDesc}
-                      onChange={e => setTaskDesc(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none"
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[10px] uppercase font-mono text-slate-500 mb-1">Исполнитель (Студент):</label>
-                      <select
-                        value={taskAssignee}
-                        onChange={e => setTaskAssignee(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl border bg-white text-xs"
-                      >
-                        <option value="">-- Выберите участника СНИЛ --</option>
-                        {db.users.map(u => (
-                          <option key={u.record_book_id} value={u.record_book_id}>{u.last_name} {u.first_name} ({u.group})</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-[10px] uppercase font-mono text-slate-500 mb-1">Дедлайн:</label>
-                      <input
-                        type="date"
-                        value={taskDeadline}
-                        onChange={e => setTaskDeadline(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl border bg-white text-xs"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex justify-end space-x-2">
-                    <button type="button" onClick={() => setShowTaskForm(false)} className="px-3 py-1.5 text-xs text-slate-600">Отмена</button>
-                    <button type="submit" className="px-4 py-1.5 bg-[#d4af37] text-[#0a2a5e] font-bold text-xs rounded-lg">Назначить</button>
-                  </div>
-                </form>
-              )}
-
-              {/* Список поручений */}
-              {snilTasks.length === 0 ? (
-                <p className="text-center py-8 text-xs text-slate-400">Активных задач в лаборатории пока нет.</p>
-              ) : (
-                <div className="space-y-3">
-                  {snilTasks.map(t => (
-                    <div key={t.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <div className="space-y-1">
-                        <div className="flex items-center space-x-2">
-                          <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${
-                            t.status === 'выполнена' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
-                          }`}>
-                            {t.status.toUpperCase()}
-                          </span>
-                          <span className="text-xs text-slate-400 font-mono">Дедлайн: {t.deadline}</span>
-                        </div>
-                        <h5 className="font-bold text-sm text-[#0a2a5e]">{t.title}</h5>
-                        <p className="text-xs text-slate-600">{t.description}</p>
-                        <p className="text-[11px] text-blue-900 font-medium">👤 Исполнитель: {t.assigned_to_name}</p>
-                      </div>
-
-                      {t.status !== 'выполнена' && user && (user.record_book_id === t.assigned_to_record_book || isHead) && (
-                        <button
-                          onClick={() => handleCompleteTask(t.id)}
-                          className="px-4 py-2 rounded-xl bg-green-600 hover:bg-green-500 text-white font-bold text-xs flex items-center justify-center space-x-1 self-start sm:self-center flex-shrink-0 shadow"
-                        >
-                          <FileCheck className="w-4 h-4" />
-                          <span>Сдать отчёт</span>
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-          </div>
-
-          {/* Правая колонка СНИЛ: Члены лаборатории и гранты */}
-          <div className="space-y-6">
-            <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
-              <h4 className="font-bold text-[#0a2a5e] flex items-center space-x-2 text-sm">
-                <Users className="w-4 h-4 text-[#d4af37]" />
-                <span>Исследователи лаборатории</span>
-              </h4>
-              <div className="space-y-2">
-                {activeSnil.member_record_books.map(mb => {
-                  const u = db.users.find(usr => usr.record_book_id === mb);
-                  return (
-                    <div key={mb} className="p-2.5 rounded-xl bg-slate-50 flex items-center justify-between text-xs font-mono">
-                      <span className="text-slate-800 font-sans font-semibold">{u ? `${u.last_name} ${u.first_name}` : mb}</span>
-                      <span className="text-[10px] text-slate-400">{u?.group || 'БГЭУ'}</span>
-                    </div>
-                  );
-                })}
+      {/* Hidden PDF Template */}
+      <div 
+        style={{ 
+          position: 'fixed', 
+          left: '-10000px', 
+          top: 0, 
+          pointerEvents: 'none',
+          zIndex: -300
+        }}
+      >
+        <div 
+          ref={snilApplicationRef} 
+          className="w-[800px] p-[100px] bg-white text-black font-serif"
+          style={{ fontFamily: 'Times New Roman, serif', backgroundColor: '#ffffff', minHeight: '1100px', color: '#000000' }}
+        >
+          {activeSnil && (
+            <>
+              <div className="ml-auto w-1/2 text-sm space-y-1 mb-20" style={{ marginLeft: 'auto', width: '50%', marginBottom: '5rem' }}>
+                <p>Руководителю СНИЛ</p>
+                <p>{activeSnil.name}</p>
+                <p>{activeSnil.head_name}</p>
+                <p className="pt-2" style={{ paddingTop: '0.5rem' }}>студента(ки) {user?.course} курса, группы {user?.group}</p>
+                <p className="font-bold" style={{ fontWeight: 'bold' }}>{user?.last_name} {user?.first_name} {user?.middle_name || ''}</p>
               </div>
-            </div>
-          </div>
 
+              <div className="text-center mb-12" style={{ textAlign: 'center', marginBottom: '3rem' }}>
+                <h2 className="text-2xl font-bold uppercase tracking-widest" style={{ fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: '1.5rem' }}>ЗАЯВЛЕНИЕ</h2>
+              </div>
+
+              <div className="text-lg leading-relaxed text-justify mb-20 px-4" style={{ fontSize: '1.125rem', lineHeight: '1.625', textAlign: 'justify', marginBottom: '5rem', paddingLeft: '1rem', paddingRight: '1rem' }}>
+                <p>
+                  Прошу включить меня в состав участников Студенческой научно-исследовательской лаборатории (СНИЛ) {activeSnil.name} ФЭМ БГЭУ.
+                </p>
+                <p className="mt-6" style={{ marginTop: '1.5rem' }}>
+                  Намерен(а) принимать активное участие в научно-исследовательской работе лаборатории по направлениям: 
+                  <span className="italic" style={{ fontStyle: 'italic' }}> {activeSnil.research_directions.join(', ')}</span>.
+                </p>
+                <p className="mt-6" style={{ marginTop: '1.5rem' }}>
+                  Обязуюсь соблюдать внутренний регламент работы СНИЛ и своевременно выполнять порученные научно-исследовательские задания.
+                </p>
+              </div>
+
+              <div className="flex justify-between items-end mt-40 px-4" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '10rem', paddingLeft: '1rem', paddingRight: '1rem' }}>
+                <div className="text-lg pb-1 w-40 text-center" style={{ fontSize: '1.125rem', borderBottom: '1px solid #000000', width: '10rem', textAlign: 'center' }}>
+                  {new Date().toLocaleDateString('ru-RU')}
+                </div>
+                <div className="text-lg pb-1 w-48 text-center relative" style={{ fontSize: '1.125rem', borderBottom: '1px solid #000000', width: '12rem', textAlign: 'center', position: 'relative' }}>
+                  <span className="text-[10px] absolute -bottom-5 left-0 right-0 text-center uppercase font-sans" style={{ fontSize: '10px', position: 'absolute', bottom: '-1.25rem', left: 0, right: 0, textAlign: 'center', textTransform: 'uppercase', color: '#9ca3af' }}>Подпись</span>
+                </div>
+              </div>
+
+              <div className="mt-32 pt-10 border-t text-[10px] font-sans italic text-center" style={{ marginTop: '8rem', paddingTop: '2.5rem', borderTop: '1px solid #f3f4f6', fontSize: '10px', fontStyle: 'italic', textAlign: 'center', color: '#d1d5db' }}>
+                Сформировано в SNO.PORTAL • Кафедра {activeSnil.department} • {new Date().toLocaleString('ru-RU')}
+              </div>
+            </>
+          )}
         </div>
-      )}
+      </div>
 
     </div>
   );
 };
+

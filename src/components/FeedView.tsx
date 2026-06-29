@@ -155,17 +155,17 @@ export const FeedView: React.FC<FeedViewProps> = ({
     <div className="space-y-8 pb-12">
       
       {/* Главный баннер ФЭМ БГЭУ */}
-      <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-brand-blue via-blue-900 to-[#0d3b84] text-white p-8 sm:p-12 shadow-xl border border-brand-gold/30">
-        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-80 h-80 bg-brand-gold/15 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-[#0a2a5e] via-blue-900 to-[#0d3b84] text-white p-8 sm:p-12 shadow-xl border border-[#d4af37]/30">
+        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-80 h-80 bg-[#d4af37]/15 rounded-full blur-3xl pointer-events-none"></div>
         <div className="absolute bottom-0 right-1/3 w-64 h-64 bg-blue-400/10 rounded-full blur-2xl pointer-events-none"></div>
 
         <div className="relative z-10 max-w-3xl space-y-4">
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-brand-gold/20 border border-brand-gold text-brand-gold text-xs font-semibold uppercase tracking-wider">
+          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-[#d4af37]/20 border border-[#d4af37] text-[#d4af37] text-xs font-semibold uppercase tracking-wider">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Студенческая наука БГЭУ</span>
           </div>
           <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight">
-            Цифровой портал исследователя <span className="text-brand-gold underline decoration-cyan-400/50">ФЭМ</span>
+            Цифровой портал исследователя <span className="text-[#d4af37] underline decoration-amber-400/50">ФЭМ</span>
           </h1>
           <p className="text-blue-100 text-sm sm:text-base leading-relaxed opacity-90">
             Единая среда для генерации идей, участия в конференциях, подачи заявок на гранты СНИЛ и формирования верифицированного портфолио исследователя.
@@ -175,7 +175,7 @@ export const FeedView: React.FC<FeedViewProps> = ({
             {db.news.length === 0 && db.events.length === 0 && (
               <button
                 onClick={() => { seedFacultyStarterTemplate(); onRefresh(); }}
-                className="px-5 py-2.5 rounded-xl bg-brand-gold text-brand-blue font-bold shadow-lg hover:brightness-110 flex items-center space-x-2 transition-all animate-bounce"
+                className="px-5 py-2.5 rounded-xl bg-[#d4af37] text-[#0a2a5e] font-bold shadow-lg hover:brightness-110 flex items-center space-x-2 transition-all animate-bounce"
               >
                 <Plus className="w-4 h-4" />
                 <span>Загрузить стартовые анонсы ФЭМ (Демо)</span>
@@ -197,7 +197,7 @@ export const FeedView: React.FC<FeedViewProps> = ({
       {/* Быстрая статистика факультета */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard icon={<FileText className="w-6 h-6 text-blue-400" />} number={db.publications.length + 42} label="Публикаций в базе" />
-        <StatCard icon={<Calendar className="w-6 h-6 text-brand-gold" />} number={db.events.length + 8} label="Научных мероприятий" />
+        <StatCard icon={<Calendar className="w-6 h-6 text-[#d4af37]" />} number={db.events.length + 8} label="Научных мероприятий" />
         <StatCard icon={<FlaskConical className="w-6 h-6 text-teal-400" />} number={db.snils.length + 5} label="Лабораторий СНИЛ" />
         <StatCard icon={<Users className="w-6 h-6 text-purple-400" />} number={db.users.length + 156} label="Исследователей ФЭМ" />
       </div>
@@ -209,8 +209,8 @@ export const FeedView: React.FC<FeedViewProps> = ({
           
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
             <div>
-              <h2 className="text-xl font-bold text-brand-blue dark:text-blue-300 flex items-center space-x-2">
-                <BookOpen className="w-5 h-5 text-brand-gold" />
+              <h2 className="text-xl font-bold text-[#0a2a5e] dark:text-blue-300 flex items-center space-x-2">
+                <BookOpen className="w-5 h-5 text-[#d4af37]" />
                 <span>Новости и анонсы СНО ФЭМ</span>
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">Официальная хроника и дискуссионные площадки</p>
@@ -224,16 +224,16 @@ export const FeedView: React.FC<FeedViewProps> = ({
                     placeholder="Поиск новостей..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2.5 sm:py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs focus:outline-none focus:border-brand-blue dark:focus:border-blue-500 min-h-[40px]"
+                    className="w-full pl-9 pr-4 py-2.5 sm:py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs focus:outline-none focus:border-[#0a2a5e] dark:focus:border-blue-500 min-h-[40px]"
                   />
                 </div>
 
                 {canCreateNews && (
                   <button
                     onClick={() => setShowCreateNews(!showCreateNews)}
-                    className="px-4 py-2.5 sm:px-3.5 sm:py-1.5 rounded-xl bg-brand-blue text-white hover:bg-blue-900 transition-colors text-xs font-bold flex items-center justify-center space-x-1 min-h-[40px] shadow-sm"
+                    className="px-4 py-2.5 sm:px-3.5 sm:py-1.5 rounded-xl bg-[#0a2a5e] text-white hover:bg-blue-900 transition-colors text-xs font-bold flex items-center justify-center space-x-1 min-h-[40px] shadow-sm"
                   >
-                    <Plus className="w-4 h-4 text-brand-gold" />
+                    <Plus className="w-4 h-4 text-[#d4af37]" />
                     <span className="whitespace-nowrap">Новый анонс</span>
                   </button>
                 )}
@@ -244,8 +244,8 @@ export const FeedView: React.FC<FeedViewProps> = ({
           {showCreateNews && (
             <form onSubmit={handlePublishNews} className="p-6 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-blue-200 dark:border-blue-900 shadow-md space-y-4 animate-fadeIn">
               <div className="flex items-center justify-between">
-                <h3 className="font-bold text-sm text-brand-blue dark:text-blue-300">Публикация анонса СНО</h3>
-                <span className="text-[10px] px-2 py-0.5 rounded bg-cyan-100 dark:bg-cyan-900/30 text-cyan-800 dark:text-cyan-400 font-mono">Авто-интеграция Telegram</span>
+                <h3 className="font-bold text-sm text-[#0a2a5e] dark:text-blue-300">Публикация анонса СНО</h3>
+                <span className="text-[10px] px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400 font-mono">Авто-интеграция Telegram</span>
               </div>
 
               <div>
@@ -254,7 +254,7 @@ export const FeedView: React.FC<FeedViewProps> = ({
                   placeholder="Заголовок новости..."
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:border-brand-blue dark:focus:border-blue-500"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:border-[#0a2a5e] dark:focus:border-blue-500"
                 />
               </div>
 
@@ -264,14 +264,14 @@ export const FeedView: React.FC<FeedViewProps> = ({
                   placeholder="Текст анонса (поддерживает ссылки на мероприятия)..."
                   value={newContent}
                   onChange={(e) => setNewContent(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:border-brand-blue dark:focus:border-blue-500"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:border-[#0a2a5e] dark:focus:border-blue-500"
                 />
               </div>
 
               <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
                 <div className="flex items-center space-x-4">
                   <label className="flex items-center space-x-1.5 text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
-                    <input type="checkbox" checked={isPinned} onChange={(e) => setIsPinned(e.target.checked)} className="rounded text-brand-blue" />
+                    <input type="checkbox" checked={isPinned} onChange={(e) => setIsPinned(e.target.checked)} className="rounded text-[#0a2a5e]" />
                     <span>Закрепить наверху</span>
                   </label>
                   <label className="flex items-center space-x-1.5 text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
@@ -282,7 +282,7 @@ export const FeedView: React.FC<FeedViewProps> = ({
 
                 <div className="flex space-x-3 w-full sm:w-auto">
                   <button type="button" onClick={() => setShowCreateNews(false)} className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl border dark:border-slate-700 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors font-semibold">Отмена</button>
-                  <button type="submit" className="flex-1 sm:flex-none px-6 py-2.5 rounded-xl bg-brand-gold text-brand-blue font-bold text-sm shadow-md hover:brightness-105 transition-all">Опубликовать</button>
+                  <button type="submit" className="flex-1 sm:flex-none px-6 py-2.5 rounded-xl bg-[#d4af37] text-[#0a2a5e] font-bold text-sm shadow-md hover:brightness-105 transition-all">Опубликовать</button>
                 </div>
               </div>
             </form>
@@ -298,7 +298,7 @@ export const FeedView: React.FC<FeedViewProps> = ({
           ) : (
             <div className="space-y-4">
               {filteredNews.map(item => (
-                <article key={item.id} className={`bg-white dark:bg-slate-900 rounded-2xl border p-6 shadow-sm hover:shadow-md transition-all relative ${item.is_pinned ? 'border-brand-gold dark:border-cyan-600/50 bg-amber-50/20 dark:bg-amber-900/10' : 'border-slate-200 dark:border-slate-800'}`}>
+                <article key={item.id} className={`bg-white dark:bg-slate-900 rounded-2xl border p-6 shadow-sm hover:shadow-md transition-all relative ${item.is_pinned ? 'border-[#d4af37] dark:border-amber-600/50 bg-amber-50/20 dark:bg-amber-900/10' : 'border-slate-200 dark:border-slate-800'}`}>
                   {item.is_pinned && (
                     <div className="absolute top-4 right-4 flex items-center space-x-1 text-xs font-bold text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-2.5 py-0.5 rounded-full">
                       <Pin className="w-3 h-3 rotate-45" />
@@ -323,7 +323,7 @@ export const FeedView: React.FC<FeedViewProps> = ({
                     )}
                   </div>
 
-                  <h3 className="text-lg font-bold text-brand-blue dark:text-blue-100 mb-2 leading-snug">{item.title}</h3>
+                  <h3 className="text-lg font-bold text-[#0a2a5e] dark:text-blue-100 mb-2 leading-snug">{item.title}</h3>
                   <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed whitespace-pre-line">{item.content}</p>
                 </article>
               ))}
@@ -337,14 +337,10 @@ export const FeedView: React.FC<FeedViewProps> = ({
 
           {/* Персональный научный статус исследователя на дашборде */}
           {user && (
-            <div className="bg-gradient-to-br from-brand-blue to-blue-950 text-white rounded-3xl p-6 shadow-md border border-brand-gold/30 space-y-4">
+            <div className="bg-gradient-to-br from-[#0a2a5e] to-blue-950 text-white rounded-3xl p-6 shadow-md border border-[#d4af37]/30 space-y-4">
               <div className="flex items-center space-x-3 border-b border-blue-900 pb-3">
-                <div className="w-10 h-10 rounded-xl bg-brand-gold/20 flex items-center justify-center text-brand-gold font-bold overflow-hidden">
-                  {user.avatar_url ? (
-                    <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    <>{user.first_name[0]}{user.last_name[0]}</>
-                  )}
+                <div className="w-10 h-10 rounded-xl bg-[#d4af37]/20 flex items-center justify-center text-[#d4af37] font-bold">
+                  {user.first_name[0]}{user.last_name[0]}
                 </div>
                 <div>
                   <h4 className="font-bold text-sm leading-tight">{user.last_name} {user.first_name}</h4>
@@ -355,22 +351,22 @@ export const FeedView: React.FC<FeedViewProps> = ({
               <div className="grid grid-cols-3 gap-2 text-center py-1">
                 <div className="bg-blue-950/40 p-2 rounded-xl border border-blue-900/40">
                   <p className="text-[9px] text-blue-300 font-bold uppercase tracking-wider">h-индекс</p>
-                  <p className="text-sm font-black text-brand-gold mt-0.5">{stats.hIndex}</p>
+                  <p className="text-sm font-black text-[#d4af37] mt-0.5">{stats.hIndex}</p>
                 </div>
                 <div className="bg-blue-950/40 p-2 rounded-xl border border-blue-900/40">
                   <p className="text-[9px] text-blue-300 font-bold uppercase tracking-wider">Работы</p>
-                  <p className="text-sm font-black text-brand-gold mt-0.5">{myPubs.length}</p>
+                  <p className="text-sm font-black text-[#d4af37] mt-0.5">{myPubs.length}</p>
                 </div>
                 <div className="bg-blue-950/40 p-2 rounded-xl border border-blue-900/40">
                   <p className="text-[9px] text-blue-300 font-bold uppercase tracking-wider">Рейтинг</p>
-                  <p className="text-sm font-black text-cyan-400 mt-0.5">{stats.ratingPoints}</p>
+                  <p className="text-sm font-black text-amber-400 mt-0.5">{stats.ratingPoints}</p>
                 </div>
               </div>
 
               <button
                 onClick={exportPortfolioToPdf}
                 disabled={isExporting}
-                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-brand-gold to-cyan-500 text-brand-blue font-black text-sm shadow-lg hover:brightness-110 flex items-center justify-center space-x-3 transition-all disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer active:scale-[0.98]"
+                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#d4af37] to-amber-500 text-[#0a2a5e] font-black text-sm shadow-lg hover:brightness-110 flex items-center justify-center space-x-3 transition-all disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer active:scale-[0.98]"
                 id="download-dashboard-pdf-btn"
               >
                 {isExporting ? (
@@ -399,20 +395,20 @@ export const FeedView: React.FC<FeedViewProps> = ({
                 className="w-[800px] p-12 bg-white text-[#0f172a] font-sans"
                 style={{ fontFamily: 'Inter, system-ui, sans-serif', backgroundColor: '#ffffff' }}
               >
-                <div className="flex items-center justify-between pb-6 mb-8" style={{ borderBottom: '2px solid var(--color-brand-blue)' }}>
+                <div className="flex items-center justify-between pb-6 mb-8" style={{ borderBottom: '2px solid #0a2a5e' }}>
                   <div>
-                    <h1 className="text-2xl font-black uppercase tracking-tighter" style={{ color: 'var(--color-brand-blue)' }}>SNO.PORTAL</h1>
+                    <h1 className="text-2xl font-black uppercase tracking-tighter" style={{ color: '#0a2a5e' }}>SNO.PORTAL</h1>
                     <p className="text-xs font-bold text-[#64748b]">БЕЛОРУССКИЙ ГОСУДАРСТВЕННЫЙ ЭКОНОМИЧЕСКИЙ УНИВЕРСИТЕТ</p>
                   </div>
                   <div className="text-right">
                     <p className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-widest">Электронный документ</p>
-                    <p className="text-xs font-black text-brand-gold">ФАКУЛЬТЕТ ЭКОНОМИКИ И МЕНЕДЖМЕНТА</p>
+                    <p className="text-xs font-black text-[#d4af37]">ФАКУЛЬТЕТ ЭКОНОМИКИ И МЕНЕДЖМЕНТА</p>
                   </div>
                 </div>
 
                 <div className="mb-10">
                   <h2 className="text-3xl font-black text-[#0f172a] mb-2 uppercase tracking-tight">ЭЛЕКТРОННОЕ ПОРТФОЛИО ИССЛЕДОВАТЕЛЯ</h2>
-                  <div className="h-1.5 w-24 rounded-full" style={{ backgroundColor: 'var(--color-brand-gold)' }}></div>
+                  <div className="h-1.5 w-24 rounded-full" style={{ backgroundColor: '#d4af37' }}></div>
                 </div>
 
                 <div className="grid grid-cols-3 gap-8 mb-10">
@@ -437,32 +433,32 @@ export const FeedView: React.FC<FeedViewProps> = ({
                     </div>
                   </div>
                   <div className="rounded-2xl p-6 border border-[#f1f5f9]" style={{ backgroundColor: '#f8fafc' }}>
-                    <p className="text-[10px] font-black uppercase tracking-widest mb-4 text-center" style={{ color: 'var(--color-brand-blue)' }}>Научный статус</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest mb-4 text-center" style={{ color: '#0a2a5e' }}>Научный статус</p>
                     <div className="space-y-3">
                       <div className="flex justify-between items-center pb-2" style={{ borderBottom: '1px solid #e2e8f0' }}>
                         <span className="text-[10px] font-bold text-[#64748b] uppercase">Индекс Хирша</span>
-                        <span className="text-sm font-black text-brand-blue">{stats.hIndex}</span>
+                        <span className="text-sm font-black text-[#0a2a5e]">{stats.hIndex}</span>
                       </div>
                       <div className="flex justify-between items-center pb-2" style={{ borderBottom: '1px solid #e2e8f0' }}>
                         <span className="text-[10px] font-bold text-[#64748b] uppercase">Публикации</span>
-                        <span className="text-sm font-black text-brand-blue">{myPubs.length}</span>
+                        <span className="text-sm font-black text-[#0a2a5e]">{myPubs.length}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-[10px] font-bold text-[#64748b] uppercase">Рейтинг ФЭМ</span>
-                        <span className="text-sm font-black text-brand-gold">{stats.ratingPoints}</span>
+                        <span className="text-sm font-black text-[#d4af37]">{stats.ratingPoints}</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div className="mb-10">
-                  <h3 className="text-lg font-black text-[#1e293b] mb-4 pl-3 uppercase tracking-tight" style={{ borderLeft: '4px solid var(--color-brand-blue)' }}>Список опубликованных научных работ</h3>
+                  <h3 className="text-lg font-black text-[#1e293b] mb-4 pl-3 uppercase tracking-tight" style={{ borderLeft: '4px solid #0a2a5e' }}>Список опубликованных научных работ</h3>
                   <div className="space-y-4">
                     {myPubs.length > 0 ? myPubs.map((p, idx) => (
                       <div key={p.id} className="p-4 rounded-xl border border-[#f1f5f9]" style={{ backgroundColor: '#f8fafc' }}>
                         <div className="flex justify-between items-start mb-1">
                           <p className="text-sm font-bold text-[#1e293b] leading-tight">
-                            <span className="mr-2" style={{ color: 'var(--color-brand-blue)' }}>{idx + 1}.</span> {p.title}
+                            <span className="mr-2" style={{ color: '#0a2a5e' }}>{idx + 1}.</span> {p.title}
                           </p>
                           <span className="text-[9px] font-black text-[#94a3b8] uppercase ml-4 flex-shrink-0">{p.year} г.</span>
                         </div>
@@ -504,13 +500,13 @@ export const FeedView: React.FC<FeedViewProps> = ({
                 </div>
 
                 <div className="mb-10">
-                  <h3 className="text-lg font-black text-[#1e293b] mb-4 pl-3 uppercase tracking-tight" style={{ borderLeft: '4px solid var(--color-brand-blue)' }}>Достижения и сертификаты</h3>
+                  <h3 className="text-lg font-black text-[#1e293b] mb-4 pl-3 uppercase tracking-tight" style={{ borderLeft: '4px solid #0a2a5e' }}>Достижения и сертификаты</h3>
                   <div className="space-y-4">
                     {myCerts.length > 0 ? myCerts.map((c, idx) => (
                       <div key={c.id} className="p-4 rounded-xl border border-[#f1f5f9]" style={{ backgroundColor: '#f8fafc' }}>
                         <div className="flex justify-between items-start mb-1">
                           <p className="text-sm font-bold text-[#1e293b] leading-tight">
-                            <span className="mr-2" style={{ color: 'var(--color-brand-blue)' }}>{idx + 1}.</span> {c.title}
+                            <span className="mr-2" style={{ color: '#0a2a5e' }}>{idx + 1}.</span> {c.title}
                           </p>
                           <span className="text-[9px] font-black text-[#94a3b8] uppercase ml-4 flex-shrink-0">{new Date(c.issue_date).getFullYear()} г.</span>
                         </div>
@@ -546,8 +542,8 @@ export const FeedView: React.FC<FeedViewProps> = ({
           {/* Виджет ближайших конференций */}
           <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-              <h3 className="font-bold text-brand-blue dark:text-blue-300 flex items-center space-x-2 text-base">
-                <Calendar className="w-5 h-5 text-brand-gold" />
+              <h3 className="font-bold text-[#0a2a5e] dark:text-blue-300 flex items-center space-x-2 text-base">
+                <Calendar className="w-5 h-5 text-[#d4af37]" />
                 <span>Ближайшие события</span>
               </h3>
               <span className="text-[11px] text-blue-600 dark:text-blue-400 font-semibold">Онлайн-регистрация</span>
@@ -567,7 +563,7 @@ export const FeedView: React.FC<FeedViewProps> = ({
                       <span className="text-[#d4af37] font-bold uppercase">{ev.type.replace('_', ' ')}</span>
                       <span>до {new Date(ev.registration_deadline).toLocaleDateString()}</span>
                     </div>
-                    <h4 className="font-bold text-xs sm:text-sm text-brand-blue dark:text-blue-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
+                    <h4 className="font-bold text-xs sm:text-sm text-[#0a2a5e] dark:text-blue-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
                       {ev.title}
                     </h4>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 truncate">📍 {ev.location}</p>
@@ -578,10 +574,10 @@ export const FeedView: React.FC<FeedViewProps> = ({
           </div>
 
           {/* Конкурс Лучшая СНИЛ */}
-          <div className="bg-gradient-to-br from-brand-gold to-cyan-500 rounded-3xl p-6 text-brand-blue shadow-lg relative overflow-hidden">
+          <div className="bg-gradient-to-br from-amber-500 to-[#d4af37] rounded-3xl p-6 text-[#0a2a5e] shadow-lg relative overflow-hidden">
             <Award className="w-32 h-32 absolute -bottom-6 -right-6 text-white/20 pointer-events-none" />
             <div className="relative z-10 space-y-3">
-              <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-brand-blue text-white">Конкурс БГЭУ</span>
+              <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-[#0a2a5e] text-white">Конкурс БГЭУ</span>
               <h3 className="text-xl font-extrabold leading-tight">Лучшая СНИЛ БГЭУ 2026</h3>
               <p className="text-xs leading-relaxed font-medium opacity-90">
                 Приём отчётов лабораторий факультета экономики и менеджмента за прошедший год открыт до 15 мая.
@@ -589,7 +585,7 @@ export const FeedView: React.FC<FeedViewProps> = ({
               <div className="pt-2">
                 <button 
                   onClick={() => onSelectSnil('snil_1')}
-                  className="px-4 py-2 rounded-xl bg-brand-blue text-brand-gold font-bold text-xs shadow hover:bg-blue-950 flex items-center space-x-1.5"
+                  className="px-4 py-2 rounded-xl bg-[#0a2a5e] text-[#d4af37] font-bold text-xs shadow hover:bg-blue-950 flex items-center space-x-1.5"
                 >
                   <span>Подать заявку СНИЛ</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -601,7 +597,7 @@ export const FeedView: React.FC<FeedViewProps> = ({
           {/* Виджет Лабораторий */}
           <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-              <h3 className="font-bold text-brand-blue dark:text-blue-300 flex items-center space-x-2 text-base">
+              <h3 className="font-bold text-[#0a2a5e] dark:text-blue-300 flex items-center space-x-2 text-base">
                 <FlaskConical className="w-5 h-5 text-teal-600" />
                 <span>Активные СНИЛ ФЭМ</span>
               </h3>
@@ -613,7 +609,7 @@ export const FeedView: React.FC<FeedViewProps> = ({
                 onClick={() => onSelectSnil(sn.id)}
                 className="p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 hover:border-teal-300 dark:hover:border-teal-700 hover:bg-teal-50/30 dark:hover:bg-teal-900/20 cursor-pointer transition-all"
               >
-                <h4 className="font-bold text-xs text-brand-blue dark:text-blue-200 line-clamp-1">{sn.name}</h4>
+                <h4 className="font-bold text-xs text-[#0a2a5e] dark:text-blue-200 line-clamp-1">{sn.name}</h4>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">Рук: {sn.head_name}</p>
                 <div className="flex flex-wrap gap-1 mt-2">
                   {sn.research_directions.slice(0, 2).map((d, i) => (
@@ -638,7 +634,7 @@ const StatCard: React.FC<{ icon: React.ReactNode; number: number; label: string 
       {icon}
     </div>
     <div>
-      <p className="text-xl sm:text-2xl font-extrabold text-brand-blue dark:text-blue-300 font-mono">{number}</p>
+      <p className="text-xl sm:text-2xl font-extrabold text-[#0a2a5e] dark:text-blue-300 font-mono">{number}</p>
       <p className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-tight mt-0.5">{label}</p>
     </div>
   </div>

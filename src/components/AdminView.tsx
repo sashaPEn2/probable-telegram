@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { PortalDatabase } from '../services/storage';
-import { CustomUser, Publication, ResearchApplication, ResearchTask } from '../types';
+import { PortalDatabase, savePortalDB } from '../services/storage';
+import { CustomUser, Publication, ResearchApplication, ResearchTask, MerchOrder } from '../types';
 import { 
   Shield, 
   CheckCircle2, 
@@ -13,7 +13,10 @@ import {
   Send, 
   AlertCircle,
   Plus,
-  Trash2
+  Trash2,
+  ShoppingBag,
+  PackageCheck,
+  CheckCircle
 } from 'lucide-react';
 
 interface AdminViewProps {
@@ -23,7 +26,7 @@ interface AdminViewProps {
 }
 
 export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => {
-  const [activeAdminTab, setActiveAdminTab] = useState<'pubs' | 'apps' | 'tasks' | 'broadcast'>('pubs');
+  const [activeAdminTab, setActiveAdminTab] = useState<'pubs' | 'apps' | 'tasks' | 'broadcast' | 'merch'>('pubs');
   
   // Форма рассылки уведомлений
   const [broadcastTitle, setBroadcastTitle] = useState('');
@@ -152,6 +155,36 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
     onRefresh();
   };
 
+  const handleUpdateOrderStatus = (order: MerchOrder, newStatus: MerchOrder['status']) => {
+    order.status = newStatus;
+    
+    let title = '';
+    let message = '';
+    
+    if (newStatus === 'ready') {
+      title = 'Ваш сувенир готов к выдаче!';
+      message = `Ваш заказ «${order.itemName}» ожидает вас в деканате (Корпус 4, каб. 314). Не забудьте зачётку!`;
+    } else if (newStatus === 'received') {
+      title = 'Сувенир получен';
+      message = `Вы получили «${order.itemName}». Спасибо за вашу научную активность на ФЭМ!`;
+    }
+
+    if (title) {
+      db.notifications.push({
+        id: 'notif_' + Date.now(),
+        user_record_book: order.userRecordBook,
+        title,
+        message,
+        type: 'success',
+        is_read: false,
+        created_at: new Date().toISOString()
+      });
+    }
+
+    savePortalDB(db);
+    onRefresh();
+  };
+
   return (
     <div className="space-y-8 pb-12">
       
@@ -208,6 +241,17 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
         >
           <Bell className="w-4 h-4" />
           <span>Факультетская рассылка</span>
+        </button>
+
+        <button
+          onClick={() => setActiveAdminTab('merch')}
+          className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl transition-all ${activeAdminTab === 'merch' ? 'bg-[#0a2a5e] text-[#d4af37]' : 'hover:bg-slate-100 text-slate-600'}`}
+        >
+          <ShoppingBag className="w-4 h-4" />
+          <span>Заказы сувениров</span>
+          <span className="px-1.5 py-0.2 rounded bg-blue-100 text-blue-800 font-mono">
+            {db.orders.filter(o => o.status === 'pending').length}
+          </span>
         </button>
       </div>
 
@@ -374,6 +418,89 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
               <span>Отправить рассылку на факультет</span>
             </button>
           </form>
+        </div>
+      )}
+
+      {/* Контент 5: Заказы сувениров */}
+      {activeAdminTab === 'merch' && (
+        <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-bold text-[#0a2a5e]">Реестр заказов сувенирной продукции СНО</h3>
+            <div className="flex items-center space-x-4 text-xs font-bold text-slate-500">
+              <span className="flex items-center space-x-1">
+                <span className="w-2 h-2 bg-amber-400 rounded-full"></span>
+                <span>Новые: {db.orders.filter(o => o.status === 'pending').length}</span>
+              </span>
+              <span className="flex items-center space-x-1">
+                <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                <span>Готовы: {db.orders.filter(o => o.status === 'ready').length}</span>
+              </span>
+            </div>
+          </div>
+
+          <div className="overflow-hidden border border-slate-100 rounded-2xl">
+            <table className="w-full text-left">
+              <thead className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                <tr>
+                  <th className="px-6 py-4">Студент</th>
+                  <th className="px-6 py-4">Товар</th>
+                  <th className="px-6 py-4">Статус</th>
+                  <th className="px-6 py-4">Действия</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50 text-sm">
+                {db.orders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((order) => (
+                  <tr key={order.id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="font-bold text-slate-900">{order.userName}</div>
+                      <div className="text-[10px] text-slate-500 font-mono">Зачётка: {order.userRecordBook}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="font-medium text-[#0a2a5e]">{order.itemName}</div>
+                      <div className="text-[10px] text-amber-600 font-bold">{order.points} баллов</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      {order.status === 'pending' && <span className="text-amber-600 font-bold bg-amber-50 px-2 py-1 rounded text-[10px] uppercase">Ожидает</span>}
+                      {order.status === 'ready' && <span className="text-blue-600 font-bold bg-blue-50 px-2 py-1 rounded text-[10px] uppercase">Готов</span>}
+                      {order.status === 'received' && <span className="text-emerald-600 font-bold bg-emerald-50 px-2 py-1 rounded text-[10px] uppercase">Получен</span>}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex space-x-2">
+                        {order.status === 'pending' && (
+                          <button
+                            onClick={() => handleUpdateOrderStatus(order, 'ready')}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Отметить как готовый"
+                          >
+                            <PackageCheck className="w-4 h-4" />
+                          </button>
+                        )}
+                        {order.status === 'ready' && (
+                          <button
+                            onClick={() => handleUpdateOrderStatus(order, 'received')}
+                            className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                            title="Отметить как выданный"
+                          >
+                            <CheckCircle className="w-4 h-4" />
+                          </button>
+                        )}
+                        {order.status === 'received' && (
+                          <CheckCircle className="w-4 h-4 text-emerald-300" />
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {db.orders.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-10 text-center text-slate-400">
+                      Заказов пока нет.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
