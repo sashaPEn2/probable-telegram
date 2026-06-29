@@ -3,28 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Google AI Studio App</title>
-    <script>
-      // Fix for libraries that try to overwrite window.fetch in environments where it's read-only
-      (function() {
-        try {
-          var descriptor = Object.getOwnPropertyDescriptor(window, 'fetch');
-          if (descriptor && !descriptor.writable && descriptor.configurable) {
-            var originalFetch = window.fetch;
-            Object.defineProperty(window, 'fetch', {
-              value: originalFetch,
-              writable: true,
-              configurable: true,
-              enumerable: true
-            });
-          }
-          // If we still can't write to it, we'll try to prevent the error by trapping the assignment if possible
-          // but that's hard for global properties. Instead, we just hope the library handles the failure.
-        } catch (e) {
-          console.warn('Could not redefine window.fetch', e);
-        }
-      })();
-    </script>
+    <title>SNO.PORTAL ФЭМ БГЭУ</title>
   </head>
   <body>
     <div id="root"></div>
