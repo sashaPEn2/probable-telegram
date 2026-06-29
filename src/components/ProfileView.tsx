@@ -1,6 +1,9 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { PortalDatabase, calculateResearcherStats, DEPARTMENTS, GROUPS, addNotificationAndNotifyTelegram, notifySnilMembers } from '../services/storage';
 import { TelegramSettings } from './TelegramSettings';
+import { CertificateModal } from './CertificateModal';
+import { UserAvatar } from './UserAvatar';
+import { AvatarModal } from './AvatarModal';
 import { CustomUser, Publication, Certificate, ResearchProject } from '../types';
 import { signOut } from 'firebase/auth';
 import { auth } from '../lib/firebase';
@@ -72,13 +75,28 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [tempGroup, setTempGroup] = useState(user.group);
   const [tempDepartment, setTempDepartment] = useState(user.department);
+  const [tempIsPrivate, setTempIsPrivate] = useState(user.is_private || false);
+  const [viewingCert, setViewingCert] = useState<Certificate | null>(null);
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
+
+  const handleSaveAvatar = (newAvatarUrl: string) => {
+    const updated = { ...user, avatar_url: newAvatarUrl };
+    const dbUser = db.users.find(u => u.record_book_id === user.record_book_id);
+    if (dbUser) {
+        dbUser.avatar_url = newAvatarUrl;
+    }
+    localStorage.setItem('fem_bseu_portal_db_v1', JSON.stringify(db));
+    onUpdateUser(updated);
+    setShowAvatarModal(false);
+  };
 
   const handleSaveProfile = () => {
-    const updated = { ...user, group: tempGroup, department: tempDepartment };
+    const updated = { ...user, group: tempGroup, department: tempDepartment, is_private: tempIsPrivate };
     const dbUser = db.users.find(u => u.record_book_id === user.record_book_id);
     if (dbUser) {
         dbUser.group = tempGroup;
         dbUser.department = tempDepartment;
+        dbUser.is_private = tempIsPrivate;
     }
     localStorage.setItem('fem_bseu_portal_db_v1', JSON.stringify(db));
     onUpdateUser(updated);
@@ -359,9 +377,15 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         <div className="absolute -top-20 -right-20 w-72 h-72 bg-[#d4af37]/15 rounded-full blur-3xl pointer-events-none"></div>
 
         <div className="flex items-center space-x-6 relative z-10">
-          <div className="w-20 sm:w-24 h-20 sm:h-24 rounded-3xl bg-gradient-to-tr from-[#d4af37] to-amber-500 p-1 flex-shrink-0 shadow-xl">
-            <div className="w-full h-full bg-[#0a2a5e] rounded-[22px] flex items-center justify-center text-3xl font-extrabold text-[#d4af37]">
-              {user.first_name[0]}{user.last_name[0]}
+          <div 
+            onClick={() => setShowAvatarModal(true)}
+            className="relative group cursor-pointer w-20 sm:w-24 h-20 sm:h-24 rounded-3xl overflow-hidden shadow-xl hover:scale-105 transition-all flex-shrink-0"
+            title="Изменить аватар"
+          >
+            <UserAvatar size="2xl" user={user} className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-[10px] font-bold text-[#d4af37] font-mono text-center px-1">
+              <Sparkles className="w-4 h-4 mb-1" />
+              <span>ИЗМЕНИТЬ АВАТАР</span>
             </div>
           </div>
           <div className="space-y-1">
@@ -386,6 +410,21 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                         {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
                     </select>
                 ) : user.department}
+
+                {isEditingProfile && (
+                  <div className="flex items-center gap-2 ml-4 bg-blue-950/50 px-3 py-1 rounded-lg border border-blue-800/30">
+                    <input 
+                      type="checkbox" 
+                      id="is_private" 
+                      checked={tempIsPrivate} 
+                      onChange={e => setTempIsPrivate(e.target.checked)}
+                      className="w-4 h-4 rounded border-blue-500 text-blue-600 focus:ring-blue-500"
+                    />
+                    <label htmlFor="is_private" className="text-[10px] font-bold uppercase tracking-wider text-blue-200 cursor-pointer">
+                      Скрыть профиль в рейтинге
+                    </label>
+                  </div>
+                )}
                 
                 <div className="flex gap-2 ml-2">
                     {isEditingProfile ? (
@@ -628,9 +667,18 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   <p className="text-[10px] text-[#64748b] font-medium mb-1">
                     <span className="font-bold uppercase mr-1" style={{ color: '#475569' }}>Мероприятие:</span> {c.event_name}
                   </p>
-                  <span className="text-[9px] px-1.5 py-0.5 rounded font-bold uppercase" style={{ backgroundColor: '#fef3c7', color: '#92400e' }}>
-                    {c.type.replace(/_/g, ' ')}
-                  </span>
+                  <div className="flex items-center justify-between mt-2">
+                    <span className="text-[9px] px-1.5 py-0.5 rounded font-bold uppercase" style={{ backgroundColor: '#fef3c7', color: '#92400e' }}>
+                      {c.type.replace(/_/g, ' ')}
+                    </span>
+                    <button 
+                      onClick={() => setViewingCert(c)}
+                      className="text-[10px] font-black text-[#0a2a5e] hover:text-blue-800 uppercase tracking-widest flex items-center space-x-1 border border-[#0a2a5e]/20 px-2.5 py-1 rounded bg-white hover:bg-[#0a2a5e]/5 transition-all"
+                    >
+                      <span>Смотреть</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </button>
+                  </div>
                 </div>
               )) : (
                 <p className="text-sm text-[#94a3b8] italic">Награды и сертификаты отсутствуют</p>
@@ -918,7 +966,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     }`}>
                       {c.type.replace(/_/g, ' ')}
                     </span>
-                    <button className="text-blue-600 hover:text-blue-800 transition-colors">
+                    <button 
+                      onClick={() => setViewingCert(c)}
+                      className="text-blue-600 hover:text-blue-800 transition-colors flex items-center space-x-1 border border-blue-100 bg-blue-50/50 hover:bg-blue-100/50 px-2.5 py-1.5 rounded-xl text-xs font-bold"
+                      title="Посмотреть электронный диплом/сертификат"
+                    >
+                      <span>Просмотр</span>
                       <ExternalLink className="w-4 h-4" />
                     </button>
                   </div>
@@ -1168,9 +1221,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     mySnilMembers.map(member => (
                       <div key={member.record_book_id} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700">
                         <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 rounded-lg bg-[#0a2a5e] text-[#d4af37] flex items-center justify-center text-[10px] font-black">
-                            {member.first_name[0]}{member.last_name[0]}
-                          </div>
+                          <UserAvatar size="sm" user={member} />
                           <div>
                             <p className="text-[11px] font-black text-slate-700 dark:text-slate-200 leading-tight">{member.last_name} {member.first_name[0]}.</p>
                             <p className="text-[9px] font-mono text-slate-400">{member.record_book_id}</p>
@@ -1342,6 +1393,23 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             ))}
           </div>
         </div>
+      )}
+
+      {viewingCert && (
+        <CertificateModal
+          certificate={viewingCert}
+          recipientUser={user}
+          onClose={() => setViewingCert(null)}
+        />
+      )}
+
+      {showAvatarModal && (
+        <AvatarModal
+          currentAvatar={user.avatar_url}
+          userName={`${user.first_name} ${user.last_name}`}
+          onClose={() => setShowAvatarModal(false)}
+          onSave={handleSaveAvatar}
+        />
       )}
 
     </div>

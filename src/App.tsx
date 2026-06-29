@@ -22,7 +22,7 @@ import { ProfileView } from './components/ProfileView';
 import { AdminView } from './components/AdminView';
 import { QuizzesView } from './components/QuizzesView';
 import { AnimatePresence, motion } from 'motion/react';
-import { doc, updateDoc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, updateDoc, getDoc, setDoc, onSnapshot, collection } from 'firebase/firestore';
 import { db as firestoreDb } from './lib/firebase';
 
 export default function App() {
@@ -48,6 +48,58 @@ export default function App() {
       setUser(JSON.parse(savedUser));
     }
   }, []);
+
+  // Синхронизация списка аккаунтов (пользователей) с Firestore в реальном времени
+  useEffect(() => {
+    try {
+      const usersColRef = collection(firestoreDb, 'users');
+      const unsubscribe = onSnapshot(usersColRef, (snapshot) => {
+        const firestoreUsers: CustomUser[] = [];
+        snapshot.forEach((doc) => {
+          firestoreUsers.push(doc.data() as CustomUser);
+        });
+        
+        if (firestoreUsers.length > 0) {
+          setDb(prevDb => {
+            const updatedDb = { ...prevDb };
+            const mergedUsers = [...(updatedDb.users || [])];
+            
+            firestoreUsers.forEach(fUser => {
+              const index = mergedUsers.findIndex(u => u.record_book_id === fUser.record_book_id);
+              if (index !== -1) {
+                mergedUsers[index] = { ...mergedUsers[index], ...fUser };
+              } else {
+                mergedUsers.push(fUser);
+              }
+            });
+            
+            updatedDb.users = mergedUsers;
+            savePortalDB(updatedDb);
+            
+            // Если текущий вошедший пользователь есть в списке, обновим его локально при изменениях
+            if (user) {
+              const currentUpdated = firestoreUsers.find(u => u.record_book_id === user.record_book_id);
+              if (currentUpdated) {
+                const hasChanged = JSON.stringify(currentUpdated) !== JSON.stringify(user);
+                if (hasChanged) {
+                  setUser(currentUpdated);
+                  localStorage.setItem('fem_bseu_user', JSON.stringify(currentUpdated));
+                }
+              }
+            }
+            
+            return updatedDb;
+          });
+        }
+      }, (error) => {
+        console.error("Error listening to users in real-time:", error);
+      });
+
+      return () => unsubscribe();
+    } catch (e) {
+      console.error("Failed to initialize real-time users sync:", e);
+    }
+  }, [user]);
 
   // Управление темной темой
   useEffect(() => {
@@ -179,7 +231,7 @@ export default function App() {
   const userNotifs = user ? (db.notifications || []).filter(n => n.user_record_book === user.record_book_id).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()) : [];
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden bg-[#f8fafc] dark:bg-[#030712] font-sans text-slate-900 dark:text-slate-100 selection:bg-[#d4af37]/30 transition-colors duration-200">
+    <div className="min-h-screen w-full overflow-x-hidden bg-[#f8fafc] dark:bg-[#030712] font-sans text-slate-900 dark:text-slate-100 selection:bg-[#d4af37]/30 transition-colors duration-200 relative z-0">
       <Navbar
         user={user}
         activeTab={activeTab}

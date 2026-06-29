@@ -17,6 +17,7 @@ export interface CustomUser {
   telegram_chat_id?: string;
   avatar_url?: string;
   password?: string;
+  is_private?: boolean;
 }
 
 export interface Announcement {
@@ -251,6 +252,38 @@ export interface Quiz {
   pointsForPlaces: { place: number; points: number }[]; // Custom points distribution, e.g. [{place: 1, points: 50}, ...]
   created_at: string;
   winners?: { place: number; studentRecordBook: string; name: string; group: string; points: number; score?: string }[];
+}
+
+export interface FeedBanner {
+  show: boolean;
+  tag_text: string;
+  title_main: string;
+  title_highlight: string;
+  description: string;
+  bg_gradient_from: string;
+  bg_gradient_via: string;
+  bg_gradient_to: string;
+  accent_color: string;
+  button1_text: string;
+  button1_link: string;
+  button2_text: string;
+  button2_link: string;
+}
+
+export interface SecondaryBanner {
+  show: boolean;
+  tag_text: string;
+  title: string;
+  description: string;
+  bg_gradient_from: string;
+  bg_gradient_to: string;
+  text_color: string;
+  tag_bg: string;
+  tag_text_color: string;
+  button_text: string;
+  button_bg: string;
+  button_text_color: string;
+  button_link: string;
 }
 
 export interface QuizAttempt {

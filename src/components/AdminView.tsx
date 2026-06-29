@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { PortalDatabase, savePortalDB, addNotificationAndNotifyTelegram } from '../services/storage';
 import { CustomUser, Publication, ResearchApplication, ResearchTask, MerchOrder } from '../types';
+import { UserAvatar } from './UserAvatar';
 import { 
   Shield, 
   CheckCircle2, 
@@ -26,7 +27,7 @@ interface AdminViewProps {
 }
 
 export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => {
-  const [activeAdminTab, setActiveAdminTab] = useState<'pubs' | 'apps' | 'tasks' | 'broadcast' | 'merch'>('pubs');
+  const [activeAdminTab, setActiveAdminTab] = useState<'pubs' | 'apps' | 'tasks' | 'broadcast' | 'merch' | 'banner' | 'news' | 'events'>('pubs');
   
   // Форма рассылки уведомлений
   const [broadcastTitle, setBroadcastTitle] = useState('');
@@ -40,8 +41,73 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
   const [taskSnil, setTaskSnil] = useState('СНИЛ «Маркетинг инноваций»');
   const [taskDeadline, setTaskDeadline] = useState('2026-05-15');
 
+  // Форма баннера
+  const initialBanner = db.feed_banner || {
+    show: true,
+    tag_text: 'Студенческая наука БГЭУ',
+    title_main: 'Цифровой портал исследователя ',
+    title_highlight: 'ФЭМ',
+    description: 'Единая среда для генерации идей, участия в конференциях, подачи заявок на гранты СНИЛ и формирования верифицированного портфолио исследователя.',
+    bg_gradient_from: '#0a2a5e',
+    bg_gradient_via: 'blue-900',
+    bg_gradient_to: '#0d3b84',
+    accent_color: '#d4af37',
+    button1_text: 'Загрузить стартовые анонсы ФЭМ (Демо)',
+    button1_link: '#',
+    button2_text: 'СНО ФЭМ',
+    button2_link: 'https://t.me/snofem'
+  };
+  const [bannerForm, setBannerForm] = useState(initialBanner);
+  
+  // Форма дополнительного баннера (Конкурс)
+  const initialSecondaryBanner = db.secondary_banner || {
+    show: true,
+    tag_text: 'Конкурс БГЭУ',
+    title: 'Лучшая СНИЛ БГЭУ 2026',
+    description: 'Приём отчётов лабораторий факультета экономики и менеджмента за прошедший год открыт до 15 мая.',
+    bg_gradient_from: '#f59e0b', // amber-500
+    bg_gradient_to: '#d4af37',
+    text_color: '#0a2a5e',
+    tag_bg: '#0a2a5e',
+    tag_text_color: '#ffffff',
+    button_text: 'Подать заявку СНИЛ',
+    button_bg: '#0a2a5e',
+    button_text_color: '#d4af37',
+    button_link: 'snil_1'
+  };
+  const [secondaryBannerForm, setSecondaryBannerForm] = useState(initialSecondaryBanner);
+
+  // Форма новостей
+  const [newsForm, setNewsForm] = useState({
+    title: '',
+    content: '',
+    is_pinned: false,
+    image_url: ''
+  });
+
+  // Форма мероприятий
+  const [eventForm, setEventForm] = useState({
+    title: '',
+    type: 'конференция' as 'конференция' | 'форум' | 'семинар' | 'хакатон' | 'олимпиада',
+    description: '',
+    organizer: '',
+    start_date: '',
+    end_date: '',
+    registration_deadline: '',
+    location: '',
+    max_participants: 100,
+  });
+
   const pendingPubs = db.publications.filter(p => !p.is_confirmed);
   const pendingApps = db.applications.filter(a => a.status === 'на_рассмотрении');
+
+  const handleSaveBanner = () => {
+    db.feed_banner = { ...bannerForm };
+    db.secondary_banner = { ...secondaryBannerForm };
+    localStorage.setItem('fem_bseu_portal_db_v1', JSON.stringify(db));
+    onRefresh();
+    alert('Баннеры успешно обновлены');
+  };
 
   const handleApprovePub = (pub: Publication) => {
     pub.is_confirmed = true;
@@ -185,6 +251,77 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
     onRefresh();
   };
 
+  const handleAddNews = () => {
+    if (!newsForm.title || !newsForm.content) {
+      alert('Заполните обязательные поля');
+      return;
+    }
+    
+    db.news.push({
+      id: 'news_' + Date.now(),
+      title: newsForm.title,
+      content: newsForm.content,
+      author_record_book: user.record_book,
+      author_name: `${user.last_name} ${user.first_name}`,
+      is_pinned: newsForm.is_pinned,
+      created_at: new Date().toISOString(),
+      image_url: newsForm.image_url,
+      published_to_telegram: false
+    });
+    
+    savePortalDB(db);
+    setNewsForm({ title: '', content: '', is_pinned: false, image_url: '' });
+    onRefresh();
+    alert('Новость успешно добавлена!');
+  };
+
+  const handleDeleteNews = (id: string) => {
+    if (confirm('Удалить новость?')) {
+      db.news = db.news.filter(n => n.id !== id);
+      savePortalDB(db);
+      onRefresh();
+    }
+  };
+
+  const handleAddEvent = () => {
+    if (!eventForm.title || !eventForm.description || !eventForm.start_date || !eventForm.end_date) {
+      alert('Заполните обязательные поля');
+      return;
+    }
+
+    db.events.push({
+      id: 'event_' + Date.now(),
+      title: eventForm.title,
+      type: eventForm.type as any,
+      description: eventForm.description,
+      organizer: eventForm.organizer || 'ФЭМ',
+      start_date: eventForm.start_date,
+      end_date: eventForm.end_date,
+      registration_deadline: eventForm.registration_deadline || eventForm.start_date,
+      location: eventForm.location || 'Уточняется',
+      is_active: true,
+      max_participants: eventForm.max_participants || 100,
+      participant_record_books: [],
+      materials_links: [],
+      created_at: new Date().toISOString(),
+    });
+
+    savePortalDB(db);
+    setEventForm({
+      title: '', type: 'конференция', description: '', organizer: '', start_date: '', end_date: '', registration_deadline: '', location: '', max_participants: 100
+    });
+    onRefresh();
+    alert('Мероприятие успешно добавлено!');
+  };
+
+  const handleDeleteEvent = (id: string) => {
+    if (confirm('Удалить мероприятие?')) {
+      db.events = db.events.filter(e => e.id !== id);
+      savePortalDB(db);
+      onRefresh();
+    }
+  };
+
   return (
     <div className="space-y-8 pb-12">
       
@@ -252,6 +389,30 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
           <span className="px-1.5 py-0.2 rounded bg-blue-100 text-blue-800 font-mono">
             {db.orders.filter(o => o.status === 'pending').length}
           </span>
+        </button>
+
+        <button
+          onClick={() => setActiveAdminTab('banner')}
+          className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl transition-all ${activeAdminTab === 'banner' ? 'bg-[#0a2a5e] text-[#d4af37]' : 'hover:bg-slate-100 text-slate-600'}`}
+        >
+          <AlertCircle className="w-4 h-4" />
+          <span>Главный баннер</span>
+        </button>
+
+        <button
+          onClick={() => setActiveAdminTab('news')}
+          className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl transition-all ${activeAdminTab === 'news' ? 'bg-[#0a2a5e] text-[#d4af37]' : 'hover:bg-slate-100 text-slate-600'}`}
+        >
+          <FileText className="w-4 h-4" />
+          <span>Новости и Анонсы</span>
+        </button>
+
+        <button
+          onClick={() => setActiveAdminTab('events')}
+          className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl transition-all ${activeAdminTab === 'events' ? 'bg-[#0a2a5e] text-[#d4af37]' : 'hover:bg-slate-100 text-slate-600'}`}
+        >
+          <Briefcase className="w-4 h-4" />
+          <span>Мероприятия</span>
         </button>
       </div>
 
@@ -452,8 +613,13 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
                 {db.orders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((order) => (
                   <tr key={order.id} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-6 py-4">
-                      <div className="font-bold text-slate-900">{order.userName}</div>
-                      <div className="text-[10px] text-slate-500 font-mono">Зачётка: {order.userRecordBook}</div>
+                      <div className="flex items-center space-x-3">
+                        <UserAvatar size="sm" user={db.users.find(u => u.record_book_id === order.userRecordBook) || { first_name: order.userName.split(' ')[1] || '', last_name: order.userName.split(' ')[0] || '' }} />
+                        <div>
+                          <div className="font-bold text-slate-900">{order.userName}</div>
+                          <div className="text-[10px] text-slate-500 font-mono">Зачётка: {order.userRecordBook}</div>
+                        </div>
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="font-medium text-[#0a2a5e]">{order.itemName}</div>
@@ -500,6 +666,355 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Контент 6: Баннер */}
+      {activeAdminTab === 'banner' && (
+        <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm space-y-6">
+          <h3 className="text-lg font-bold text-[#0a2a5e]">Настройки главного баннера</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Тег</label>
+              <input type="text" value={bannerForm.tag_text} onChange={(e) => setBannerForm({...bannerForm, tag_text: e.target.value})} className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Основной заголовок</label>
+              <input type="text" value={bannerForm.title_main} onChange={(e) => setBannerForm({...bannerForm, title_main: e.target.value})} className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Акцент заголовка (выделено цветом)</label>
+              <input type="text" value={bannerForm.title_highlight} onChange={(e) => setBannerForm({...bannerForm, title_highlight: e.target.value})} className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Акцентный цвет (HEX)</label>
+              <input type="text" value={bannerForm.accent_color} onChange={(e) => setBannerForm({...bannerForm, accent_color: e.target.value})} className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+            </div>
+
+            <div className="space-y-2 md:col-span-2">
+              <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Описание</label>
+              <textarea rows={3} value={bannerForm.description} onChange={(e) => setBannerForm({...bannerForm, description: e.target.value})} className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Градиент ОТ (Tailwind или HEX)</label>
+              <input type="text" value={bannerForm.bg_gradient_from} onChange={(e) => setBannerForm({...bannerForm, bg_gradient_from: e.target.value})} className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Градиент ДО (Tailwind или HEX)</label>
+              <input type="text" value={bannerForm.bg_gradient_to} onChange={(e) => setBannerForm({...bannerForm, bg_gradient_to: e.target.value})} className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+            </div>
+          </div>
+
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mt-4 space-y-4">
+            <h4 className="font-bold text-sm text-slate-700">Настройки кнопок</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Текст кнопки 1</label>
+                <input type="text" value={bannerForm.button1_text} onChange={(e) => setBannerForm({...bannerForm, button1_text: e.target.value})} className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Ссылка кнопки 1</label>
+                <input type="text" value={bannerForm.button1_link} onChange={(e) => setBannerForm({...bannerForm, button1_link: e.target.value})} className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Текст кнопки 2</label>
+                <input type="text" value={bannerForm.button2_text} onChange={(e) => setBannerForm({...bannerForm, button2_text: e.target.value})} className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Ссылка кнопки 2</label>
+                <input type="text" value={bannerForm.button2_link} onChange={(e) => setBannerForm({...bannerForm, button2_link: e.target.value})} className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 mt-8 space-y-4">
+            <h4 className="font-bold text-lg text-slate-700">Настройки дополнительного баннера (Конкурс)</h4>
+            
+            <div className="flex items-center space-x-2 mb-4">
+              <input type="checkbox" id="show_secondary_banner" checked={secondaryBannerForm.show} onChange={(e) => setSecondaryBannerForm({...secondaryBannerForm, show: e.target.checked})} className="w-4 h-4 text-blue-600 rounded border-slate-300" />
+              <label htmlFor="show_secondary_banner" className="text-sm font-semibold text-slate-700">Отображать дополнительный баннер</label>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Тег</label>
+                <input type="text" value={secondaryBannerForm.tag_text} onChange={(e) => setSecondaryBannerForm({...secondaryBannerForm, tag_text: e.target.value})} className="w-full p-3 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Заголовок</label>
+                <input type="text" value={secondaryBannerForm.title} onChange={(e) => setSecondaryBannerForm({...secondaryBannerForm, title: e.target.value})} className="w-full p-3 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Описание</label>
+                <textarea rows={2} value={secondaryBannerForm.description} onChange={(e) => setSecondaryBannerForm({...secondaryBannerForm, description: e.target.value})} className="w-full p-3 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Градиент ОТ (HEX)</label>
+                <input type="text" value={secondaryBannerForm.bg_gradient_from} onChange={(e) => setSecondaryBannerForm({...secondaryBannerForm, bg_gradient_from: e.target.value})} className="w-full p-3 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Градиент ДО (HEX)</label>
+                <input type="text" value={secondaryBannerForm.bg_gradient_to} onChange={(e) => setSecondaryBannerForm({...secondaryBannerForm, bg_gradient_to: e.target.value})} className="w-full p-3 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Цвет текста (HEX)</label>
+                <input type="text" value={secondaryBannerForm.text_color} onChange={(e) => setSecondaryBannerForm({...secondaryBannerForm, text_color: e.target.value})} className="w-full p-3 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Фон тега (HEX)</label>
+                <input type="text" value={secondaryBannerForm.tag_bg} onChange={(e) => setSecondaryBannerForm({...secondaryBannerForm, tag_bg: e.target.value})} className="w-full p-3 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Цвет текста тега (HEX)</label>
+                <input type="text" value={secondaryBannerForm.tag_text_color} onChange={(e) => setSecondaryBannerForm({...secondaryBannerForm, tag_text_color: e.target.value})} className="w-full p-3 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Текст кнопки</label>
+                <input type="text" value={secondaryBannerForm.button_text} onChange={(e) => setSecondaryBannerForm({...secondaryBannerForm, button_text: e.target.value})} className="w-full p-3 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Фон кнопки (HEX)</label>
+                <input type="text" value={secondaryBannerForm.button_bg} onChange={(e) => setSecondaryBannerForm({...secondaryBannerForm, button_bg: e.target.value})} className="w-full p-3 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Цвет текста кнопки (HEX)</label>
+                <input type="text" value={secondaryBannerForm.button_text_color} onChange={(e) => setSecondaryBannerForm({...secondaryBannerForm, button_text_color: e.target.value})} className="w-full p-3 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Ссылка кнопки</label>
+                <input type="text" value={secondaryBannerForm.button_link} onChange={(e) => setSecondaryBannerForm({...secondaryBannerForm, button_link: e.target.value})} className="w-full p-3 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+                <p className="text-xs text-slate-500 mt-1">Оставьте "snil_1" для заявки в СНИЛ или укажите URL ссылку.</p>
+              </div>
+            </div>
+            
+            <div className="mt-4">
+              <h5 className="font-bold text-slate-500 mb-2 uppercase text-xs tracking-wider">Предпросмотр доп. баннера</h5>
+              {secondaryBannerForm.show && (
+                <div 
+                  className="rounded-3xl p-6 shadow-lg relative overflow-hidden max-w-sm"
+                  style={{
+                    background: `linear-gradient(to bottom right, ${secondaryBannerForm.bg_gradient_from}, ${secondaryBannerForm.bg_gradient_to})`,
+                    color: secondaryBannerForm.text_color
+                  }}
+                >
+                  <div className="relative z-10 space-y-3">
+                    <span 
+                      className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded"
+                      style={{ backgroundColor: secondaryBannerForm.tag_bg, color: secondaryBannerForm.tag_text_color }}
+                    >
+                      {secondaryBannerForm.tag_text}
+                    </span>
+                    <h3 className="text-xl font-extrabold leading-tight">{secondaryBannerForm.title}</h3>
+                    <p className="text-xs leading-relaxed font-medium opacity-90">
+                      {secondaryBannerForm.description}
+                    </p>
+                    <div className="pt-2">
+                      <button 
+                        className="px-4 py-2 rounded-xl font-bold text-xs shadow hover:brightness-110 flex items-center space-x-1.5 transition-all"
+                        style={{ backgroundColor: secondaryBannerForm.button_bg, color: secondaryBannerForm.button_text_color }}
+                      >
+                        <span>{secondaryBannerForm.button_text}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <button
+            onClick={handleSaveBanner}
+            className="mt-6 w-full py-4 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold shadow-lg transition-all"
+          >
+            Сохранить настройки баннеров
+          </button>
+
+          {/* Предпросмотр */}
+          <div className="mt-8 pt-8 border-t border-slate-200">
+            <h4 className="font-bold text-slate-500 mb-4 uppercase text-xs tracking-wider">Предпросмотр</h4>
+            <div 
+              className="relative rounded-3xl overflow-hidden p-8 sm:p-12 shadow-xl border"
+              style={{
+                background: `linear-gradient(to right, ${bannerForm.bg_gradient_from}, ${bannerForm.bg_gradient_to})`,
+                borderColor: `${bannerForm.accent_color}40` // 40 is hex for 25% opacity
+              }}
+            >
+              <div className="relative z-10 max-w-3xl space-y-4 text-white">
+                <div 
+                  className="inline-flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider border"
+                  style={{ borderColor: bannerForm.accent_color, color: bannerForm.accent_color, backgroundColor: `${bannerForm.accent_color}20` }}
+                >
+                  <AlertCircle className="w-3.5 h-3.5" />
+                  <span>{bannerForm.tag_text}</span>
+                </div>
+                <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight">
+                  {bannerForm.title_main} <span style={{ color: bannerForm.accent_color }} className="underline decoration-amber-400/50">{bannerForm.title_highlight}</span>
+                </h1>
+                <p className="text-blue-100 text-sm sm:text-base leading-relaxed opacity-90">
+                  {bannerForm.description}
+                </p>
+                <div className="pt-2 flex flex-wrap gap-3">
+                  {bannerForm.button1_text && (
+                    <button style={{ backgroundColor: bannerForm.accent_color, color: '#0a2a5e' }} className="px-5 py-2.5 rounded-xl font-bold shadow-lg hover:brightness-110 flex items-center space-x-2 transition-all">
+                      <span>{bannerForm.button1_text}</span>
+                    </button>
+                  )}
+                  {bannerForm.button2_text && (
+                    <button className="px-4 py-2.5 rounded-xl bg-blue-950/80 hover:bg-blue-900 border border-blue-400/30 font-semibold flex items-center space-x-2 transition-all text-xs sm:text-sm">
+                      <span>{bannerForm.button2_text}</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Контент 7: Новости и Анонсы */}
+      {activeAdminTab === 'news' && (
+        <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm space-y-8">
+          <div>
+            <h3 className="text-lg font-bold text-[#0a2a5e] mb-4">Добавить новость или анонс</h3>
+            <div className="space-y-4 max-w-2xl">
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Заголовок</label>
+                <input type="text" value={newsForm.title} onChange={(e) => setNewsForm({...newsForm, title: e.target.value})} className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Укажите броский заголовок новости" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Текст (разрешена разметка)</label>
+                <textarea rows={4} value={newsForm.content} onChange={(e) => setNewsForm({...newsForm, content: e.target.value})} className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Подробный текст новости..." />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Ссылка на изображение (опционально)</label>
+                <input type="text" value={newsForm.image_url} onChange={(e) => setNewsForm({...newsForm, image_url: e.target.value})} className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="https://..." />
+              </div>
+              <div className="flex items-center space-x-2">
+                <input type="checkbox" id="is_pinned" checked={newsForm.is_pinned} onChange={(e) => setNewsForm({...newsForm, is_pinned: e.target.checked})} className="w-4 h-4 text-blue-600 rounded border-slate-300" />
+                <label htmlFor="is_pinned" className="text-sm font-semibold text-slate-700">Закрепить новость (важное)</label>
+              </div>
+              <button onClick={handleAddNews} className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all shadow-md flex items-center space-x-2">
+                <Plus className="w-4 h-4" />
+                <span>Опубликовать новость</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="border-t border-slate-200 pt-8">
+            <h3 className="text-lg font-bold text-[#0a2a5e] mb-4">Управление существующими новостями</h3>
+            <div className="space-y-4">
+              {db.news.length === 0 ? (
+                <p className="text-slate-500 text-sm italic">Новостей пока нет.</p>
+              ) : (
+                db.news.map(news => (
+                  <div key={news.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border border-slate-200 rounded-xl hover:border-blue-300 transition-colors gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-2">
+                        {news.is_pinned && <span className="bg-red-100 text-red-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Закреп</span>}
+                        <h4 className="font-bold text-slate-800">{news.title}</h4>
+                      </div>
+                      <p className="text-sm text-slate-500 line-clamp-2">{news.content}</p>
+                      <p className="text-xs text-slate-400">{new Date(news.created_at).toLocaleString('ru-RU')} • Автор: {news.author_name}</p>
+                    </div>
+                    <button onClick={() => handleDeleteNews(news.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0">
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Контент 8: Мероприятия */}
+      {activeAdminTab === 'events' && (
+        <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm space-y-8">
+          <div>
+            <h3 className="text-lg font-bold text-[#0a2a5e] mb-4">Добавить новое мероприятие</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl">
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Название</label>
+                <input type="text" value={eventForm.title} onChange={(e) => setEventForm({...eventForm, title: e.target.value})} className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Тип мероприятия</label>
+                <select value={eventForm.type} onChange={(e) => setEventForm({...eventForm, type: e.target.value as any})} className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                  <option value="конференция">Конференция</option>
+                  <option value="форум">Форум</option>
+                  <option value="семинар">Семинар</option>
+                  <option value="хакатон">Хакатон</option>
+                  <option value="олимпиада">Олимпиада</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Организатор</label>
+                <input type="text" value={eventForm.organizer} onChange={(e) => setEventForm({...eventForm, organizer: e.target.value})} className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="СНО ФЭМ / Деканат" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Место проведения</label>
+                <input type="text" value={eventForm.location} onChange={(e) => setEventForm({...eventForm, location: e.target.value})} className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ауд. 410, Корпус 4" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Дата начала</label>
+                <input type="date" value={eventForm.start_date} onChange={(e) => setEventForm({...eventForm, start_date: e.target.value})} className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Дата окончания</label>
+                <input type="date" value={eventForm.end_date} onChange={(e) => setEventForm({...eventForm, end_date: e.target.value})} className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Описание</label>
+                <textarea rows={3} value={eventForm.description} onChange={(e) => setEventForm({...eventForm, description: e.target.value})} className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+            </div>
+            <button onClick={handleAddEvent} className="mt-6 px-6 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold transition-all shadow-md flex items-center space-x-2">
+              <Plus className="w-4 h-4" />
+              <span>Создать мероприятие</span>
+            </button>
+          </div>
+
+          <div className="border-t border-slate-200 pt-8">
+            <h3 className="text-lg font-bold text-[#0a2a5e] mb-4">Управление мероприятиями</h3>
+            <div className="space-y-4">
+              {db.events.length === 0 ? (
+                <p className="text-slate-500 text-sm italic">Мероприятий пока нет.</p>
+              ) : (
+                db.events.map(event => (
+                  <div key={event.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border border-slate-200 rounded-xl hover:border-green-300 transition-colors gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-2">
+                        <span className="bg-green-100 text-green-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">{event.type}</span>
+                        <h4 className="font-bold text-slate-800">{event.title}</h4>
+                      </div>
+                      <p className="text-sm text-slate-500">Организатор: {event.organizer} | Место: {event.location}</p>
+                      <p className="text-xs text-slate-400">С {new Date(event.start_date).toLocaleDateString('ru-RU')} по {new Date(event.end_date).toLocaleDateString('ru-RU')}</p>
+                    </div>
+                    <button onClick={() => handleDeleteEvent(event.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0">
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
       )}

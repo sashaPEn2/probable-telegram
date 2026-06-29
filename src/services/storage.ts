@@ -18,9 +18,11 @@ import {
   Announcement,
   SnilApplication,
   Quiz,
-  QuizAttempt
+  QuizAttempt,
+  FeedBanner,
+  SecondaryBanner
 } from '../types';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db as firestoreDb } from '../lib/firebase';
 
 const STORAGE_KEY = 'fem_bseu_portal_db_v1';
@@ -45,6 +47,8 @@ export interface PortalDatabase {
   snil_applications: SnilApplication[];
   quizzes: Quiz[];
   quizAttempts: QuizAttempt[];
+  feed_banner?: FeedBanner;
+  secondary_banner?: SecondaryBanner;
 }
 
 const INITIAL_DB: PortalDatabase = {
@@ -228,6 +232,16 @@ export function loginUser(
     savePortalDB(db);
   }
 
+  // Also write to Firestore directly to make sure we persist it and support real-time across devices!
+  try {
+    const userRef = doc(firestoreDb, 'users', user.record_book_id);
+    setDoc(userRef, { ...user }, { merge: true }).catch(err => {
+      console.error("Error writing registered user to Firestore:", err);
+    });
+  } catch (error) {
+    console.error("Firestore error in loginUser:", error);
+  }
+
   setCurrentUser(user);
   return user;
 }
@@ -252,6 +266,16 @@ export function updateUserRole(recordBook: string, newRole: UserRole): boolean {
   if (!user) return false;
   user.role = newRole;
   savePortalDB(db);
+  
+  // Also write the updated role to Firestore to make it available in real-time across devices!
+  try {
+    const userRef = doc(firestoreDb, 'users', recordBook);
+    setDoc(userRef, { role: newRole }, { merge: true }).catch(err => {
+      console.error("Error updating role in Firestore:", err);
+    });
+  } catch (error) {
+    console.error("Firestore error in updateUserRole:", error);
+  }
   
   // Обновляем текущую сессию если это мы
   const current = getCurrentUser();
@@ -451,7 +475,7 @@ export function seedFacultyStarterTemplate(): void {
     last_name: 'Координатор',
     first_name: 'ФЭМ',
     role: 'coordinator',
-    group: 'Сотрудник',
+    group: GROUPS[0],
     course: 4,
     department: DEPARTMENTS[0],
     scientific_interests: ['Организация науки'],
@@ -674,11 +698,22 @@ export function updateUserPassword(recordBook: string, newPassword: string): { s
 
   db.users[userIndex].password = newPassword;
   
+  // Also write the updated password to Firestore to make it available in real-time across devices!
+  try {
+    const userRef = doc(firestoreDb, 'users', recordBook);
+    setDoc(userRef, { password: newPassword }, { merge: true }).catch(err => {
+      console.error("Error updating password in Firestore:", err);
+    });
+  } catch (error) {
+    console.error("Firestore error in updateUserPassword:", error);
+  }
+
   // Also update current session if it's the same user
   const currentUser = getCurrentUser();
   if (currentUser && currentUser.record_book_id === recordBook) {
     currentUser.password = newPassword;
     sessionStorage.setItem('current_portal_user', JSON.stringify(currentUser));
+    localStorage.setItem('fem_bseu_user', JSON.stringify(currentUser)); // Sync primary user state in localStorage
   }
 
   savePortalDB(db);

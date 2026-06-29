@@ -43,6 +43,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess, onClose 
           return;
         }
       } else {
+        if (!existingUser) {
+          setError('Пользователь с таким номером зачётной книжки не найден. Пожалуйста, перейдите во вкладку «Регистрация».');
+          setIsLoading(false);
+          return;
+        }
         if (existingUser?.password && existingUser.password !== password) {
           setError('Неверный пароль. Пожалуйста, попробуйте еще раз.');
           setIsLoading(false);
@@ -50,7 +55,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess, onClose 
         }
       }
 
-      if (!lastName.trim() || !firstName.trim()) {
+      if (isRegister && (!lastName.trim() || !firstName.trim())) {
         setError('Укажите фамилию и имя для идентификации в базе БГЭУ');
         setIsLoading(false);
         return;
@@ -62,7 +67,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess, onClose 
         return;
       }
 
-      const user = loginUser(recordBook, lastName, firstName, group, faculty);
+      const user = loginUser(
+        recordBook,
+        isRegister ? lastName : (existingUser ? existingUser.last_name : ''),
+        isRegister ? firstName : (existingUser ? existingUser.first_name : ''),
+        isRegister ? group : (existingUser ? existingUser.group : ''),
+        isRegister ? faculty : (existingUser ? existingUser.faculty : 'ФЭМ')
+      );
       await onLoginSuccess(user);
     } catch (e) {
       console.error("Login error:", e);
@@ -175,30 +186,32 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess, onClose 
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-blue-200 uppercase mb-1.5">Фамилия</label>
-              <input
-                type="text"
-                placeholder="Иванов"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                disabled={isLoading}
-                className="w-full px-4 py-3 bg-slate-800/80 border border-blue-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#d4af37] transition-all disabled:opacity-50"
-              />
+          {isRegister && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-blue-200 uppercase mb-1.5">Фамилия</label>
+                <input
+                  type="text"
+                  placeholder="Иванов"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  disabled={isLoading}
+                  className="w-full px-4 py-3 bg-slate-800/80 border border-blue-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#d4af37] transition-all disabled:opacity-50"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-blue-200 uppercase mb-1.5">Имя</label>
+                <input
+                  type="text"
+                  placeholder="Иван"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  disabled={isLoading}
+                  className="w-full px-4 py-3 bg-slate-800/80 border border-blue-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#d4af37] transition-all disabled:opacity-50"
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-xs font-semibold text-blue-200 uppercase mb-1.5">Имя</label>
-              <input
-                type="text"
-                placeholder="Иван"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                disabled={isLoading}
-                className="w-full px-4 py-3 bg-slate-800/80 border border-blue-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#d4af37] transition-all disabled:opacity-50"
-              />
-            </div>
-          </div>
+          )}
 
           {!isRegister && (
             <div>

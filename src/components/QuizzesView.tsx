@@ -12,6 +12,8 @@ import {
   QuizAttempt, 
   Certificate 
 } from '../types';
+import { CertificateModal } from './CertificateModal';
+import { UserAvatar } from './UserAvatar';
 import { 
   Sparkles, 
   Plus, 
@@ -76,6 +78,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
   // Results viewing modal state
   const [activeResultsQuiz, setActiveResultsQuiz] = useState<Quiz | null>(null);
   const [resultsQuestions, setResultsQuestions] = useState<QuizQuestion[]>([]);
+  const [viewingCert, setViewingCert] = useState<Certificate | null>(null);
 
   // Admin management state
   const [managingQuiz, setManagingQuiz] = useState<Quiz | null>(null);
@@ -1323,12 +1326,37 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
               {user && activeResultsQuiz.winners?.some(w => w.studentRecordBook === user.record_book_id) && (() => {
                 const prize = activeResultsQuiz.winners.find(w => w.studentRecordBook === user.record_book_id);
                 return (
-                  <div className="bg-gradient-to-r from-yellow-500/20 via-amber-500/10 to-transparent p-5 rounded-2xl border border-yellow-500/30 text-center">
+                  <div className="bg-gradient-to-r from-yellow-500/20 via-amber-500/10 to-transparent p-5 rounded-2xl border border-yellow-500/30 text-center flex flex-col items-center">
                     <Trophy className="w-10 h-10 text-yellow-500 mx-auto mb-2 animate-bounce" />
                     <h4 className="text-base font-black text-slate-800 dark:text-white">Поздравляем с победой в СНО!</h4>
                     <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 font-medium">
                       Вы ответили верно на наибольшее количество вопросов быстрее остальных и заняли <strong>{prize?.place}-е место</strong> с начислением <strong>+{prize?.points} рейтинговых баллов</strong>!
                     </p>
+                    <button
+                      onClick={() => {
+                        const cert = db.certificates?.find(
+                          c => c.user_record_book === user.record_book_id && c.id.includes(`cert_quiz_${activeResultsQuiz.id}`)
+                        );
+                        if (cert) {
+                          setViewingCert(cert);
+                        } else {
+                          const tempCert: Certificate = {
+                            id: `cert_quiz_${activeResultsQuiz.id}_temp_${user.record_book_id}`,
+                            user_record_book: user.record_book_id,
+                            title: `Победитель викторины "${activeResultsQuiz.title}" (${prize?.place}-е место)`,
+                            event_name: 'Викторины СНО ФЭМ',
+                            issue_date: new Date().toISOString().split('T')[0],
+                            type: prize?.place === 1 ? 'диплом_1_степени' : prize?.place === 2 ? 'диплом_2_степени' : prize?.place === 3 ? 'диплом_3_степени' : 'сертификат_участника',
+                            custom_points: prize?.points
+                          };
+                          setViewingCert(tempCert);
+                        }
+                      }}
+                      className="mt-4 w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-5 py-2.5 bg-yellow-500 hover:bg-yellow-600 active:scale-95 text-blue-950 font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-md"
+                    >
+                      <Award className="w-4 h-4" />
+                      <span>Смотреть электронный диплом</span>
+                    </button>
                   </div>
                 );
               })()}
@@ -1338,12 +1366,22 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                 const attempt = db.quizAttempts?.find(att => att.quizId === activeResultsQuiz.id && att.userRecordBook === user?.record_book_id);
                 if (attempt) {
                   return (
-                    <div className="bg-slate-50 dark:bg-slate-950 border border-slate-150 dark:border-slate-850 p-4 rounded-xl flex items-center justify-between text-xs">
-                      <div>
-                        <span className="font-bold text-slate-500 block">Ваш результат прохождения:</span>
-                        <span className="font-mono text-slate-400">Дата: {new Date(attempt.answeredAt).toLocaleString()}</span>
+                    <div className="bg-slate-50 dark:bg-slate-950 border border-slate-150 dark:border-slate-850 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                      <div className="flex-1 flex justify-between items-center sm:items-start sm:flex-col">
+                        <div>
+                          <span className="font-bold text-slate-500 block">Ваш результат прохождения:</span>
+                          <span className="font-mono text-slate-400">Дата: {new Date(attempt.answeredAt).toLocaleString()}</span>
+                        </div>
+                        <div className="sm:hidden text-right">
+                          <span className="font-black text-blue-600 dark:text-blue-400 text-sm block">
+                            {attempt.correctCount !== undefined ? `${attempt.correctCount}/${attempt.totalQuestions}` : (attempt.isCorrect ? '1/1' : '0/1')} верных
+                          </span>
+                          {attempt.timeSpentMs !== undefined && (
+                            <span className="font-mono text-slate-500">Время: {(attempt.timeSpentMs / 1000).toFixed(1)} сек</span>
+                          )}
+                        </div>
                       </div>
-                      <div className="text-right">
+                      <div className="hidden sm:block text-right">
                         <span className="font-black text-blue-600 dark:text-blue-400 text-sm block">
                           {attempt.correctCount !== undefined ? `${attempt.correctCount}/${attempt.totalQuestions}` : (attempt.isCorrect ? '1/1' : '0/1')} верных
                         </span>
@@ -1351,6 +1389,31 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                           <span className="font-mono text-slate-500">Время: {(attempt.timeSpentMs / 1000).toFixed(1)} сек</span>
                         )}
                       </div>
+                      <button
+                        onClick={() => {
+                          const cert = db.certificates?.find(
+                            c => c.user_record_book === user.record_book_id && c.id.includes(`cert_quiz_${activeResultsQuiz.id}`)
+                          );
+                          if (cert) {
+                            setViewingCert(cert);
+                          } else {
+                            const tempCert: Certificate = {
+                              id: `cert_quiz_${activeResultsQuiz.id}_temp_${user.record_book_id}`,
+                              user_record_book: user.record_book_id,
+                              title: `Участник викторины "${activeResultsQuiz.title}"`,
+                              event_name: 'Викторины СНО ФЭМ',
+                              issue_date: new Date().toISOString().split('T')[0],
+                              type: 'сертификат_участника',
+                              custom_points: 0
+                            };
+                            setViewingCert(tempCert);
+                          }
+                        }}
+                        className="px-4 py-2.5 bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold rounded-xl transition-all flex items-center justify-center space-x-1.5"
+                      >
+                        <Award className="w-3.5 h-3.5" />
+                        <span>Смотреть сертификат</span>
+                      </button>
                     </div>
                   );
                 }
@@ -1467,7 +1530,12 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                                 {winner.place}
                               </span>
                             </td>
-                            <td className="py-3 px-3 text-slate-800 dark:text-slate-200">{winner.name}</td>
+                            <td className="py-3 px-3 text-slate-800 dark:text-slate-200">
+                              <div className="flex items-center space-x-2">
+                                <UserAvatar size="xs" user={db.users.find(u => u.record_book_id === winner.studentRecordBook) || { first_name: winner.name.split(' ')[1] || '', last_name: winner.name.split(' ')[0] || '' }} />
+                                <span>{winner.name}</span>
+                              </div>
+                            </td>
                             <td className="py-3 px-3 text-center text-slate-500 font-mono text-[11px]">{winner.group}</td>
                             <td className="py-3 px-3 text-center text-slate-500 font-mono text-[10px] italic">{winner.score || '1/1'}</td>
                             <td className="py-3 px-4 text-right font-black font-mono text-amber-500">+{winner.points}</td>
@@ -1676,6 +1744,14 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
           </div>
         </div>,
         document.body
+      )}
+
+      {viewingCert && (
+        <CertificateModal
+          certificate={viewingCert}
+          recipientUser={user}
+          onClose={() => setViewingCert(null)}
+        />
       )}
 
     </div>

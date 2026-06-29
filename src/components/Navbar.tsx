@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { CustomUser, UserRole, Notification } from '../types';
 import { getRoleTitle, logoutUser } from '../services/storage';
+import { UserAvatar } from './UserAvatar';
 import { 
   GraduationCap, 
   FlaskConical, 
@@ -319,9 +320,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                           : 'bg-blue-900/60 border-blue-700/60 text-white hover:bg-blue-800'
                       }`}
                     >
-                      <div className="w-7 h-7 rounded-full bg-blue-950 flex items-center justify-center text-xs font-bold text-[#d4af37] border border-[#d4af37]/40">
-                        {user.first_name[0]}
-                      </div>
+                      <UserAvatar size="sm" user={user} className="border border-[#d4af37]/40 shadow-sm" />
                       <div className="text-left hidden lg:block">
                         <p className="text-xs leading-none font-medium truncate max-w-[80px]">{user.last_name} {user.first_name[0]}.</p>
                       </div>
@@ -331,9 +330,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       <div className="absolute right-0 mt-3 w-64 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl py-2 z-[70] animate-fadeIn origin-top-right">
                         <div className="px-4 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 rounded-t-2xl">
                           <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 rounded-xl bg-[#0a2a5e] flex items-center justify-center text-white font-black text-sm border border-[#d4af37]/40">
-                              {user.last_name[0]}{user.first_name[0]}
-                            </div>
+                            <UserAvatar size="md" user={user} className="border border-[#d4af37]/40 shadow-sm" />
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-black text-[#0a2a5e] dark:text-blue-200 truncate leading-tight">{user.last_name} {user.first_name}</p>
                               <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">{getRoleTitle(user.role)}</p>

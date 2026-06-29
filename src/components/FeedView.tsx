@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { PortalDatabase, seedFacultyStarterTemplate, calculateResearcherStats, savePortalDB, addNotificationAndNotifyTelegram } from '../services/storage';
 import { CustomUser } from '../types';
+import { UserAvatar } from './UserAvatar';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { 
@@ -150,49 +151,101 @@ export const FeedView: React.FC<FeedViewProps> = ({
 
   const activeEvents = db.events.filter(e => e.is_active).slice(0, 4);
   const topSnils = db.snils.filter(s => s.is_active).slice(0, 3);
+  
+  const secondaryBanner = db.secondary_banner || {
+    show: true,
+    tag_text: 'Конкурс БГЭУ',
+    title: 'Лучшая СНИЛ БГЭУ 2026',
+    description: 'Приём отчётов лабораторий факультета экономики и менеджмента за прошедший год открыт до 15 мая.',
+    bg_gradient_from: '#f59e0b', // amber-500
+    bg_gradient_to: '#d4af37',
+    text_color: '#0a2a5e',
+    tag_bg: '#0a2a5e',
+    tag_text_color: '#ffffff',
+    button_text: 'Подать заявку СНИЛ',
+    button_bg: '#0a2a5e',
+    button_text_color: '#d4af37',
+    button_link: 'snil_1' // action will remain onSelectSnil
+  };
+
+  const banner = db.feed_banner || {
+    show: true,
+    tag_text: 'Студенческая наука БГЭУ',
+    title_main: 'Цифровой портал исследователя ',
+    title_highlight: 'ФЭМ',
+    description: 'Единая среда для генерации идей, участия в конференциях, подачи заявок на гранты СНИЛ и формирования верифицированного портфолио исследователя.',
+    bg_gradient_from: '#0a2a5e',
+    bg_gradient_via: 'blue-900',
+    bg_gradient_to: '#0d3b84',
+    accent_color: '#d4af37',
+    button1_text: 'Загрузить стартовые анонсы ФЭМ (Демо)',
+    button1_link: '#',
+    button2_text: 'СНО ФЭМ',
+    button2_link: 'https://t.me/snofem'
+  };
 
   return (
     <div className="space-y-8 pb-12">
       
       {/* Главный баннер ФЭМ БГЭУ */}
-      <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-[#0a2a5e] via-blue-900 to-[#0d3b84] text-white p-8 sm:p-12 shadow-xl border border-[#d4af37]/30">
-        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-80 h-80 bg-[#d4af37]/15 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute bottom-0 right-1/3 w-64 h-64 bg-blue-400/10 rounded-full blur-2xl pointer-events-none"></div>
+      {banner.show && (
+        <div 
+          className="relative rounded-3xl overflow-hidden p-8 sm:p-12 shadow-xl border"
+          style={{
+            background: `linear-gradient(to right, ${banner.bg_gradient_from}, ${banner.bg_gradient_to})`,
+            borderColor: `${banner.accent_color}40`
+          }}
+        >
+          <div className="absolute top-0 right-0 -mr-16 -mt-16 w-80 h-80 rounded-full blur-3xl pointer-events-none" style={{ backgroundColor: `${banner.accent_color}15` }}></div>
+          <div className="absolute bottom-0 right-1/3 w-64 h-64 bg-blue-400/10 rounded-full blur-2xl pointer-events-none"></div>
 
-        <div className="relative z-10 max-w-3xl space-y-4">
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-[#d4af37]/20 border border-[#d4af37] text-[#d4af37] text-xs font-semibold uppercase tracking-wider">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Студенческая наука БГЭУ</span>
-          </div>
-          <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight">
-            Цифровой портал исследователя <span className="text-[#d4af37] underline decoration-amber-400/50">ФЭМ</span>
-          </h1>
-          <p className="text-blue-100 text-sm sm:text-base leading-relaxed opacity-90">
-            Единая среда для генерации идей, участия в конференциях, подачи заявок на гранты СНИЛ и формирования верифицированного портфолио исследователя.
-          </p>
-          
-          <div className="pt-2 flex flex-wrap gap-3">
-            {db.news.length === 0 && db.events.length === 0 && (
-              <button
-                onClick={() => { seedFacultyStarterTemplate(); onRefresh(); }}
-                className="px-5 py-2.5 rounded-xl bg-[#d4af37] text-[#0a2a5e] font-bold shadow-lg hover:brightness-110 flex items-center space-x-2 transition-all animate-bounce"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Загрузить стартовые анонсы ФЭМ (Демо)</span>
-              </button>
-            )}
-            <a 
-              href="https://t.me/snofem" 
-              target="_blank" 
-              rel="noreferrer"
-              className="px-4 py-2.5 rounded-xl bg-blue-950/80 hover:bg-blue-900 border border-blue-400/30 text-white font-semibold flex items-center space-x-2 transition-all text-xs sm:text-sm"
+          <div className="relative z-10 max-w-3xl space-y-4">
+            <div 
+              className="inline-flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider border"
+              style={{ borderColor: banner.accent_color, color: banner.accent_color, backgroundColor: `${banner.accent_color}20` }}
             >
-              <Send className="w-4 h-4 text-sky-400" />
-              <span>Канал @snofem в Telegram</span>
-            </a>
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>{banner.tag_text}</span>
+            </div>
+            <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight text-white">
+              {banner.title_main} <span className="underline decoration-amber-400/50" style={{ color: banner.accent_color }}>{banner.title_highlight}</span>
+            </h1>
+            <p className="text-blue-100 text-sm sm:text-base leading-relaxed opacity-90">
+              {banner.description}
+            </p>
+            
+            <div className="pt-2 flex flex-wrap gap-3">
+              {banner.button1_text && (
+                <button
+                  onClick={() => { 
+                    if (banner.button1_link === '#') {
+                      seedFacultyStarterTemplate(); onRefresh(); 
+                    } else {
+                      window.open(banner.button1_link, '_blank');
+                    }
+                  }}
+                  style={{ backgroundColor: banner.accent_color, color: '#0a2a5e' }}
+                  className="px-5 py-2.5 rounded-xl font-bold shadow-lg hover:brightness-110 flex items-center space-x-2 transition-all"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>{banner.button1_text}</span>
+                </button>
+              )}
+              {banner.button2_text && (
+                <a 
+                  href={banner.button2_link} 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="px-4 py-2.5 rounded-xl bg-blue-950/80 hover:bg-blue-900 border border-blue-400/30 text-white font-semibold flex items-center space-x-2 transition-all text-xs sm:text-sm"
+                >
+                  <Send className="w-4 h-4 text-sky-400" />
+                  <span>{banner.button2_text}</span>
+                </a>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Быстрая статистика факультета */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -297,36 +350,46 @@ export const FeedView: React.FC<FeedViewProps> = ({
             </div>
           ) : (
             <div className="space-y-4">
-              {filteredNews.map(item => (
-                <article key={item.id} className={`bg-white dark:bg-slate-900 rounded-2xl border p-6 shadow-sm hover:shadow-md transition-all relative ${item.is_pinned ? 'border-[#d4af37] dark:border-amber-600/50 bg-amber-50/20 dark:bg-amber-900/10' : 'border-slate-200 dark:border-slate-800'}`}>
-                  {item.is_pinned && (
-                    <div className="absolute top-4 right-4 flex items-center space-x-1 text-xs font-bold text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-2.5 py-0.5 rounded-full">
-                      <Pin className="w-3 h-3 rotate-45" />
-                      <span>Важное</span>
-                    </div>
-                  )}
+              {filteredNews.map(item => {
+                const authorUser = db.users.find(u => u.record_book_id === item.author_record_book);
 
-                  {item.image_url && (
-                    <div className="mb-4 rounded-xl overflow-hidden max-h-56 border border-slate-100 dark:border-slate-800">
-                      <img src={item.image_url} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                    </div>
-                  )}
-
-                  <div className="flex items-center space-x-2 text-[11px] text-slate-400 dark:text-slate-500 mb-2 font-mono">
-                    <span>{new Date(item.created_at).toLocaleDateString('ru-RU')}</span>
-                    <span>•</span>
-                    <span className="text-blue-900 dark:text-blue-400 font-semibold">{item.author_name}</span>
-                    {item.published_to_telegram && (
-                      <span className="text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40 px-1.5 py-0.5 rounded ml-auto flex items-center space-x-1">
-                        <Send className="w-2.5 h-2.5" /> <span>Telegram</span>
-                      </span>
+                return (
+                  <article key={item.id} className={`bg-white dark:bg-slate-900 rounded-2xl border p-6 shadow-sm hover:shadow-md transition-all relative ${item.is_pinned ? 'border-[#d4af37] dark:border-amber-600/50 bg-amber-50/20 dark:bg-amber-900/10' : 'border-slate-200 dark:border-slate-800'}`}>
+                    {item.is_pinned && (
+                      <div className="absolute top-4 right-4 flex items-center space-x-1 text-xs font-bold text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-2.5 py-0.5 rounded-full">
+                        <Pin className="w-3 h-3 rotate-45" />
+                        <span>Важное</span>
+                      </div>
                     )}
-                  </div>
+
+                    {item.image_url && (
+                      <div className="mb-4 rounded-xl overflow-hidden max-h-56 border border-slate-100 dark:border-slate-800">
+                        <img src={item.image_url} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      </div>
+                    )}
+
+                    <div className="flex items-center space-x-3 mb-4">
+                      <UserAvatar size="sm" user={authorUser || { first_name: item.author_name.split(' ')[1] || 'S', last_name: item.author_name.split(' ')[0] || 'N' }} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[#0a2a5e] dark:text-blue-300 font-extrabold text-sm">{item.author_name}</span>
+                          {item.published_to_telegram && (
+                            <span className="text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40 px-1.5 py-0.5 rounded flex items-center space-x-1 text-[9px] font-mono font-bold">
+                              <Send className="w-2.5 h-2.5" /> <span>Telegram</span>
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-0.5">
+                          {new Date(item.created_at).toLocaleDateString('ru-RU')}
+                        </p>
+                      </div>
+                    </div>
 
                   <h3 className="text-lg font-bold text-[#0a2a5e] dark:text-blue-100 mb-2 leading-snug">{item.title}</h3>
                   <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed whitespace-pre-line">{item.content}</p>
                 </article>
-              ))}
+                );
+              })}
             </div>
           )}
 
@@ -574,25 +637,45 @@ export const FeedView: React.FC<FeedViewProps> = ({
           </div>
 
           {/* Конкурс Лучшая СНИЛ */}
-          <div className="bg-gradient-to-br from-amber-500 to-[#d4af37] rounded-3xl p-6 text-[#0a2a5e] shadow-lg relative overflow-hidden">
-            <Award className="w-32 h-32 absolute -bottom-6 -right-6 text-white/20 pointer-events-none" />
-            <div className="relative z-10 space-y-3">
-              <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-[#0a2a5e] text-white">Конкурс БГЭУ</span>
-              <h3 className="text-xl font-extrabold leading-tight">Лучшая СНИЛ БГЭУ 2026</h3>
-              <p className="text-xs leading-relaxed font-medium opacity-90">
-                Приём отчётов лабораторий факультета экономики и менеджмента за прошедший год открыт до 15 мая.
-              </p>
-              <div className="pt-2">
-                <button 
-                  onClick={() => onSelectSnil('snil_1')}
-                  className="px-4 py-2 rounded-xl bg-[#0a2a5e] text-[#d4af37] font-bold text-xs shadow hover:bg-blue-950 flex items-center space-x-1.5"
+          {secondaryBanner.show && (
+            <div 
+              className="rounded-3xl p-6 shadow-lg relative overflow-hidden"
+              style={{
+                background: `linear-gradient(to bottom right, ${secondaryBanner.bg_gradient_from}, ${secondaryBanner.bg_gradient_to})`,
+                color: secondaryBanner.text_color
+              }}
+            >
+              <Award className="w-32 h-32 absolute -bottom-6 -right-6 text-white/20 pointer-events-none" />
+              <div className="relative z-10 space-y-3">
+                <span 
+                  className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded"
+                  style={{ backgroundColor: secondaryBanner.tag_bg, color: secondaryBanner.tag_text_color }}
                 >
-                  <span>Подать заявку СНИЛ</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
+                  {secondaryBanner.tag_text}
+                </span>
+                <h3 className="text-xl font-extrabold leading-tight">{secondaryBanner.title}</h3>
+                <p className="text-xs leading-relaxed font-medium opacity-90">
+                  {secondaryBanner.description}
+                </p>
+                <div className="pt-2">
+                  <button 
+                    onClick={() => {
+                      if (secondaryBanner.button_link === 'snil_1') {
+                        onSelectSnil('snil_1');
+                      } else {
+                        window.open(secondaryBanner.button_link, '_blank');
+                      }
+                    }}
+                    className="px-4 py-2 rounded-xl font-bold text-xs shadow hover:brightness-110 flex items-center space-x-1.5 transition-all"
+                    style={{ backgroundColor: secondaryBanner.button_bg, color: secondaryBanner.button_text_color }}
+                  >
+                    <span>{secondaryBanner.button_text}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Виджет Лабораторий */}
           <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm space-y-4">
