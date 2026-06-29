@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { PortalDatabase, seedFacultyStarterTemplate, calculateResearcherStats } from '../services/storage';
+import { PortalDatabase, seedFacultyStarterTemplate, calculateResearcherStats, savePortalDB, addNotificationAndNotifyTelegram } from '../services/storage';
 import { CustomUser } from '../types';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -122,11 +122,13 @@ export const FeedView: React.FC<FeedViewProps> = ({
       is_pinned: isPinned,
       created_at: new Date().toISOString(),
       published_to_telegram: pubToTg,
-      image_url: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=800&auto=format&fit=crop&q=80'
+      image_url: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=800&auto=format&fit=crop&q=80 font-bold'
     });
 
+    savePortalDB(db);
+
     // Оповещение
-    db.notifications.push({
+    addNotificationAndNotifyTelegram({
       id: 'notif_' + Date.now(),
       user_record_book: 'all',
       title: 'Новый анонс СНО ФЭМ!',
@@ -135,8 +137,6 @@ export const FeedView: React.FC<FeedViewProps> = ({
       is_read: false,
       created_at: new Date().toISOString()
     });
-
-    localStorage.setItem('fem_bseu_portal_db_v1', JSON.stringify(db));
     setNewTitle('');
     setNewContent('');
     setShowCreateNews(false);

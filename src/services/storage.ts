@@ -1,6 +1,5 @@
 import {
   CustomUser,
-
   Publication,
   Certificate,
   ResearchProject,
@@ -17,23 +16,14 @@ import {
   MerchItem,
   MerchOrder,
   Announcement,
-  SnilApplication
+  SnilApplication,
+  Quiz,
+  QuizAttempt
 } from '../types';
+import { doc, getDoc } from 'firebase/firestore';
+import { db as firestoreDb } from '../lib/firebase';
 
 const STORAGE_KEY = 'fem_bseu_portal_db_v1';
-
-async function notifyTelegram(record_book_id: string, title: string, message: string, type: Notification['type']): Promise<void> {
-  try {
-    await fetch('/api/telegram/notify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ record_book_id, title, message, type })
-    });
-  } catch {
-    // Silent fail for client-only environments / local dev
-  }
-}
-
 const CURRENT_USER_KEY = 'fem_bseu_current_user_v1';
 
 export interface PortalDatabase {
@@ -53,6 +43,8 @@ export interface PortalDatabase {
   orders: MerchOrder[];
   announcements: Announcement[];
   snil_applications: SnilApplication[];
+  quizzes: Quiz[];
+  quizAttempts: QuizAttempt[];
 }
 
 const INITIAL_DB: PortalDatabase = {
@@ -71,7 +63,9 @@ const INITIAL_DB: PortalDatabase = {
   merch: [],
   orders: [],
   announcements: [],
-  snil_applications: []
+  snil_applications: [],
+  quizzes: [],
+  quizAttempts: []
 };
 
 export const DEPARTMENTS = [
@@ -85,20 +79,20 @@ export const FACULTIES = ['ФЭМ'];
 
 export const GROUPS_BY_COURSE: Record<number, string[]> = {
   1: [
-    '26 DKKS 1', '26 DKKS 2', '26 DKP 1', '26 DKP 2', '26 DK E', '26 DK T', 
-    '26 DKH 1', '26 DKH 2', '26 DKU', '26 DKR'
+    '26ДКС-1', '26ДКС-2', '26ДКП-1', '26ДКП-2', '26ДКЭ', '26ДКТ', 
+    '26ДКХ-1', '26ДКХ-2', '26ДКУ', '26ДКР'
   ],
   2: [
-    '25 DKKS 1', '25 DKKS 2', '25 DKP 1', '25 DKP 2', '25 DK E', '25 DK T', 
-    '25 DKA 1', '25 DKA 2', '25 DKU', '25 DKR'
+    '25ДКС-1', '25ДКС-2', '25ДКП-1', '25ДКП-2', '25ДКЭ', '25ДКТ', 
+    '25ДКА-1', '25ДКА-2', '25ДКУ', '25ДКР'
   ],
   3: [
-    '24 DKKS 1', '24 DKKS 2', '24 DKP 1', '24 DKP 2', '24 DK E', '24 DK T', 
-    '24 DKA 1', '24 DKA 2', '24 DKU', '24 DKR'
+    '24ДКС-1', '24ДКС-2', '24ДКП-1', '24ДКП-2', '24ДКЭ', '24ДКТ', 
+    '24ДКА-1', '24ДКА-2', '24ДКУ', '24ДКР'
   ],
   4: [
-    '23 DKKS 1', '23 DKKS 2', '23 DKP 1', '23 DKP 2', '23 DK E', '23 DK T', 
-    '23 DKA 1', '23 DKA 2', '23 DKU', '23 DKR'
+    '23ДКС-1', '23ДКС-2', '23ДКП-1', '23ДКП-2', '23ДКЭ', '23ДКТ', 
+    '23ДКА-1', '23ДКА-2', '23ДКУ', '23ДКР'
   ]
 };
 
@@ -119,7 +113,7 @@ export function getPortalDB(): PortalDatabase {
     const collections: (keyof PortalDatabase)[] = [
       'users', 'publications', 'certificates', 'projects', 'snils', 'events', 
       'applications', 'news', 'tasks', 'gallery', 'notifications', 'reports', 
-      'merch', 'orders', 'announcements', 'snil_applications'
+      'merch', 'orders', 'announcements', 'snil_applications', 'quizzes', 'quizAttempts'
     ];
     
     let updated = false;
@@ -217,20 +211,17 @@ export function loginUser(
     };
     db.users.push(user);
     
-    const notif = {
+    addNotificationAndNotifyTelegram({
       id: 'notif_' + Date.now(),
       user_record_book: user.record_book_id,
       title: 'Добро пожаловать в Цифровой портал ФЭМ!',
       message: `Вы зарегистрированы в системе с ролью «${getRoleTitle(user.role)}». Заполните научное портфолио!`,
-      type: 'info' as const,
+      type: 'info',
       is_read: false,
       created_at: new Date().toISOString()
-    };
-    db.notifications.push(notif);
-    notifyTelegram(user.record_book_id, notif.title, notif.message, notif.type);
+    });
 
     savePortalDB(db);
-
   } else {
     user.last_name = trimmedLast;
     user.first_name = trimmedFirst;
@@ -298,7 +289,9 @@ export function calculateResearcherStats(recordBook: string): {
   });
   points += totalReports * 10;
   certs.forEach(c => {
-    if (c.type === 'диплом_1_степени') points += 30;
+    if (c.custom_points !== undefined) {
+      points += c.custom_points;
+    } else if (c.type === 'диплом_1_степени') points += 30;
     else if (c.type === 'диплом_2_степени') points += 20;
     else if (c.type === 'диплом_3_степени') points += 15;
     else points += 5;
@@ -334,6 +327,25 @@ export function seedFacultyStarterTemplate(): void {
   db.orders = db.orders || [];
   db.announcements = db.announcements || [];
   db.snil_applications = db.snil_applications || [];
+
+  // Migrate group names to new Russian format
+  db.users.forEach(u => {
+    if (u.group && (u.group.includes('DK') || u.group.includes(' '))) {
+      // Avoid migrating already correct Russian groups or non-student roles
+      if (u.role === 'student') {
+        u.group = u.group
+          .replace('DKKS', 'ДКС-')
+          .replace('DKP', 'ДКП-')
+          .replace('DK E', 'ДКЭ')
+          .replace('DK T', 'ДКТ')
+          .replace('DKH', 'ДКХ-')
+          .replace('DKA', 'ДКА-')
+          .replace('DKU', 'ДКУ')
+          .replace('DKR', 'ДКР')
+          .replace(/\s+/g, '');
+      }
+    }
+  });
 
   if (db.news && db.news.length > 0) {
     // Migration: ensure new SNILs are present and old ones are gone
@@ -451,38 +463,42 @@ export function seedFacultyStarterTemplate(): void {
   }
 
   // Новость СНО
-  db.news.push({
-    id: 'news_1',
-    title: 'Ежегодная Декада студенческой науки БГЭУ стартует в марте!',
-    content: 'Студенческое научное общество ФЭМ приглашает всех студентов-исследователей принять участие в секциях Декады студенческой науки. Победители получат возможность публикации в сборнике БГЭУ с индексацией в РИНЦ.',
-    author_record_book: adminUser.record_book_id,
-    author_name: 'СНО ФЭМ Деканат',
-    is_pinned: true,
-    created_at: new Date().toISOString(),
-    published_to_telegram: true,
-    image_url: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800&auto=format&fit=crop&q=80'
-  });
+  if (!db.news.find(n => n.id === 'news_1')) {
+    db.news.push({
+      id: 'news_1',
+      title: 'Ежегодная Декада студенческой науки БГЭУ стартует в марте!',
+      content: 'Студенческое научное общество ФЭМ приглашает всех студентов-исследователей принять участие в секциях Декады студенческой науки. Победители получат возможность публикации в сборнике БГЭУ с индексацией в РИНЦ.',
+      author_record_book: adminUser.record_book_id,
+      author_name: 'СНО ФЭМ Деканат',
+      is_pinned: true,
+      created_at: new Date().toISOString(),
+      published_to_telegram: true,
+      image_url: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800&auto=format&fit=crop&q=80'
+    });
+  }
 
   // Научное мероприятие
-  db.events.push({
-    id: 'ev_1',
-    title: 'Международная конференция «Экономика и управление в XXI веке»',
-    type: 'конференция',
-    description: 'Пленарное заседание и работа секций по направлениям цифровизации экономики, менеджмента инноваций и устойчивого развития.',
-    organizer: 'Деканат ФЭМ и СНО ФЭМ',
-    start_date: new Date(Date.now() + 86400000 * 14).toISOString().split('T')[0],
-    end_date: new Date(Date.now() + 86400000 * 15).toISOString().split('T')[0],
-    registration_deadline: new Date(Date.now() + 86400000 * 10).toISOString().split('T')[0],
-    location: 'Корпус №4, ауд. 310 / Онлайн',
-    is_active: true,
-    max_participants: 120,
-    participant_record_books: [],
-    materials_links: [
-      { title: 'Требования к оформлению тезисов (DOCX)', url: '#' },
-      { title: 'Информационное письмо БГЭУ (PDF)', url: '#' }
-    ],
-    created_at: new Date().toISOString()
-  });
+  if (!db.events.find(e => e.id === 'ev_1')) {
+    db.events.push({
+      id: 'ev_1',
+      title: 'Международная конференция «Экономика и управление в XXI веке»',
+      type: 'конференция',
+      description: 'Пленарное заседание и работа секций по направлениям цифровизации экономики, менеджмента инноваций и устойчивого развития.',
+      organizer: 'Деканат ФЭМ и СНО ФЭМ',
+      start_date: new Date(Date.now() + 86400000 * 14).toISOString().split('T')[0],
+      end_date: new Date(Date.now() + 86400000 * 15).toISOString().split('T')[0],
+      registration_deadline: new Date(Date.now() + 86400000 * 10).toISOString().split('T')[0],
+      location: 'Корпус №4, ауд. 310 / Онлайн',
+      is_active: true,
+      max_participants: 120,
+      participant_record_books: [],
+      materials_links: [
+        { title: 'Требования к оформлению тезисов (DOCX)', url: '#' },
+        { title: 'Информационное письмо БГЭУ (PDF)', url: '#' }
+      ],
+      created_at: new Date().toISOString()
+    });
+  }
 
   // СНИЛ ФЭМ БГЭУ (4 Лаборатории)
   db.snils = [
@@ -632,21 +648,18 @@ export function placeMerchOrder(user: CustomUser, item: MerchItem): { success: b
 
   db.orders.push(order);
   dbItem.stock -= 1;
+  savePortalDB(db);
   
   // Уведомление пользователю
-  const notif = {
+  addNotificationAndNotifyTelegram({
     id: 'notif_' + Date.now(),
     user_record_book: user.record_book_id,
     title: 'Заказ сувенира оформлен',
     message: `Вы обменяли ${item.points} баллов на «${item.name}». Получить сувенир можно в деканате (Корпус 4, каб. 314) у зам. декана.`,
-    type: 'success' as const,
+    type: 'success',
     is_read: false,
     created_at: new Date().toISOString()
-  };
-  db.notifications.push(notif);
-  notifyTelegram(user.record_book_id, notif.title, notif.message, notif.type);
-
-  savePortalDB(db);
+  });
 
   return { success: true, message: 'Заказ успешно оформлен! Инструкции отправлены в уведомления.' };
 }
@@ -700,23 +713,20 @@ export function addMemberToSnil(snilId: string, recordBook: string): { success: 
   }
   
   db.snils[snilIndex].member_record_books.push(recordBook);
+  savePortalDB(db);
   
   // Send notification to student
-  const notif = {
+  addNotificationAndNotifyTelegram({
     id: 'notif_' + Date.now(),
     user_record_book: recordBook,
     title: 'Вы приняты в СНИЛ',
     message: `Поздравляем! Руководитель СНИЛ «${db.snils[snilIndex].name}» добавил вас в список участников.`,
-    type: 'success' as const,
+    type: 'success',
     is_read: false,
     created_at: new Date().toISOString()
-  };
-  db.notifications.push(notif);
-  notifyTelegram(recordBook, notif.title, notif.message, notif.type);
+  });
   
-  savePortalDB(db);
   return { success: true, message: 'Студент успешно добавлен' };
-
 }
 
 export function removeMemberFromSnil(snilId: string, recordBook: string): void {
@@ -750,3 +760,74 @@ export function createSnilApplication(snilId: string, snilName: string, studentR
   savePortalDB(db);
 }
 
+export function notifySnilMembers(snilId: string, title: string, message: string): void {
+  const db = getPortalDB();
+  const snil = db.snils.find(s => s.id === snilId);
+  if (!snil) return;
+
+  snil.member_record_books.forEach(recordBook => {
+    addNotificationAndNotifyTelegram({
+      id: 'notif_' + recordBook + '_' + Date.now(),
+      user_record_book: recordBook,
+      title: title,
+      message: message,
+      type: 'info',
+      is_read: false,
+      created_at: new Date().toISOString()
+    });
+  });
+}
+
+export function addNotificationAndNotifyTelegram(notification: Notification): void {
+  const db = getPortalDB();
+  db.notifications.push(notification);
+  savePortalDB(db);
+
+  const userRecordBook = notification.user_record_book;
+
+  // Define helper function to send post request
+  const sendToTelegram = (chatId: string) => {
+    fetch('/api/send-telegram', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chatId: chatId,
+        message: `📢 ${notification.title}\n\n${notification.message}`
+      })
+    }).catch(err => console.error("Error sending notification via Telegram API:", err));
+  };
+
+  // 1. Support general broadcast for 'all' users
+  if (userRecordBook === 'all') {
+    db.users.forEach(u => {
+      if (u.telegram_chat_id) {
+        sendToTelegram(u.telegram_chat_id);
+      }
+    });
+  } else {
+    // 1. Get from local storage cache
+    const localUser = db.users.find(u => u.record_book_id === userRecordBook);
+    const localChatId = localUser?.telegram_chat_id;
+    if (localChatId) {
+      sendToTelegram(localChatId);
+    }
+
+    // 2. Fetch the latest profile from Firestore as well to find the real-time up-to-date Telegram Chat ID
+    try {
+      const userRef = doc(firestoreDb, 'users', userRecordBook);
+      getDoc(userRef).then(userDoc => {
+        if (userDoc.exists()) {
+          const firestoreUser = userDoc.data() as CustomUser;
+          const firestoreChatId = firestoreUser.telegram_chat_id;
+          if (firestoreChatId && firestoreChatId !== localChatId) {
+            sendToTelegram(firestoreChatId);
+          }
+        }
+      }).catch(e => {
+        console.error("Error fetching recipient from Firestore for Telegram notification:", e);
+      });
+    } catch (e) {
+      console.error("Firestore not initialized or accessible in background context:", e);
+    }
+  }
+}

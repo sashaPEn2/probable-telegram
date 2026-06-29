@@ -10,7 +10,6 @@ import { Navbar } from './components/Navbar';
 import { Code2 } from 'lucide-react';
 import { LoginModal } from './components/LoginModal';
 import { DjangoCodeModal } from './components/DjangoCodeModal';
-import { NotificationsModal } from './components/NotificationsModal';
 import { FeedView } from './components/FeedView';
 import { EventsView } from './components/EventsView';
 import { SnilView } from './components/SnilView';
@@ -21,7 +20,10 @@ import { MerchView } from './components/MerchView';
 import { SecurityView } from './components/SecurityView';
 import { ProfileView } from './components/ProfileView';
 import { AdminView } from './components/AdminView';
+import { QuizzesView } from './components/QuizzesView';
 import { AnimatePresence, motion } from 'motion/react';
+import { doc, updateDoc, getDoc, setDoc } from 'firebase/firestore';
+import { db as firestoreDb } from './lib/firebase';
 
 export default function App() {
   const [db, setDb] = useState<PortalDatabase>(getPortalDB());
@@ -62,10 +64,80 @@ export default function App() {
     setDarkMode(prev => !prev);
   };
 
-  const handleLogin = (u: CustomUser) => {
-    setUser(u);
-    localStorage.setItem('fem_bseu_user', JSON.stringify(u));
+  const handleLogin = async (u: CustomUser) => {
+    // Fetch latest user data from Firestore to ensure persistent updates (like Telegram chat ID)
+    try {
+        const userRef = doc(firestoreDb, 'users', u.record_book_id);
+        const userDoc = await getDoc(userRef);
+        if (userDoc.exists()) {
+            const latestUser = userDoc.data() as CustomUser;
+            
+            // Sync with local database as well!
+            const localDb = getPortalDB();
+            const index = localDb.users.findIndex(x => x.record_book_id === latestUser.record_book_id);
+            if (index !== -1) {
+              localDb.users[index] = { ...localDb.users[index], ...latestUser };
+            } else {
+              localDb.users.push(latestUser);
+            }
+            savePortalDB(localDb);
+            setDb(localDb);
+
+            setUser(latestUser);
+            localStorage.setItem('fem_bseu_user', JSON.stringify(latestUser));
+        } else {
+            // First time user registers, make sure they are persistently created in Firestore!
+            await setDoc(userRef, u, { merge: true });
+
+            // Sync with local database as well
+            const localDb = getPortalDB();
+            const index = localDb.users.findIndex(x => x.record_book_id === u.record_book_id);
+            if (index !== -1) {
+              localDb.users[index] = { ...localDb.users[index], ...u };
+            } else {
+              localDb.users.push(u);
+            }
+            savePortalDB(localDb);
+            setDb(localDb);
+
+            setUser(u);
+            localStorage.setItem('fem_bseu_user', JSON.stringify(u));
+        }
+    } catch (error) {
+        console.error("Error fetching latest user from Firestore:", error);
+        setUser(u);
+        localStorage.setItem('fem_bseu_user', JSON.stringify(u));
+    }
     setShowLoginModal(false);
+    setActiveTab('profile');
+  };
+  
+  const handleUpdateUser = async (updatedUser: CustomUser) => {
+    setUser(updatedUser);
+    localStorage.setItem('fem_bseu_user', JSON.stringify(updatedUser));
+    
+    // Sync with local database as well
+    try {
+      const localDb = getPortalDB();
+      const index = localDb.users.findIndex(x => x.record_book_id === updatedUser.record_book_id);
+      if (index !== -1) {
+        localDb.users[index] = { ...localDb.users[index], ...updatedUser };
+      } else {
+        localDb.users.push(updatedUser);
+      }
+      savePortalDB(localDb);
+      setDb(localDb);
+    } catch (error) {
+      console.error("Error updating local db users list:", error);
+    }
+
+    // Update Firestore
+    try {
+        const userRef = doc(firestoreDb, 'users', updatedUser.record_book_id);
+        await setDoc(userRef, { ...updatedUser }, { merge: true });
+    } catch (error) {
+        console.error("Error updating user in Firestore:", error);
+    }
   };
 
   const handleLogout = () => {
@@ -115,7 +187,9 @@ export default function App() {
         onLoginClick={() => setShowLoginModal(true)}
         onLogout={handleLogout}
         unreadCount={unreadCount}
-        onNotifClick={() => setShowNotifModal(true)}
+        notifications={userNotifs}
+        onMarkRead={handleMarkRead}
+        onClearAll={handleClearNotifs}
         darkMode={darkMode}
         onToggleDarkMode={toggleDarkMode}
       />
@@ -156,6 +230,7 @@ export default function App() {
             )}
             {activeTab === 'rating' && <RatingView db={db} user={user} />}
             {activeTab === 'gallery' && <GalleryView db={db} user={user} onRefresh={refreshDB} />}
+            {activeTab === 'quizzes' && <QuizzesView db={db} user={user} onRefresh={refreshDB} />}
             {activeTab === 'faq' && <FAQView />}
             {activeTab === 'merch' && <MerchView db={db} user={user} onRefresh={refreshDB} />}
             {activeTab === 'security' && user && <SecurityView user={user} onRefresh={refreshDB} />}
@@ -164,7 +239,7 @@ export default function App() {
               <ProfileView 
                 db={db} 
                 user={user} 
-                onUpdateUser={setUser} 
+                onUpdateUser={handleUpdateUser} 
                 onRefresh={refreshDB} 
               />
             )}
@@ -230,14 +305,7 @@ export default function App() {
         />
       )}
 
-      {showNotifModal && (
-        <NotificationsModal
-          notifications={userNotifs}
-          onMarkRead={handleMarkRead}
-          onClearAll={handleClearNotifs}
-          onClose={() => setShowNotifModal(false)}
-        />
-      )}
+
     </div>
   );
 }

@@ -14,7 +14,7 @@ export interface CustomUser {
   scientific_interests: string[]; // Научные интересы
   created_at: string;
   telegram_username?: string;
-  telegram_user_id?: number;
+  telegram_chat_id?: string;
   avatar_url?: string;
   password?: string;
 }
@@ -51,6 +51,7 @@ export interface Certificate {
   event_name: string;
   issue_date: string;
   type: 'диплом_1_степени' | 'диплом_2_степени' | 'диплом_3_степени' | 'сертификат_участника' | 'грамота';
+  custom_points?: number;
 }
 
 export interface ResearchProject {
@@ -223,4 +224,46 @@ export interface NIRSReport {
   snil_count: number;
   generated_at: string;
   department_stats: { department: string; pubs: number; students: number }[];
+}
+
+export interface QuizQuestion {
+  id: string;
+  question: string;
+  options: string[];
+  correctOptionIndex: number;
+  clarification: string;
+  mediaType?: 'photo' | 'video' | 'none';
+  mediaData?: string;
+}
+
+export interface Quiz {
+  id: string;
+  title: string;
+  questions?: QuizQuestion[]; // support multiple questions
+  question?: string; // legacy fallback
+  options?: string[]; // legacy fallback
+  correctOptionIndex?: number; // legacy fallback
+  clarification?: string; // legacy fallback
+  mediaType?: 'photo' | 'video' | 'none'; // legacy fallback
+  mediaData?: string; // legacy fallback
+  status: 'open' | 'closed'; // Status of access
+  resultsPublished: boolean; // Whether results are published
+  pointsForPlaces: { place: number; points: number }[]; // Custom points distribution, e.g. [{place: 1, points: 50}, ...]
+  created_at: string;
+  winners?: { place: number; studentRecordBook: string; name: string; group: string; points: number; score?: string }[];
+}
+
+export interface QuizAttempt {
+  id: string;
+  quizId: string;
+  userRecordBook: string;
+  userName: string;
+  userGroup: string;
+  selectedOptionIndex?: number; // legacy
+  isCorrect?: boolean; // legacy
+  answers?: { questionId: string; selectedOptionIndex: number; isCorrect: boolean }[]; // multi-question support
+  correctCount?: number; // multi-question support
+  totalQuestions?: number; // multi-question support
+  timeSpentMs?: number; // speed/time measurement for ties
+  answeredAt: string;
 }

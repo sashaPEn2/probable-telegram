@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PortalDatabase, savePortalDB } from '../services/storage';
+import { PortalDatabase, savePortalDB, addNotificationAndNotifyTelegram } from '../services/storage';
 import { CustomUser, Publication, ResearchApplication, ResearchTask, MerchOrder } from '../types';
 import { 
   Shield, 
@@ -45,7 +45,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
 
   const handleApprovePub = (pub: Publication) => {
     pub.is_confirmed = true;
-    db.notifications.push({
+    addNotificationAndNotifyTelegram({
       id: 'notif_' + Date.now(),
       user_record_book: pub.user_record_book,
       title: 'Публикация подтверждена ВАК/Деканатом',
@@ -60,7 +60,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
 
   const handleRejectPub = (pubId: string, studentRecord: string, title: string) => {
     db.publications = db.publications.filter(p => p.id !== pubId);
-    db.notifications.push({
+    addNotificationAndNotifyTelegram({
       id: 'notif_' + Date.now(),
       user_record_book: studentRecord,
       title: 'Отклонена заявка на публикацию',
@@ -75,7 +75,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
 
   const handleReviewApp = (app: ResearchApplication, newStatus: 'принята' | 'отклонена') => {
     app.status = newStatus;
-    db.notifications.push({
+    addNotificationAndNotifyTelegram({
       id: 'notif_' + Date.now(),
       user_record_book: app.student_record_book,
       title: `Заявка на конференцию ${newStatus}`,
@@ -94,7 +94,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
 
     // Рассылаем всем пользователям в базе
     db.users.forEach(u => {
-      db.notifications.push({
+      addNotificationAndNotifyTelegram({
         id: 'notif_' + u.record_book_id + '_' + Date.now(),
         user_record_book: u.record_book_id,
         title: `📢 ${broadcastTitle}`,
@@ -137,7 +137,8 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
     };
 
     db.tasks.unshift(newTask);
-    db.notifications.push({
+    savePortalDB(db);
+    addNotificationAndNotifyTelegram({
       id: 'notif_' + Date.now(),
       user_record_book: targetUser.record_book_id,
       title: 'Новая задача от руководителя СНИЛ',
@@ -147,7 +148,6 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
       created_at: new Date().toISOString()
     });
 
-    localStorage.setItem('fem_bseu_portal_db_v1', JSON.stringify(db));
     setTaskTitle('');
     setTaskDesc('');
     setTaskStudent('');
@@ -157,6 +157,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
 
   const handleUpdateOrderStatus = (order: MerchOrder, newStatus: MerchOrder['status']) => {
     order.status = newStatus;
+    savePortalDB(db);
     
     let title = '';
     let message = '';
@@ -170,7 +171,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
     }
 
     if (title) {
-      db.notifications.push({
+      addNotificationAndNotifyTelegram({
         id: 'notif_' + Date.now(),
         user_record_book: order.userRecordBook,
         title,
@@ -181,7 +182,6 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
       });
     }
 
-    savePortalDB(db);
     onRefresh();
   };
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { PortalDatabase, generateIcsCalendar } from '../services/storage';
+import { createPortal } from 'react-dom';
+import { PortalDatabase, generateIcsCalendar, addNotificationAndNotifyTelegram } from '../services/storage';
 import { CustomUser, ScientificEvent, EventType } from '../types';
 import { 
   Calendar, 
@@ -96,7 +97,7 @@ export const EventsView: React.FC<EventsViewProps> = ({
       }
 
       // Оповещение пользователю
-      db.notifications.push({
+      addNotificationAndNotifyTelegram({
         id: 'notif_' + Date.now(),
         user_record_book: user.record_book_id,
         title: 'Заявка принята на рассмотрение',
@@ -268,7 +269,7 @@ export const EventsView: React.FC<EventsViewProps> = ({
       )}
 
       {/* Модальное окно подачи тезисов доклада */}
-      {activeModalEvent && (
+      {activeModalEvent && createPortal(
         <div className="fixed inset-0 z-[110] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
           <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] max-w-lg w-full overflow-hidden shadow-2xl border border-[#d4af37]/30 flex flex-col max-h-[90vh]">
             
@@ -405,7 +406,8 @@ export const EventsView: React.FC<EventsViewProps> = ({
             </div>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>

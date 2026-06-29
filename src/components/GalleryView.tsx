@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { PortalDatabase } from '../services/storage';
 import { CustomUser, GalleryItem } from '../types';
 import { Image as ImageIcon, Video, Upload, ExternalLink, Plus, Camera, Sparkles, X } from 'lucide-react';
@@ -135,7 +136,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ db, user, onRefresh })
       </div>
 
       {/* Модалка загрузки */}
-      {showUploadModal && (
+      {showUploadModal && createPortal(
         <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
           <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-blue-200 dark:border-blue-900 transition-colors">
             <div className="bg-[#0a2a5e] p-6 text-white flex items-center justify-between">
@@ -165,7 +166,8 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ db, user, onRefresh })
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>

@@ -1,26 +1,32 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { PortalDatabase, calculateResearcherStats, DEPARTMENTS } from '../services/storage';
+import { PortalDatabase, calculateResearcherStats, DEPARTMENTS, GROUPS, addNotificationAndNotifyTelegram, notifySnilMembers } from '../services/storage';
+import { TelegramSettings } from './TelegramSettings';
 import { CustomUser, Publication, Certificate, ResearchProject } from '../types';
+import { signOut } from 'firebase/auth';
+import { auth } from '../lib/firebase';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { 
   User, 
   Award, 
   BookOpen, 
-  FileText, 
-  Download, 
+  Loader2, 
   Plus, 
-  CheckCircle2, 
-  Clock, 
-  Briefcase, 
-  Sparkles, 
-  Trash2, 
+  Download, 
+  LogOut, 
+  Edit3, 
+  Save,
+  FileText,
+  CheckCircle2,
+  Clock,
+  Briefcase,
+  Sparkles,
+  Trash2,
   ExternalLink,
   ShieldAlert,
   GraduationCap,
   TrendingUp,
   Activity,
-  Loader2,
   Megaphone,
   UserPlus,
   BarChart3,
@@ -60,9 +66,24 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const pdfTemplateRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isGeneratingApplication, setIsGeneratingApplication] = useState(false);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const snoApplicationRef = useRef<HTMLDivElement>(null);
   const reportRef = useRef<HTMLDivElement>(null);
-  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [tempGroup, setTempGroup] = useState(user.group);
+  const [tempDepartment, setTempDepartment] = useState(user.department);
+
+  const handleSaveProfile = () => {
+    const updated = { ...user, group: tempGroup, department: tempDepartment };
+    const dbUser = db.users.find(u => u.record_book_id === user.record_book_id);
+    if (dbUser) {
+        dbUser.group = tempGroup;
+        dbUser.department = tempDepartment;
+    }
+    localStorage.setItem('fem_bseu_portal_db_v1', JSON.stringify(db));
+    onUpdateUser(updated);
+    setIsEditingProfile(false);
+  };
 
   // SNIL Management State
   const [annTitle, setAnnTitle] = useState('');
@@ -141,7 +162,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     db.publications.unshift(newP);
     
     // Оповещение координатора
-    db.notifications.push({
+    addNotificationAndNotifyTelegram({
       id: 'notif_' + Date.now(),
       user_record_book: 'coordinator',
       title: 'Новая публикация на модерацию',
@@ -212,6 +233,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       content: annContent,
       is_urgent: isAnnUrgent
     });
+    
+    notifySnilMembers(mySnil.id, `📢 ${annTitle}`, annContent);
+    
     setAnnTitle('');
     setAnnContent('');
     setIsAnnUrgent(false);
@@ -308,7 +332,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       pdf.save(`Заявление_СНО_${user.last_name}.pdf`);
       
       // Можно также отправить уведомление координатору
-      db.notifications.push({
+      addNotificationAndNotifyTelegram({
         id: 'notif_' + Date.now(),
         user_record_book: 'coordinator',
         title: 'Новое заявление в СНО',
@@ -345,43 +369,77 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               <span className="px-3 py-0.5 rounded-full bg-[#d4af37] text-[#0a2a5e] font-bold text-xs uppercase tracking-wider">
                 Зачётка № {user.record_book_id}
               </span>
-              <span className="text-xs font-mono bg-blue-950 px-2 py-0.5 rounded text-blue-300">
-                Группа {user.group} (Курс {user.course})
+              <span className="text-xs font-mono bg-blue-950 px-2 py-0.5 rounded text-blue-300 flex items-center gap-2">
+                Группа: 
+                {isEditingProfile ? (
+                    <select className="bg-blue-900 text-white p-1 rounded" value={tempGroup} onChange={e => setTempGroup(e.target.value)}>
+                        {GROUPS.map(g => <option key={g} value={g}>{g}</option>)}
+                    </select>
+                ) : user.group}
               </span>
             </div>
             <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight">{user.last_name} {user.first_name}</h1>
-            <p className="text-blue-200 text-xs sm:text-sm opacity-90 truncate max-w-xl">{user.faculty} • {user.department}</p>
+            <div className="text-blue-200 text-xs sm:text-sm opacity-90 flex flex-wrap items-center gap-2">
+                {user.faculty} • 
+                {isEditingProfile ? (
+                    <select className="bg-blue-900 text-white p-1 rounded" value={tempDepartment} onChange={e => setTempDepartment(e.target.value)}>
+                        {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                ) : user.department}
+                
+                <div className="flex gap-2 ml-2">
+                    {isEditingProfile ? (
+                        <button onClick={handleSaveProfile} className="flex items-center gap-1 bg-green-600 text-white text-xs px-2 py-1 rounded hover:bg-green-700">
+                            <Save className="w-3 h-3" /> Сохранить
+                        </button>
+                    ) : (
+                        <button onClick={() => setIsEditingProfile(true)} className="flex items-center gap-1 bg-blue-600 text-white text-xs px-2 py-1 rounded hover:bg-blue-700">
+                            <Edit3 className="w-3 h-3" /> Редактировать
+                        </button>
+                    )}
+                    <button onClick={() => signOut(auth)} className="flex items-center gap-1 bg-red-600 text-white text-xs px-2 py-1 rounded hover:bg-red-700">
+                        <LogOut className="w-3 h-3" /> Выйти
+                    </button>
+                </div>
+            </div>
+            
           </div>
         </div>
 
         {/* Кнопка экспорта в PDF */}
-        <div className="relative z-10 w-full md:w-auto flex flex-col sm:flex-row gap-3">
+        <div className="relative z-10 w-full md:w-auto flex flex-wrap gap-2">
           {user.role === 'student' && (
             <button
-              onClick={generateSnoApplication}
+              onClick={() => {
+                if (myPubs.length < 2) {
+                  alert("Чтобы подать заявку и заявление на вступление в СНО, нужно иметь как минимум две публикации: две статьи или два доклада");
+                  return;
+                }
+                generateSnoApplication();
+              }}
               disabled={isGeneratingApplication}
-              className="px-6 py-3.5 rounded-2xl bg-blue-600 text-white font-bold text-sm shadow-xl hover:bg-blue-700 flex items-center justify-center space-x-2 transition-all disabled:opacity-70"
+              className={`px-3 py-2 rounded-lg ${myPubs.length < 2 ? 'bg-slate-400' : 'bg-blue-600 hover:bg-blue-700'} text-white font-bold text-xs sm:text-sm shadow-sm flex items-center justify-center space-x-1.5 transition-all disabled:opacity-70`}
             >
               {isGeneratingApplication ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <Plus className="w-5 h-5" />
+                <Plus className="w-4 h-4" />
               )}
-              <span>{isGeneratingApplication ? 'Генерация...' : 'Вступить в СНО'}</span>
+              <span>{myPubs.length < 2 ? 'Нужно 2+ публикации' : (isGeneratingApplication ? 'Генерация...' : 'Вступить в СНО')}</span>
             </button>
           )}
 
           <button
             onClick={exportPortfolioToPdf}
             disabled={isExporting}
-            className="w-full md:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-[#d4af37] to-amber-500 text-[#0a2a5e] font-extrabold text-sm shadow-xl hover:brightness-110 flex items-center justify-center space-x-2 transition-all group disabled:opacity-70 disabled:cursor-not-allowed"
+            className="px-3 py-2 rounded-lg bg-gradient-to-r from-[#d4af37] to-amber-500 text-[#0a2a5e] font-extrabold text-xs sm:text-sm shadow-sm hover:brightness-110 flex items-center justify-center space-x-1.5 transition-all group disabled:opacity-70 disabled:cursor-not-allowed"
           >
             {isExporting ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
-              <Download className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform" />
+              <Download className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform" />
             )}
-            <span>{isExporting ? 'Генерация PDF...' : 'Экспорт портфолио в PDF'}</span>
+            <span>{isExporting ? 'Генерация...' : 'Экспорт PDF'}</span>
           </button>
         </div>
       </div>
@@ -596,6 +654,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       </div>
 
       {/* Дашборд показателей (4 карточки) */}
+      <div className="mb-6">
+        <TelegramSettings user={user} onUpdate={onUpdateUser} />
+      </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <DashStat title="Публикации" value={myPubs.length} desc={`${stats.totalPubs} верифицировано`} highlight />
         <DashStat title="Доклады" value={myApps.length} desc="конференции БГЭУ" />

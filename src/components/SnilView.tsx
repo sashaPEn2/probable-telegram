@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { PortalDatabase, createSnilApplication } from '../services/storage';
+import { PortalDatabase, createSnilApplication, savePortalDB, addNotificationAndNotifyTelegram } from '../services/storage';
 import { CustomUser, SNIL, ResearchTask } from '../types';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -57,8 +57,9 @@ export const SnilView: React.FC<SnilViewProps> = ({
     if (snil.member_record_books.includes(user.record_book_id)) return;
 
     snil.member_record_books.push(user.record_book_id);
-    const notifications = db.notifications || [];
-    notifications.push({
+    savePortalDB(db);
+
+    addNotificationAndNotifyTelegram({
       id: 'notif_' + Date.now(),
       user_record_book: snil.head_record_book,
       title: 'Новый участник в лаборатории СНИЛ!',
@@ -67,9 +68,6 @@ export const SnilView: React.FC<SnilViewProps> = ({
       is_read: false,
       created_at: new Date().toISOString()
     });
-    db.notifications = notifications;
-
-    localStorage.setItem('fem_bseu_portal_db_v1', JSON.stringify(db));
     onRefresh();
   };
 
@@ -100,8 +98,7 @@ export const SnilView: React.FC<SnilViewProps> = ({
         // Record the application in the system
         createSnilApplication(snil.id, snil.name, user.record_book_id);
 
-        const notifications = db.notifications || [];
-        notifications.push({
+        addNotificationAndNotifyTelegram({
           id: 'notif_' + Date.now(),
           user_record_book: snil.head_record_book,
           title: 'Сформировано заявление на вступление',
@@ -110,8 +107,6 @@ export const SnilView: React.FC<SnilViewProps> = ({
           is_read: false,
           created_at: new Date().toISOString()
         });
-        db.notifications = notifications;
-        localStorage.setItem('fem_bseu_portal_db_v1', JSON.stringify(db));
         onRefresh();
 
       } catch (error) {
