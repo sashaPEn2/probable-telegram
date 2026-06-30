@@ -17,7 +17,8 @@ async function startServer() {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
   let bot: TelegramBot | null = null;
   if (botToken) {
-    bot = new TelegramBot(botToken, { polling: true });
+    const TelegramBotClass = (TelegramBot as any).default || TelegramBot;
+    bot = new TelegramBotClass(botToken, { polling: true });
     
     bot.onText(/\/start/, (msg) => {
       bot?.sendMessage(msg.chat.id, `Привет! Ваш Telegram ID: ${msg.chat.id}. Используйте его для привязки к порталу.`);
@@ -130,7 +131,7 @@ Response must strictly match this schema:
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
-    app.get('*', (req, res) => {
+    app.get('*all', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
