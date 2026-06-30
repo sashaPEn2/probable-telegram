@@ -192,12 +192,12 @@ export const AvatarModal: React.FC<AvatarModalProps> = ({
   }, [seedText, seedType, activeTab]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex p-4 bg-slate-950/70 backdrop-blur-sm overflow-y-auto items-start md:items-center justify-center">
       <motion.div 
         initial={{ opacity: 0, scale: 0.95, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 15 }}
-        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-2xl max-w-2xl w-full flex flex-col md:flex-row h-auto md:h-[520px] max-h-[90vh]"
+        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-2xl max-w-2xl w-full flex flex-col md:flex-row my-auto max-h-[90vh] md:h-[520px]"
       >
         {/* Left pane: Avatar Preview */}
         <div className="bg-slate-50 dark:bg-slate-950 p-6 md:p-8 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-800 md:w-56 flex-shrink-0">

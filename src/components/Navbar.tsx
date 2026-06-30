@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { CustomUser, UserRole, Notification } from '../types';
-import { getRoleTitle, logoutUser } from '../services/storage';
+import { getRoleTitle, logoutUser, canAccessAdmin } from '../services/storage';
 import { UserAvatar } from './UserAvatar';
 import { 
   GraduationCap, 
@@ -98,15 +98,15 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="flex items-center justify-between">
             
             {/* Logo Section */}
-            <div className="flex items-center space-x-4 cursor-pointer group" onClick={() => setActiveTab('feed')}>
-              <div className="relative flex items-center justify-center w-11 h-11 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-[#d4af37] via-amber-500 to-amber-600 p-0.5 shadow-[0_0_20px_rgba(212,175,55,0.3)] group-hover:scale-105 group-hover:shadow-[0_0_30px_rgba(212,175,55,0.5)] transition-all">
-                <div className="w-full h-full bg-[#0a2a5e] rounded-[14px] flex items-center justify-center">
-                  <GraduationCap className="w-6 h-6 sm:w-8 sm:h-8 text-[#d4af37]" />
+            <div className="flex items-center space-x-3 sm:space-x-4 cursor-pointer group" onClick={() => setActiveTab('feed')}>
+              <div className="relative flex items-center justify-center w-9 h-9 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#d4af37] via-amber-500 to-amber-600 p-0.5 shadow-[0_0_15px_rgba(212,175,55,0.2)] group-hover:scale-105 group-hover:shadow-[0_0_30px_rgba(212,175,55,0.5)] transition-all">
+                <div className="w-full h-full bg-[#0a2a5e] rounded-[10px] sm:rounded-[14px] flex items-center justify-center">
+                  <GraduationCap className="w-5 h-5 sm:w-8 sm:h-8 text-[#d4af37]" />
                 </div>
               </div>
-              <div className="hidden xs:block">
+              <div className="block">
                 <div className="flex items-center space-x-2">
-                  <span className="font-black tracking-tight text-lg sm:text-2xl uppercase leading-none">БГЭУ <span className="text-[#d4af37]">ФЭМ</span></span>
+                  <span className="font-black tracking-tight text-base sm:text-2xl uppercase leading-none">ФЭМ <span className="text-[#d4af37]">СНО</span></span>
                   <div className="h-4 w-[1px] bg-white/20 hidden md:block mx-1"></div>
                   <span className="text-[10px] px-2 py-1 rounded-lg bg-[#d4af37] text-[#0a2a5e] font-black hidden md:inline shadow-sm">SNO / FMGL</span>
                 </div>
@@ -184,19 +184,19 @@ export const Navbar: React.FC<NavbarProps> = ({
                       icon={<ShoppingBag className="w-4 h-4" />} 
                       label="Магазин" 
                     />
+                    {user && canAccessAdmin(user) && (
+                      <div className="mt-1 pt-1 border-t border-slate-100 dark:border-slate-800">
+                        <HubItem 
+                          active={activeTab === 'admin'} 
+                          onClick={() => { setActiveTab('admin'); setShowHubMenu(false); }} 
+                          icon={<ShieldCheck className="w-4 h-4 text-[#d4af37]" />} 
+                          label="Управление" 
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
-
-              {user && (user.role === 'coordinator' || user.role === 'admin' || user.role === 'activist' || user.role === 'snil_head') && (
-                <NavButton 
-                  active={activeTab === 'admin'} 
-                  onClick={() => setActiveTab('admin')} 
-                  icon={<ShieldCheck className="w-4 h-4 text-[#d4af37]" />}
-                  label="Управление" 
-                  highlight
-                />
-              )}
             </nav>
 
             {/* Right Side Actions */}
@@ -204,9 +204,9 @@ export const Navbar: React.FC<NavbarProps> = ({
               
               <button
                 onClick={onToggleDarkMode}
-                className="p-2 sm:p-2 rounded-lg bg-blue-900/50 hover:bg-blue-800 text-blue-200 hover:text-white transition-colors cursor-pointer min-w-[36px] sm:min-w-[40px] flex items-center justify-center"
+                className="p-1.5 sm:p-2 rounded-lg bg-blue-900/50 hover:bg-blue-800 text-blue-200 hover:text-white transition-colors cursor-pointer min-w-[32px] sm:min-w-[40px] flex items-center justify-center"
               >
-                {darkMode ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-blue-200" />}
+                {darkMode ? <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" /> : <Moon className="w-4 h-4 sm:w-5 sm:h-5 text-blue-200" />}
               </button>
 
               {user ? (
@@ -214,10 +214,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <div className="relative" ref={notifRef}>
                     <button
                       onClick={() => setShowNotifDropdown(!showNotifDropdown)}
-                      className="relative p-2 sm:p-2 rounded-lg bg-blue-900/50 hover:bg-blue-800 text-blue-200 hover:text-white transition-colors min-w-[36px] sm:min-w-[40px] flex items-center justify-center cursor-pointer"
+                      className="relative p-1.5 sm:p-2 rounded-lg bg-blue-900/50 hover:bg-blue-800 text-blue-200 hover:text-white transition-colors min-w-[32px] sm:min-w-[40px] flex items-center justify-center cursor-pointer"
                     >
-                      <Bell className="w-5 h-5" />
-                      {unreadCount > 0 && <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse border border-[#0a2a5e]"></span>}
+                      <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
+                      {unreadCount > 0 && <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500 animate-pulse border border-[#0a2a5e]"></span>}
                     </button>
 
                     {showNotifDropdown && (
@@ -314,15 +314,15 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <div className="relative" ref={menuRef}>
                     <button
                       onClick={() => setShowUserMenu(!showUserMenu)}
-                      className={`flex items-center space-x-2 px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-xl border transition-all ${
+                      className={`flex items-center space-x-2 p-1 rounded-lg transition-all ${
                         activeTab === 'profile' || showUserMenu
-                          ? 'bg-[#d4af37] border-[#d4af37] text-[#0a2a5e] font-semibold'
-                          : 'bg-blue-900/60 border-blue-700/60 text-white hover:bg-blue-800'
+                          ? 'bg-[#d4af37] text-[#0a2a5e] font-bold shadow-lg'
+                          : 'bg-blue-900/50 text-white hover:bg-blue-800'
                       }`}
                     >
-                      <UserAvatar size="sm" user={user} className="border border-[#d4af37]/40 shadow-sm" />
-                      <div className="text-left hidden lg:block">
-                        <p className="text-xs leading-none font-medium truncate max-w-[80px]">{user.last_name} {user.first_name[0]}.</p>
+                      <UserAvatar size="xs" user={user} />
+                      <div className="text-left hidden lg:block pr-1">
+                        <p className="text-[10px] leading-none font-black truncate max-w-[80px]">{user.last_name} {user.first_name[0]}.</p>
                       </div>
                     </button>
 
@@ -341,17 +341,25 @@ export const Navbar: React.FC<NavbarProps> = ({
                         <div className="py-2 px-2">
                           <MenuAction onClick={() => { setActiveTab('profile'); setShowUserMenu(false); }} icon={<User className="w-4 h-4" />} label="Личный кабинет" />
                           <MenuAction onClick={() => { setActiveTab('events'); setShowUserMenu(false); }} icon={<Calendar className="w-4 h-4" />} label="Мои события" />
+                          {canAccessAdmin(user) && (
+                            <MenuAction 
+                              onClick={() => { setActiveTab('admin'); setShowUserMenu(false); }} 
+                              icon={<ShieldCheck className="w-4 h-4 text-[#d4af37]" />} 
+                              label="Управление" 
+                              highlight 
+                            />
+                          )}
                           <MenuAction onClick={() => { setActiveTab('security'); setShowUserMenu(false); }} icon={<ShieldAlert className="w-4 h-4" />} label="Безопасность" />
-                        </div>
-
-                        <div className="pt-2 border-t border-slate-100 dark:border-slate-800 mt-2 px-2 pb-1">
-                          <button
-                            onClick={() => { onLogout(); setShowUserMenu(false); }}
-                            className="w-full flex items-center space-x-3 px-4 py-3 text-sm font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all"
-                          >
-                            <LogOut className="w-4 h-4" />
-                            <span>Выйти</span>
-                          </button>
+                          <div className="border-t border-slate-100 dark:border-slate-800/80 mt-1.5 pt-1.5">
+                            <MenuAction 
+                              onClick={() => { 
+                                setShowUserMenu(false); 
+                                onLogout(); 
+                              }} 
+                              icon={<LogOut className="w-4 h-4 text-red-500 dark:text-red-400" />} 
+                              label="Выйти" 
+                            />
+                          </div>
                         </div>
                       </div>
                     )}
@@ -360,9 +368,9 @@ export const Navbar: React.FC<NavbarProps> = ({
               ) : (
                 <button
                   onClick={onLoginClick}
-                  className="flex items-center space-x-1.5 px-4 py-2 sm:px-4 sm:py-2 rounded-xl bg-[#d4af37] text-[#0a2a5e] font-bold shadow-md hover:brightness-110 transition-all text-xs sm:text-sm"
+                  className="flex items-center space-x-1 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg bg-[#d4af37] text-[#0a2a5e] font-bold shadow-md hover:brightness-110 transition-all text-[10px] sm:text-sm"
                 >
-                  <User className="w-4 h-4" />
+                  <User className="w-3 h-3 sm:w-4 sm:h-4" />
                   <span>Вход</span>
                 </button>
               )}
@@ -438,13 +446,23 @@ export const Navbar: React.FC<NavbarProps> = ({
                 icon={<HelpCircle className="w-4 h-4" />} 
                 label="FAQ" 
               />
-              {user && (user.role === 'coordinator' || user.role === 'admin' || user.role === 'activist' || user.role === 'snil_head') && (
+              {user && canAccessAdmin(user) && (
                 <div className="mt-1 pt-1 border-t border-slate-100 dark:border-slate-800">
                   <HubItem 
                     active={activeTab === 'admin'} 
                     onClick={() => { setActiveTab('admin'); setShowHubMenu(false); }} 
                     icon={<ShieldCheck className="w-4 h-4 text-[#d4af37]" />} 
                     label="Управление" 
+                  />
+                </div>
+              )}
+              {user && (
+                <div className="mt-1 pt-1 border-t border-slate-100 dark:border-slate-800">
+                  <HubItem 
+                    active={false} 
+                    onClick={() => { setShowHubMenu(false); onLogout(); }} 
+                    icon={<LogOut className="w-4 h-4 text-red-500" />} 
+                    label="Выйти" 
                   />
                 </div>
               )}

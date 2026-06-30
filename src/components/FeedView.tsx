@@ -1,9 +1,10 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { PortalDatabase, seedFacultyStarterTemplate, calculateResearcherStats, savePortalDB, addNotificationAndNotifyTelegram } from '../services/storage';
+import { PortalDatabase, seedFacultyStarterTemplate, calculateResearcherStats, savePortalDB, addNotificationAndNotifyTelegram, canAccessAdmin } from '../services/storage';
 import { CustomUser } from '../types';
 import { UserAvatar } from './UserAvatar';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { withSafeColorsForHtml2Canvas } from '../lib/pdfUtils';
 import { 
   Sparkles, 
   Calendar, 
@@ -19,8 +20,11 @@ import {
   Search,
   BookOpen,
   Download,
-  Loader2
+  Loader2,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface FeedViewProps {
   db: PortalDatabase;
@@ -45,6 +49,7 @@ export const FeedView: React.FC<FeedViewProps> = ({
   const [pubToTg, setPubToTg] = useState(true);
 
   const [isExporting, setIsExporting] = useState(false);
+  const [isStatsExpanded, setIsStatsExpanded] = useState(true);
   const pdfTemplateRef = useRef<HTMLDivElement>(null);
 
   const stats = useMemo(() => {
@@ -72,12 +77,17 @@ export const FeedView: React.FC<FeedViewProps> = ({
     setIsExporting(true);
     
     try {
-      const canvas = await html2canvas(pdfTemplateRef.current, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff'
+      let canvas: HTMLCanvasElement | null = null;
+      await withSafeColorsForHtml2Canvas(pdfTemplateRef.current, async () => {
+        canvas = await html2canvas(pdfTemplateRef.current!, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff',
+          windowWidth: 800
+        });
       });
+      if (!canvas) throw new Error("Canvas render failed");
       
       const imgData = canvas.toDataURL('image/jpeg', 0.95);
       const pdf = new jsPDF('p', 'mm', 'a4');
@@ -108,7 +118,7 @@ export const FeedView: React.FC<FeedViewProps> = ({
     }
   };
 
-  const canCreateNews = user && (user.role === 'activist' || user.role === 'coordinator' || user.role === 'admin');
+  const canCreateNews = user && canAccessAdmin(user);
 
   const handlePublishNews = (e: React.FormEvent) => {
     e.preventDefault();
@@ -248,11 +258,39 @@ export const FeedView: React.FC<FeedViewProps> = ({
       )}
 
       {/* Быстрая статистика факультета */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={<FileText className="w-6 h-6 text-blue-400" />} number={db.publications.length + 42} label="Публикаций в базе" />
-        <StatCard icon={<Calendar className="w-6 h-6 text-[#d4af37]" />} number={db.events.length + 8} label="Научных мероприятий" />
-        <StatCard icon={<FlaskConical className="w-6 h-6 text-teal-400" />} number={db.snils.length + 5} label="Лабораторий СНИЛ" />
-        <StatCard icon={<Users className="w-6 h-6 text-purple-400" />} number={db.users.length + 156} label="Исследователей ФЭМ" />
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-lg hover:scale-105 transition-all duration-300 overflow-hidden">
+        <button 
+          onClick={() => setIsStatsExpanded(!isStatsExpanded)}
+          className="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+        >
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+              <Award className="w-5 h-5" />
+            </div>
+            <h3 className="font-bold text-[#0a2a5e] dark:text-blue-300">Статистика факультета</h3>
+          </div>
+          {isStatsExpanded ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
+        </button>
+
+        <AnimatePresence>
+          {isStatsExpanded && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+            >
+              <div className="px-6 pb-6 pt-2">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  <StatCard icon={<FileText className="w-6 h-6 text-blue-400" />} number={db.publications.length} label="Публикаций в базе" />
+                  <StatCard icon={<Calendar className="w-6 h-6 text-[#d4af37]" />} number={db.events.length} label="Научных мероприятий" />
+                  <StatCard icon={<FlaskConical className="w-6 h-6 text-teal-400" />} number={db.snils.length} label="Лабораторий СНИЛ" />
+                  <StatCard icon={<Users className="w-6 h-6 text-purple-400" />} number={db.users.filter(u => u.role === 'student').length} label="Студенты-исследователи" />
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -400,44 +438,44 @@ export const FeedView: React.FC<FeedViewProps> = ({
 
           {/* Персональный научный статус исследователя на дашборде */}
           {user && (
-            <div className="bg-gradient-to-br from-[#0a2a5e] to-blue-950 text-white rounded-3xl p-6 shadow-md border border-[#d4af37]/30 space-y-4">
+            <div className="bg-gradient-to-br from-[#0a2a5e] to-blue-950 text-white rounded-3xl p-5 sm:p-6 shadow-md border border-[#d4af37]/30 space-y-4">
               <div className="flex items-center space-x-3 border-b border-blue-900 pb-3">
-                <div className="w-10 h-10 rounded-xl bg-[#d4af37]/20 flex items-center justify-center text-[#d4af37] font-bold">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#d4af37]/20 flex items-center justify-center text-[#d4af37] font-bold text-sm sm:text-base">
                   {user.first_name[0]}{user.last_name[0]}
                 </div>
                 <div>
-                  <h4 className="font-bold text-sm leading-tight">{user.last_name} {user.first_name}</h4>
-                  <p className="text-[10px] text-blue-300 font-mono">Группа {user.group} • зачётка №{user.record_book_id}</p>
+                  <h4 className="font-bold text-xs sm:text-sm leading-tight">{user.last_name} {user.first_name}</h4>
+                  <p className="text-[9px] sm:text-[10px] text-blue-300 font-mono">Группа {user.group} • №{user.record_book_id}</p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 text-center py-1">
-                <div className="bg-blue-950/40 p-2 rounded-xl border border-blue-900/40">
-                  <p className="text-[9px] text-blue-300 font-bold uppercase tracking-wider">h-индекс</p>
-                  <p className="text-sm font-black text-[#d4af37] mt-0.5">{stats.hIndex}</p>
+              <div className="grid grid-cols-3 gap-1.5 sm:gap-2 text-center py-1">
+                <div className="bg-blue-950/40 p-1.5 sm:p-2 rounded-xl border border-blue-900/40">
+                  <p className="text-[8px] sm:text-[9px] text-blue-300 font-bold uppercase tracking-wider">h-индекс</p>
+                  <p className="text-xs sm:text-sm font-black text-[#d4af37] mt-0.5">{stats.hIndex}</p>
                 </div>
-                <div className="bg-blue-950/40 p-2 rounded-xl border border-blue-900/40">
-                  <p className="text-[9px] text-blue-300 font-bold uppercase tracking-wider">Работы</p>
-                  <p className="text-sm font-black text-[#d4af37] mt-0.5">{myPubs.length}</p>
+                <div className="bg-blue-950/40 p-1.5 sm:p-2 rounded-xl border border-blue-900/40">
+                  <p className="text-[8px] sm:text-[9px] text-blue-300 font-bold uppercase tracking-wider">Труды</p>
+                  <p className="text-xs sm:text-sm font-black text-[#d4af37] mt-0.5">{myPubs.length}</p>
                 </div>
-                <div className="bg-blue-950/40 p-2 rounded-xl border border-blue-900/40">
-                  <p className="text-[9px] text-blue-300 font-bold uppercase tracking-wider">Рейтинг</p>
-                  <p className="text-sm font-black text-amber-400 mt-0.5">{stats.ratingPoints}</p>
+                <div className="bg-blue-950/40 p-1.5 sm:p-2 rounded-xl border border-blue-900/40">
+                  <p className="text-[8px] sm:text-[9px] text-blue-300 font-bold uppercase tracking-wider">Рейтинг</p>
+                  <p className="text-xs sm:text-sm font-black text-amber-400 mt-0.5">{stats.ratingPoints}</p>
                 </div>
               </div>
 
               <button
                 onClick={exportPortfolioToPdf}
                 disabled={isExporting}
-                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#d4af37] to-amber-500 text-[#0a2a5e] font-black text-sm shadow-lg hover:brightness-110 flex items-center justify-center space-x-3 transition-all disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer active:scale-[0.98]"
+                className="w-full py-3 sm:py-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-[#d4af37] to-amber-500 text-[#0a2a5e] font-black text-xs sm:text-sm shadow-lg hover:brightness-110 flex items-center justify-center space-x-2 sm:space-x-3 transition-all disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer active:scale-[0.98]"
                 id="download-dashboard-pdf-btn"
               >
                 {isExporting ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
                 ) : (
-                  <Download className="w-5 h-5" />
+                  <Download className="w-4 h-4 sm:w-5 sm:h-5" />
                 )}
-                <span>{isExporting ? 'Генерация PDF...' : 'Скачать PDF-отчет достижений'}</span>
+                <span>{isExporting ? 'Генерация...' : 'PDF-отчет достижений'}</span>
               </button>
             </div>
           )}
@@ -712,13 +750,15 @@ export const FeedView: React.FC<FeedViewProps> = ({
 };
 
 const StatCard: React.FC<{ icon: React.ReactNode; number: number; label: string }> = ({ icon, number, label }) => (
-  <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 flex items-center space-x-4 shadow-sm transition-colors">
-    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 flex-shrink-0">
-      {icon}
+  <div className="bg-slate-50/50 dark:bg-slate-800/30 rounded-2xl border border-slate-100 dark:border-slate-800/80 p-4 sm:p-5 flex flex-col justify-between shadow-xs transition-all hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:shadow-sm h-full group min-h-[120px] sm:min-h-[140px]">
+    <div className="flex items-center justify-between gap-3 mb-4">
+      <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-xs flex-shrink-0 group-hover:scale-105 transition-transform duration-300">
+        {icon}
+      </div>
+      <p className="text-2xl sm:text-3xl font-black text-[#0a2a5e] dark:text-blue-200 font-mono tracking-tight leading-none">{number}</p>
     </div>
-    <div>
-      <p className="text-xl sm:text-2xl font-extrabold text-[#0a2a5e] dark:text-blue-300 font-mono">{number}</p>
-      <p className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-tight mt-0.5">{label}</p>
+    <div className="mt-auto">
+      <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider leading-snug">{label}</p>
     </div>
   </div>
 );

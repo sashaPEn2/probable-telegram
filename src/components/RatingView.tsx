@@ -58,7 +58,7 @@ export const RatingView: React.FC<RatingViewProps> = ({ db, user }) => {
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Рейтинг исследовательской активности <span className="text-[#d4af37]">ФЭМ</span></h2>
           <p className="text-blue-100 text-xs sm:text-sm leading-relaxed opacity-90">
-            Формируется на основе верифицированного электронного портфолио: статьи в журналах ВАК, тезисы докладов, победы в конкурсах лабораторий СНИЛ и дипломы СНО.
+            Формируется на основе верифицированного электронного портфолио: научные статьи, тезисы докладов, победы в конкурсах лабораторий СНИЛ и дипломы СНО.
           </p>
         </div>
 

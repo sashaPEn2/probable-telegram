@@ -1,17 +1,22 @@
-import React, { useState, useMemo, useRef } from 'react';
-import { PortalDatabase, calculateResearcherStats, DEPARTMENTS, GROUPS, addNotificationAndNotifyTelegram, notifySnilMembers } from '../services/storage';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { PortalDatabase, calculateResearcherStats, DEPARTMENTS, GROUPS, addNotificationAndNotifyTelegram, notifySnilMembers, getRoleTitle } from '../services/storage';
 import { TelegramSettings } from './TelegramSettings';
 import { CertificateModal } from './CertificateModal';
+import { PublicationCertificateModal } from './PublicationCertificateModal';
 import { UserAvatar } from './UserAvatar';
 import { AvatarModal } from './AvatarModal';
-import { CustomUser, Publication, Certificate, ResearchProject } from '../types';
+import { CustomUser, Publication, Certificate, ResearchProject, PublicationCertificate } from '../types';
 import { signOut } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import html2canvas from 'html2canvas';
+import { withSafeColorsForHtml2Canvas } from '../lib/pdfUtils';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   User, 
   Award, 
+  Trophy,
   BookOpen, 
   Loader2, 
   Plus, 
@@ -35,7 +40,15 @@ import {
   BarChart3,
   Search,
   X,
-  FlaskConical
+  FlaskConical,
+  Check,
+  Shield,
+  Globe,
+  Users,
+  Settings,
+  ChevronRight,
+  UserCircle,
+  Info
 } from 'lucide-react';
 import {
   AreaChart,
@@ -50,20 +63,22 @@ import {
   Bar,
   Cell
 } from 'recharts';
-import { addAnnouncement, deleteAnnouncement, addMemberToSnil, removeMemberFromSnil, getPortalDB } from '../services/storage';
+import { addAnnouncement, deleteAnnouncement, deletePublication, addMemberToSnil, removeMemberFromSnil, addAchievementToSnil, removeAchievementFromSnil, getPortalDB, savePortalDB, savePublicationCertificateToFirestore } from '../services/storage';
 
 interface ProfileViewProps {
   db: PortalDatabase;
   user: CustomUser;
   onUpdateUser: (updated: CustomUser) => void;
   onRefresh: () => void;
+  onLogout: () => void;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({
   db,
   user,
   onUpdateUser,
-  onRefresh
+  onRefresh,
+  onLogout
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'overview' | 'pubs' | 'apps' | 'tasks' | 'interests' | 'certs' | 'snil_mgmt'>('overview');
   const pdfTemplateRef = useRef<HTMLDivElement>(null);
@@ -76,8 +91,61 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [tempGroup, setTempGroup] = useState(user.group);
   const [tempDepartment, setTempDepartment] = useState(user.department);
   const [tempIsPrivate, setTempIsPrivate] = useState(user.is_private || false);
+  const [tempGender, setTempGender] = useState<'male' | 'female' | undefined>(user.gender);
+  const [tempInterests, setTempInterests] = useState<string[]>(user.scientific_interests || []);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 4000);
+  };
+  const [newInterest, setNewInterest] = useState('');
   const [viewingCert, setViewingCert] = useState<Certificate | null>(null);
+  const [viewingPubCert, setViewingPubCert] = useState<{pub: Publication, cert: PublicationCertificate | null} | null>(null);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
+
+  const handleSaveProfile = () => {
+    const updated = { 
+      ...user, 
+      group: tempGroup, 
+      department: tempDepartment, 
+      is_private: tempIsPrivate, 
+      gender: tempGender,
+      scientific_interests: tempInterests
+    };
+    
+    // Update in local DB
+    const dbUser = db.users.find(u => u.record_book_id === user.record_book_id);
+    if (dbUser) {
+        dbUser.group = tempGroup;
+        dbUser.department = tempDepartment;
+        dbUser.is_private = tempIsPrivate;
+        dbUser.gender = tempGender;
+        dbUser.scientific_interests = tempInterests;
+    }
+    localStorage.setItem('fem_bseu_portal_db_v1', JSON.stringify(db));
+    
+    onUpdateUser(updated);
+    setIsEditingProfile(false);
+    onRefresh();
+  };
+
+  const handleAddInterestToTemp = () => {
+    if (!newInterest.trim()) return;
+    if (tempInterests.includes(newInterest.trim())) {
+      setNewInterest('');
+      return;
+    }
+    setTempInterests([...tempInterests, newInterest.trim()]);
+    setNewInterest('');
+  };
+
+  const handleRemoveInterestFromTemp = (interest: string) => {
+    setTempInterests(tempInterests.filter(i => i !== interest));
+  };
 
   const handleSaveAvatar = (newAvatarUrl: string) => {
     const updated = { ...user, avatar_url: newAvatarUrl };
@@ -90,29 +158,68 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     setShowAvatarModal(false);
   };
 
-  const handleSaveProfile = () => {
-    const updated = { ...user, group: tempGroup, department: tempDepartment, is_private: tempIsPrivate };
-    const dbUser = db.users.find(u => u.record_book_id === user.record_book_id);
-    if (dbUser) {
-        dbUser.group = tempGroup;
-        dbUser.department = tempDepartment;
-        dbUser.is_private = tempIsPrivate;
-    }
-    localStorage.setItem('fem_bseu_portal_db_v1', JSON.stringify(db));
-    onUpdateUser(updated);
-    setIsEditingProfile(false);
-  };
-
   // SNIL Management State
   const [annTitle, setAnnTitle] = useState('');
   const [annContent, setAnnContent] = useState('');
   const [isAnnUrgent, setIsAnnUrgent] = useState(false);
   const [studentRecordBookToAdd, setStudentRecordBookToAdd] = useState('');
   const [mgmtMessage, setMgmtMessage] = useState({ text: '', type: '' });
+  const [newSnilAchievement, setNewSnilAchievement] = useState('');
   
   const myPubs = useMemo(() => (db.publications || []).filter(p => p.user_record_book === user.record_book_id), [db.publications, user.record_book_id]);
   const myApps = useMemo(() => (db.applications || []).filter(a => a.student_record_book === user.record_book_id), [db.applications, user.record_book_id]);
   const myCerts = useMemo(() => (db.certificates || []).filter(c => c.user_record_book === user.record_book_id), [db.certificates, user.record_book_id]);
+  const myPubCerts = useMemo(() => (db.publication_certificates || []).filter(c => c.user_record_book === user.record_book_id), [db.publication_certificates, user.record_book_id]);
+
+  const handleOpenPubCert = (pub: Publication) => {
+    const existingCert = myPubCerts.find(c => c.publication_id === pub.id);
+    setViewingPubCert({ pub, cert: existingCert || null });
+  };
+
+  const handleGeneratePubCert = async (pubId: string, gender?: 'male' | 'female') => {
+    if (!viewingPubCert || !viewingPubCert.pub) return;
+    
+    // Update user gender if provided during generation
+    if (gender && !user.gender) {
+      onUpdateUser({ ...user, gender });
+    }
+
+    // Generate a unique number
+    const certNumber = Math.floor(10000 + Math.random() * 90000).toString();
+    
+    const newCert: PublicationCertificate = {
+      id: 'pub_cert_' + Date.now(),
+      number: certNumber,
+      user_record_book: user.record_book_id,
+      user_name: `${user.last_name} ${user.first_name}${user.middle_name ? ' ' + user.middle_name : ''}`,
+      publication_id: pubId,
+      publication_title: viewingPubCert.pub.title,
+      publication_type: viewingPubCert.pub.type,
+      publication_journal: viewingPubCert.pub.journal,
+      publication_year: viewingPubCert.pub.year,
+      issue_date: new Date().toISOString(),
+      status: 'issued'
+    };
+    
+    const portalDb = getPortalDB();
+    if (!portalDb.publication_certificates) {
+      portalDb.publication_certificates = [];
+    }
+    
+    // Support regeneration by removing old certificate for this publication
+    portalDb.publication_certificates = portalDb.publication_certificates.filter(c => c.publication_id !== pubId);
+    portalDb.publication_certificates.push(newCert);
+    savePortalDB(portalDb);
+    
+    try {
+      await savePublicationCertificateToFirestore(newCert);
+    } catch (error) {
+      console.error(error);
+    }
+    
+    setViewingPubCert({ pub: viewingPubCert.pub, cert: newCert });
+    onRefresh();
+  };
   const mySnilMembership = useMemo(() => (db.snils || []).find(s => s.member_record_books.includes(user.record_book_id)), [db.snils, user.record_book_id]);
   const mySnilApps = useMemo(() => (db.snil_applications || []).filter(a => a.student_record_book === user.record_book_id), [db.snil_applications, user.record_book_id]);
   
@@ -152,9 +259,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [pubJournal, setPubJournal] = useState('');
   const [pubYear, setPubYear] = useState(new Date().getFullYear());
   const [pubLink, setPubLink] = useState('');
-
-  // Форма добавления интереса
-  const [newInterest, setNewInterest] = useState('');
 
   const myTasks = useMemo(() => (db.tasks || []).filter(t => t.assigned_to_record_book === user.record_book_id), [db.tasks, user.record_book_id]);
   const stats = calculateResearcherStats(user.record_book_id);
@@ -196,34 +300,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     setPubLink('');
     setShowAddPub(false);
     onRefresh();
-  };
-
-  const handleAddInterest = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newInterest.trim()) return;
-    if (user.scientific_interests.includes(newInterest.trim())) return;
-
-    const updated = {
-      ...user,
-      scientific_interests: [...user.scientific_interests, newInterest.trim()]
-    };
-    
-    const dbUser = db.users.find(u => u.record_book_id === user.record_book_id);
-    if (dbUser) dbUser.scientific_interests = updated.scientific_interests;
-    localStorage.setItem('fem_bseu_portal_db_v1', JSON.stringify(db));
-    onUpdateUser(updated);
-    setNewInterest('');
-  };
-
-  const handleRemoveInterest = (item: string) => {
-    const updated = {
-      ...user,
-      scientific_interests: user.scientific_interests.filter(i => i !== item)
-    };
-    const dbUser = db.users.find(u => u.record_book_id === user.record_book_id);
-    if (dbUser) dbUser.scientific_interests = updated.scientific_interests;
-    localStorage.setItem('fem_bseu_portal_db_v1', JSON.stringify(db));
-    onUpdateUser(updated);
   };
 
   const mySnil = useMemo(() => {
@@ -270,11 +346,31 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     onRefresh();
   };
 
+  const handleAddAchievement = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!mySnil || !newSnilAchievement.trim()) return;
+    addAchievementToSnil(mySnil.id, newSnilAchievement.trim());
+    setNewSnilAchievement('');
+    onRefresh();
+  };
+
+  const handleRemoveAchievement = (index: number) => {
+    if (!mySnil) return;
+    if (window.confirm('Вы уверены, что хотите удалить это научное достижение?')) {
+      removeAchievementFromSnil(mySnil.id, index);
+      onRefresh();
+    }
+  };
+
   const generateSnilReport = async () => {
     if (!reportRef.current || !mySnil) return;
     setIsGeneratingReport(true);
     try {
-      const canvas = await html2canvas(reportRef.current, { scale: 2, useCORS: true });
+      let canvas: HTMLCanvasElement | null = null;
+      await withSafeColorsForHtml2Canvas(reportRef.current, async () => {
+        canvas = await html2canvas(reportRef.current!, { scale: 2, useCORS: true });
+      });
+      if (!canvas) throw new Error("Canvas render failed");
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
       const imgWidth = pdf.internal.pageSize.getWidth();
@@ -293,37 +389,59 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     setIsExporting(true);
     
     try {
-      const canvas = await html2canvas(pdfTemplateRef.current, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff'
+      // Ensure fonts are loaded
+      await document.fonts.ready;
+      
+      // Scroll to top to ensure clean capture
+      const scrollPos = window.scrollY;
+      window.scrollTo(0, 0);
+
+      let canvas: HTMLCanvasElement | null = null;
+      await withSafeColorsForHtml2Canvas(pdfTemplateRef.current, async () => {
+        canvas = await html2canvas(pdfTemplateRef.current!, {
+          scale: 3, // Higher resolution for better quality
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff',
+          windowWidth: 800,
+          allowTaint: true
+        });
       });
       
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      // Restore scroll position
+      window.scrollTo(0, scrollPos);
+
+      if (!canvas) throw new Error("Canvas render failed");
+      
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
+      const imgData = canvas.toDataURL('image/jpeg', 1.0);
       const imgWidth = pdfWidth;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
       let heightLeft = imgHeight;
       let position = 0;
-      
+      let pageNumber = 1;
+
+      // First page
       pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
       heightLeft -= pdfHeight;
-      
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
+
+      // Subsequent pages
+      while (heightLeft > 0) {
+        position = -(pdfHeight * pageNumber);
         pdf.addPage();
         pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
         heightLeft -= pdfHeight;
+        pageNumber++;
       }
-      
-      pdf.save(`Портфолио_${user.last_name}_${user.record_book_id}.pdf`);
+
+      pdf.save(`Портфолио_студента_исследователя_${user.last_name}.pdf`);
     } catch (error) {
-      console.error('PDF Export Error:', error);
+      console.error('Portfolio PDF Export Error:', error);
+      alert('Ошибка при генерации портфолио. Пожалуйста, попробуйте позже.');
     } finally {
       setIsExporting(false);
     }
@@ -334,11 +452,15 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     setIsGeneratingApplication(true);
     
     try {
-      const canvas = await html2canvas(snoApplicationRef.current, {
-        scale: 3, // Higher quality for text
-        useCORS: true,
-        backgroundColor: '#ffffff'
+      let canvas: HTMLCanvasElement | null = null;
+      await withSafeColorsForHtml2Canvas(snoApplicationRef.current, async () => {
+        canvas = await html2canvas(snoApplicationRef.current!, {
+          scale: 3, // Higher quality for text
+          useCORS: true,
+          backgroundColor: '#ffffff'
+        });
       });
+      if (!canvas) throw new Error("Canvas render failed");
       
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
@@ -362,124 +484,154 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       localStorage.setItem('fem_bseu_portal_db_v1', JSON.stringify(db));
       onRefresh();
 
+      showToast('Заявление успешно сгенерировано и скачано! Координатор СНО уведомлен.', 'success');
     } catch (error) {
       console.error('Application PDF Error:', error);
+      showToast('Ошибка при генерации заявления.', 'error');
     } finally {
       setIsGeneratingApplication(false);
     }
   };
 
   return (
-    <div className="space-y-8 pb-12">
+    <div className="space-y-8 pb-12 relative">
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: -50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] w-full max-w-md px-4 pointer-events-none"
+          >
+            <div className={`p-4 rounded-2xl shadow-2xl border flex items-center space-x-3 text-xs sm:text-sm font-bold bg-white dark:bg-slate-900 pointer-events-auto ${
+              toast.type === 'success' 
+                ? 'border-emerald-200 dark:border-emerald-800/80 text-emerald-800 dark:text-emerald-300 shadow-emerald-500/10' 
+                : toast.type === 'error'
+                  ? 'border-red-200 dark:border-red-800/80 text-red-800 dark:text-red-300 shadow-red-500/10'
+                  : 'border-blue-200 dark:border-blue-800/80 text-blue-800 dark:text-blue-300 shadow-blue-500/10'
+            }`}>
+              {toast.type === 'success' && <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />}
+              {toast.type === 'error' && <ShieldAlert className="w-5 h-5 text-red-500 flex-shrink-0" />}
+              {toast.type === 'info' && <Sparkles className="w-5 h-5 text-blue-500 flex-shrink-0" />}
+              <span className="flex-1 leading-normal">{toast.message}</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       {/* Профиль карточка исследователя */}
-      <div className="bg-gradient-to-r from-[#0a2a5e] via-blue-900 to-slate-900 rounded-3xl p-8 sm:p-10 text-white shadow-xl border border-[#d4af37]/40 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
+      <div className="bg-gradient-to-r from-[#0a2a5e] via-blue-900 to-slate-900 rounded-3xl p-6 sm:p-10 text-white shadow-xl border border-[#d4af37]/40 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative overflow-hidden">
         <div className="absolute -top-20 -right-20 w-72 h-72 bg-[#d4af37]/15 rounded-full blur-3xl pointer-events-none"></div>
 
-        <div className="flex items-center space-x-6 relative z-10">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 relative z-10 w-full lg:w-auto">
           <div 
             onClick={() => setShowAvatarModal(true)}
-            className="relative group cursor-pointer w-20 sm:w-24 h-20 sm:h-24 rounded-3xl overflow-hidden shadow-xl hover:scale-105 transition-all flex-shrink-0"
+            className="relative group cursor-pointer w-16 sm:w-24 h-16 sm:h-24 rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl hover:scale-105 transition-all flex-shrink-0 mx-auto sm:mx-0"
             title="Изменить аватар"
           >
             <UserAvatar size="2xl" user={user} className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-[10px] font-bold text-[#d4af37] font-mono text-center px-1">
               <Sparkles className="w-4 h-4 mb-1" />
-              <span>ИЗМЕНИТЬ АВАТАР</span>
+              <span>ИЗМЕНИТЬ</span>
             </div>
           </div>
-          <div className="space-y-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="px-3 py-0.5 rounded-full bg-[#d4af37] text-[#0a2a5e] font-bold text-xs uppercase tracking-wider">
+          <div className="space-y-1 w-full text-center sm:text-left">
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 sm:gap-2">
+              <span className={`px-2 py-0.5 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-wider border ${
+                user.role === 'admin' ? 'bg-red-500/20 text-red-300 border-red-500/30' :
+                user.role === 'coordinator' ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' :
+                user.role === 'snil_head' ? 'bg-purple-500/20 text-purple-300 border-purple-500/30' :
+                user.role === 'activist' ? 'bg-teal-500/20 text-teal-300 border-teal-500/30' :
+                'bg-blue-500/20 text-blue-300 border-blue-500/30'
+              }`}>
+                {getRoleTitle(user.role)}
+              </span>
+              <span className="px-2 sm:px-3 py-0.5 rounded-full bg-[#d4af37] text-[#0a2a5e] font-bold text-[9px] sm:text-xs uppercase tracking-wider whitespace-nowrap">
                 Зачётка № {user.record_book_id}
               </span>
-              <span className="text-xs font-mono bg-blue-950 px-2 py-0.5 rounded text-blue-300 flex items-center gap-2">
-                Группа: 
-                {isEditingProfile ? (
-                    <select className="bg-blue-900 text-white p-1 rounded" value={tempGroup} onChange={e => setTempGroup(e.target.value)}>
-                        {GROUPS.map(g => <option key={g} value={g}>{g}</option>)}
-                    </select>
-                ) : user.group}
+              <span className="text-[9px] sm:text-xs font-mono bg-blue-950 px-2 py-0.5 rounded text-blue-300 flex items-center gap-2 whitespace-nowrap">
+                Группа: {user.group}
               </span>
             </div>
-            <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight">{user.last_name} {user.first_name}</h1>
-            <div className="text-blue-200 text-xs sm:text-sm opacity-90 flex flex-wrap items-center gap-2">
-                {user.faculty} • 
-                {isEditingProfile ? (
-                    <select className="bg-blue-900 text-white p-1 rounded" value={tempDepartment} onChange={e => setTempDepartment(e.target.value)}>
-                        {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
-                    </select>
-                ) : user.department}
-
-                {isEditingProfile && (
-                  <div className="flex items-center gap-2 ml-4 bg-blue-950/50 px-3 py-1 rounded-lg border border-blue-800/30">
-                    <input 
-                      type="checkbox" 
-                      id="is_private" 
-                      checked={tempIsPrivate} 
-                      onChange={e => setTempIsPrivate(e.target.checked)}
-                      className="w-4 h-4 rounded border-blue-500 text-blue-600 focus:ring-blue-500"
-                    />
-                    <label htmlFor="is_private" className="text-[10px] font-bold uppercase tracking-wider text-blue-200 cursor-pointer">
-                      Скрыть профиль в рейтинге
-                    </label>
-                  </div>
-                )}
-                
-                <div className="flex gap-2 ml-2">
-                    {isEditingProfile ? (
-                        <button onClick={handleSaveProfile} className="flex items-center gap-1 bg-green-600 text-white text-xs px-2 py-1 rounded hover:bg-green-700">
-                            <Save className="w-3 h-3" /> Сохранить
-                        </button>
-                    ) : (
-                        <button onClick={() => setIsEditingProfile(true)} className="flex items-center gap-1 bg-blue-600 text-white text-xs px-2 py-1 rounded hover:bg-blue-700">
-                            <Edit3 className="w-3 h-3" /> Редактировать
-                        </button>
-                    )}
-                    <button onClick={() => signOut(auth)} className="flex items-center gap-1 bg-red-600 text-white text-xs px-2 py-1 rounded hover:bg-red-700">
-                        <LogOut className="w-3 h-3" /> Выйти
-                    </button>
-                </div>
+            <h1 className="text-xl sm:text-4xl font-extrabold tracking-tight leading-tight">{user.last_name} {user.first_name}</h1>
+            <div className="text-blue-200 text-[10px] sm:text-sm opacity-90 flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                {user.faculty} • {user.department}
             </div>
-            
           </div>
         </div>
 
-        {/* Кнопка экспорта в PDF */}
-        <div className="relative z-10 w-full md:w-auto flex flex-wrap gap-2">
+        <div className="relative z-10 w-full lg:w-auto grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-wrap items-center gap-2 sm:gap-3">
+          <button 
+            onClick={() => setIsEditingProfile(true)} 
+            className="flex items-center justify-center gap-2 bg-white/10 text-white border border-white/20 text-xs sm:text-sm px-4 py-2.5 rounded-xl hover:bg-white/20 transition-all font-bold shadow-lg w-full sm:w-auto group"
+          >
+            <Settings className="w-4 h-4 text-[#d4af37] group-hover:rotate-90 transition-transform duration-500" /> Настройки
+          </button>
+
           {user.role === 'student' && (
             <button
               onClick={() => {
                 if (myPubs.length < 2) {
-                  alert("Чтобы подать заявку и заявление на вступление в СНО, нужно иметь как минимум две публикации: две статьи или два доклада");
+                  alert("Для вступления в СНО необходимо иметь 2+ научные публикации (статьи или тезисы докладов). Пока у вас: " + myPubs.length);
                   return;
                 }
                 generateSnoApplication();
               }}
               disabled={isGeneratingApplication}
-              className={`px-3 py-2 rounded-lg ${myPubs.length < 2 ? 'bg-slate-400' : 'bg-blue-600 hover:bg-blue-700'} text-white font-bold text-xs sm:text-sm shadow-sm flex items-center justify-center space-x-1.5 transition-all disabled:opacity-70`}
+              className={`px-4 py-2 rounded-xl ${myPubs.length < 2 ? 'bg-slate-500/50 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20'} text-white font-bold text-xs sm:text-sm shadow-lg flex items-center justify-center space-x-2 transition-all disabled:opacity-70 w-full sm:w-auto`}
             >
               {isGeneratingApplication ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <Plus className="w-4 h-4" />
+                <Sparkles className="w-4 h-4 text-amber-400" />
               )}
-              <span>{myPubs.length < 2 ? 'Нужно 2+ публикации' : (isGeneratingApplication ? 'Генерация...' : 'Вступить в СНО')}</span>
+              <div className="flex flex-col items-start text-left leading-none">
+                <span>Вступить в СНО</span>
+                <span className="text-[9px] opacity-70 mt-0.5">Нужно 2+ публикации</span>
+              </div>
             </button>
           )}
 
           <button
             onClick={exportPortfolioToPdf}
             disabled={isExporting}
-            className="px-3 py-2 rounded-lg bg-gradient-to-r from-[#d4af37] to-amber-500 text-[#0a2a5e] font-extrabold text-xs sm:text-sm shadow-sm hover:brightness-110 flex items-center justify-center space-x-1.5 transition-all group disabled:opacity-70 disabled:cursor-not-allowed"
+            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#d4af37] to-amber-500 text-[#0a2a5e] font-extrabold text-xs sm:text-sm shadow-lg hover:brightness-110 flex items-center justify-center space-x-2 transition-all group disabled:opacity-70 disabled:cursor-not-allowed w-full sm:w-auto sm:col-span-2 lg:col-span-1"
+            title="Выгрузить полный отчет о научной активности"
           >
             {isExporting ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
-              <Download className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform" />
+              <FileText className="w-4 h-4" />
             )}
-            <span>{isExporting ? 'Генерация...' : 'Экспорт PDF'}</span>
+            <span>{isExporting ? 'Генерация...' : 'Портфолио студента-исследователя'}</span>
           </button>
+
+          {showLogoutConfirm ? (
+            <div className="flex items-center justify-center gap-2 bg-red-500/10 border border-red-500/30 px-3 py-2 rounded-xl w-full sm:w-auto">
+              <span className="text-xs font-bold text-red-400">Выйти?</span>
+              <button
+                onClick={onLogout}
+                className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-black shadow-sm transition-colors"
+              >
+                Да
+              </button>
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                className="px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold transition-colors"
+              >
+                Нет
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowLogoutConfirm(true)}
+              className="flex items-center justify-center gap-2 bg-red-500/10 text-red-400 border border-red-500/20 text-xs sm:text-sm px-4 py-2.5 rounded-xl hover:bg-red-500/20 transition-all font-bold shadow-lg w-full sm:w-auto group"
+            >
+              <LogOut className="w-4 h-4 group-hover:translate-x-1 transition-transform" /> Выйти
+            </button>
+          )}
         </div>
       </div>
 
@@ -597,6 +749,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   <span className="text-[10px] font-bold text-[#64748b] uppercase">Доклады</span>
                   <span className="text-sm font-black text-[#0a2a5e]">{myApps.length}</span>
                 </div>
+                {mySnilMembership && (
+                  <div className="flex justify-between items-center pb-2" style={{ borderBottom: '1px solid #e2e8f0' }}>
+                    <span className="text-[10px] font-bold text-[#64748b] uppercase">СНИЛ</span>
+                    <span className="text-[10px] font-black text-blue-600 uppercase">Участник</span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-bold text-[#64748b] uppercase">Рейтинг ФЭМ</span>
                   <span className="text-sm font-black text-[#d4af37]">{stats.ratingPoints}</span>
@@ -604,6 +762,19 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               </div>
             </div>
           </div>
+
+          {user.scientific_interests.length > 0 && (
+            <div className="mb-10">
+              <h3 className="text-lg font-black text-[#1e293b] mb-4 pl-3 uppercase tracking-tight" style={{ borderLeft: '4px solid #0a2a5e' }}>Научные интересы</h3>
+              <div className="flex flex-wrap gap-2">
+                {user.scientific_interests.map(interest => (
+                  <span key={interest} className="px-3 py-1 bg-slate-50 text-slate-600 rounded-full text-[10px] font-bold border border-slate-200 uppercase tracking-wide">
+                    {interest}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="mb-10">
             <h3 className="text-lg font-black text-[#1e293b] mb-4 pl-3 uppercase tracking-tight" style={{ borderLeft: '4px solid #0a2a5e' }}>Список опубликованных научных работ</h3>
@@ -652,6 +823,72 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               )}
             </div>
           </div>
+
+          {(mySnilMembership || mySnilApps.length > 0) && (
+            <div className="mb-10">
+              <h3 className="text-lg font-black text-[#1e293b] mb-4 pl-3 uppercase tracking-tight" style={{ borderLeft: '4px solid #0a2a5e' }}>Участие в деятельности СНИЛ</h3>
+              <div className="space-y-4">
+                {mySnilMembership && (
+                  <div className="p-4 rounded-xl border border-blue-50" style={{ backgroundColor: '#f0f9ff' }}>
+                    <div className="flex justify-between items-start mb-1">
+                      <p className="text-sm font-bold text-[#0369a1]">{mySnilMembership.name}</p>
+                      <span className="text-[9px] font-black text-[#0ea5e9] uppercase tracking-widest">Действующий участник</span>
+                    </div>
+                    <p className="text-[10px] text-[#64748b] leading-relaxed mb-3">{mySnilMembership.description}</p>
+                    <div className="flex items-center space-x-2">
+                       <span className="text-[9px] px-2 py-0.5 rounded-full font-bold uppercase" style={{ backgroundColor: '#e0f2fe', color: '#0369a1' }}>
+                         {user.role === 'snil_head' ? 'Руководитель СНИЛ' : 'Член СНИЛ'}
+                       </span>
+                       <span className="text-[9px] font-bold text-slate-400">Зачислено: {new Date(mySnilMembership.created_at || Date.now()).toLocaleDateString('ru-RU')}</span>
+                    </div>
+                  </div>
+                )}
+                {mySnilApps.map(app => (
+                  <div key={app.id} className="p-4 rounded-xl border border-slate-100 border-dashed">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="text-sm font-bold text-slate-700">Заявка на вступление: {app.snil_name}</p>
+                        <p className="text-[10px] text-slate-500 italic mt-1">«{app.motivation_letter.substring(0, 100)}...»</p>
+                      </div>
+                      <div className="text-right">
+                        <span className={`text-[9px] px-2 py-0.5 rounded-full font-black uppercase ${
+                          app.status === 'pending' ? 'bg-slate-100 text-slate-600' : 
+                          app.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                        }`}>
+                          {app.status === 'pending' ? 'На рассмотрении' : (app.status === 'approved' ? 'Одобрено' : 'Отклонено')}
+                        </span>
+                        <p className="text-[8px] text-slate-400 mt-1 font-bold">{new Date(app.created_at).toLocaleDateString('ru-RU')}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {myTasks.length > 0 && (
+            <div className="mb-10">
+              <h3 className="text-lg font-black text-[#1e293b] mb-4 pl-3 uppercase tracking-tight" style={{ borderLeft: '4px solid #0a2a5e' }}>Индивидуальные научные задачи</h3>
+              <div className="space-y-3">
+                {myTasks.map((t, idx) => (
+                  <div key={t.id} className="p-3 rounded-xl border border-slate-50 flex items-center justify-between" style={{ backgroundColor: '#fafafa' }}>
+                    <div className="flex-1 pr-4">
+                      <p className="text-sm font-bold text-slate-800 leading-tight">{t.title}</p>
+                      <p className="text-[10px] text-slate-500 mt-0.5">{t.description}</p>
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <span className={`text-[8px] px-2 py-0.5 rounded font-black uppercase tracking-tighter ${
+                        t.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                      }`}>
+                        {t.status === 'completed' ? 'Выполнено' : 'В работе'}
+                      </span>
+                      {t.due_date && <p className="text-[8px] text-slate-400 mt-1 font-bold">Срок: {new Date(t.due_date).toLocaleDateString('ru-RU')}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="mb-10">
             <h3 className="text-lg font-black text-[#1e293b] mb-4 pl-3 uppercase tracking-tight" style={{ borderLeft: '4px solid #0a2a5e' }}>Достижения и сертификаты</h3>
@@ -702,10 +939,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       </div>
 
       {/* Дашборд показателей (4 карточки) */}
-      <div className="mb-6">
+      <div className="mb-4 sm:mb-6">
         <TelegramSettings user={user} onUpdate={onUpdateUser} />
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         <DashStat title="Публикации" value={myPubs.length} desc={`${stats.totalPubs} верифицировано`} highlight />
         <DashStat title="Доклады" value={myApps.length} desc="конференции БГЭУ" />
         <DashStat 
@@ -714,28 +951,28 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           desc={mySnilMembership ? mySnilMembership.name : (mySnilApps[0]?.snil_name || 'Не зачислен')} 
           highlight={!!mySnilMembership}
         />
-        <DashStat title="Задачи СНИЛ" value={myTasks.length} desc="поручения" />
+        <DashStat title="Задачи" value={myTasks.length} desc="поручения" />
       </div>
 
       {/* График научной активности */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
-        <div className="flex items-center justify-between mb-6">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-3">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
-              <TrendingUp className="w-5 h-5" />
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
+              <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
-              <h3 className="font-extrabold text-slate-800 dark:text-blue-100 tracking-tight">Научная активность</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Динамика публикаций и заявок за последние 12 месяцев</p>
+              <h3 className="font-extrabold text-sm sm:text-base text-slate-800 dark:text-blue-100 tracking-tight">Научная активность</h3>
+              <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 leading-tight">Динамика публикаций и заявок</p>
             </div>
           </div>
-          <div className="hidden sm:flex items-center space-x-4 text-[10px] font-bold uppercase tracking-wider">
+          <div className="flex items-center space-x-4 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">
              <div className="flex items-center space-x-1.5">
-               <div className="w-2.5 h-2.5 rounded-full bg-[#d4af37]"></div>
-               <span className="text-slate-500 dark:text-slate-400">Публикации</span>
+               <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-[#d4af37]"></div>
+               <span className="text-slate-500 dark:text-slate-400">Труды</span>
              </div>
              <div className="flex items-center space-x-1.5">
-               <div className="w-2.5 h-2.5 rounded-full bg-blue-600"></div>
+               <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-blue-600"></div>
                <span className="text-slate-500 dark:text-slate-400">Заявки</span>
              </div>
           </div>
@@ -855,7 +1092,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="sm:col-span-2">
-                  <label className="block text-[10px] font-mono uppercase text-slate-600 dark:text-slate-400 mb-1">Сборник / Журнал ВАК *</label>
+                  <label className="block text-[10px] font-mono uppercase text-slate-600 dark:text-slate-400 mb-1">Сборник / Научное издание *</label>
                   <input type="text" required placeholder="Вестник БГЭУ №2 / Сборник Декады науки" value={pubJournal} onChange={e => setPubJournal(e.target.value)} className="w-full px-3 py-2 bg-white dark:bg-slate-800 dark:text-slate-100 rounded-xl border dark:border-slate-700 text-sm focus:outline-none" />
                 </div>
                 <div>
@@ -892,7 +1129,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                       <span className="text-slate-500 dark:text-slate-400">{pb.year} г.</span>
                       {pb.is_confirmed ? (
                         <span className="text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded font-bold flex items-center space-x-1">
-                          <CheckCircle2 className="w-3 h-3" /> <span>Верифицировано ВАК</span>
+                          <CheckCircle2 className="w-3 h-3" /> <span>Верифицировано СНО</span>
                         </span>
                       ) : (
                         <span className="text-amber-800 dark:text-amber-500 bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 rounded font-bold flex items-center space-x-1">
@@ -905,15 +1142,22 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   </div>
 
                   <div className="flex items-center space-x-2 self-end sm:self-center">
+                    <button
+                      onClick={() => handleOpenPubCert(pb)}
+                      className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      title={pb.is_confirmed ? "Справка о наличии публикации" : "Ожидайте верификации СНО"}
+                      disabled={!pb.is_confirmed}
+                    >
+                      <FileText className="w-4 h-4" />
+                    </button>
                     {pb.link && (
                       <a href={pb.link} target="_blank" rel="noreferrer" className="p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all" title="Открыть ссылку">
                         <ExternalLink className="w-4 h-4" />
                       </a>
                     )}
                     <button
-                      onClick={() => {
-                        db.publications = db.publications.filter(p => p.id !== pb.id);
-                        localStorage.setItem('fem_bseu_portal_db_v1', JSON.stringify(db));
+                      onClick={async () => {
+                        await deletePublication(pb.id);
                         onRefresh();
                       }}
                       className="p-2 rounded-xl bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
@@ -1159,11 +1403,56 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                           <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">{ann.content}</p>
                         </div>
                         <button 
-                          onClick={() => {
-                            deleteAnnouncement(ann.id);
+                          onClick={async () => {
+                            await deleteAnnouncement(ann.id);
                             onRefresh();
                           }}
                           className="p-2 text-slate-400 hover:text-red-500 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Achievements Management Card */}
+              <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 shadow-sm space-y-6">
+                <div className="flex items-center space-x-3 text-[#0a2a5e] dark:text-blue-300">
+                  <Trophy className="w-6 h-6 text-amber-500" />
+                  <h3 className="text-xl font-black uppercase tracking-tight">Достижения и результаты СНИЛ</h3>
+                </div>
+
+                <form onSubmit={handleAddAchievement} className="flex gap-2">
+                  <input 
+                    type="text" 
+                    required 
+                    placeholder="Например: Разработка новой экономической модели или патент"
+                    value={newSnilAchievement}
+                    onChange={e => setNewSnilAchievement(e.target.value)}
+                    className="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-sm focus:outline-none focus:border-blue-500 transition-all dark:text-white"
+                  />
+                  <button type="submit" className="px-5 py-3 bg-[#0a2a5e] text-[#d4af37] font-black rounded-xl hover:bg-blue-900 transition-all flex items-center gap-1">
+                    <Plus className="w-4 h-4" />
+                    <span className="hidden sm:inline text-xs uppercase tracking-widest">Добавить</span>
+                  </button>
+                </form>
+
+                <div className="space-y-3">
+                  {(!mySnil.achievements || mySnil.achievements.length === 0) ? (
+                    <p className="text-sm text-slate-400 text-center py-6">Достижения и результаты вашей лаборатории еще не добавлены.</p>
+                  ) : (
+                    mySnil.achievements.map((ach, index) => (
+                      <div key={index} className="flex items-center justify-between p-4 rounded-2xl border border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/20 gap-4">
+                        <div className="flex items-start space-x-2.5">
+                          <Sparkles className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                          <span className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 leading-relaxed">{ach}</span>
+                        </div>
+                        <button 
+                          onClick={() => handleRemoveAchievement(index)}
+                          className="p-1.5 text-slate-400 hover:text-red-500 transition-colors flex-shrink-0"
+                          title="Удалить достижение"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -1371,27 +1660,26 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <p className="text-xs text-slate-500 dark:text-slate-400">Используются системой для персональной рекомендации конференций и подбора команд СНИЛ</p>
           </div>
 
-          <form onSubmit={handleAddInterest} className="flex flex-col sm:flex-row gap-3 max-w-lg">
-            <input
-              type="text"
-              placeholder="Новый интерес (например: Эконометрика)..."
-              value={newInterest}
-              onChange={e => setNewInterest(e.target.value)}
-              className="flex-1 px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:border-[#0a2a5e] dark:focus:border-blue-500 dark:text-slate-100 transition-colors min-h-[44px]"
-            />
-            <button type="submit" className="px-6 py-3 bg-[#0a2a5e] text-white font-bold text-sm rounded-xl hover:bg-blue-900 transition-colors min-h-[44px] shadow-sm">
-              Добавить
-            </button>
-          </form>
-
           <div className="flex flex-wrap gap-2 pt-2">
             {user.scientific_interests.map(intr => (
               <span key={intr} className="px-3.5 py-2 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-950 dark:text-blue-200 font-medium text-xs flex items-center space-x-2 border border-blue-100 dark:border-blue-900 shadow-sm transition-colors">
                 <span>💡 {intr}</span>
-                <button type="button" onClick={() => handleRemoveInterest(intr)} className="text-slate-400 hover:text-red-500 dark:hover:text-red-400 font-bold ml-1 transition-colors">×</button>
               </span>
             ))}
+            {user.scientific_interests.length === 0 && (
+              <p className="text-sm text-slate-400 italic">Научные интересы не указаны. Нажмите «Настройки», чтобы добавить их.</p>
+            )}
           </div>
+          
+          <button 
+            onClick={() => {
+              setTempInterests([...user.scientific_interests]);
+              setIsEditingProfile(true);
+            }}
+            className="mt-4 px-6 py-3 bg-blue-600/10 text-blue-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-blue-600/20 transition-all"
+          >
+            Редактировать интересы
+          </button>
         </div>
       )}
 
@@ -1411,6 +1699,197 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           onSave={handleSaveAvatar}
         />
       )}
+
+      {viewingPubCert && (
+        <PublicationCertificateModal
+          certificate={viewingPubCert.cert}
+          publication={viewingPubCert.pub}
+          user={user}
+          onClose={() => setViewingPubCert(null)}
+          onGenerate={handleGeneratePubCert}
+        />
+      )}
+
+      {/* Edit Profile Modal */}
+      <AnimatePresence>
+        {isEditingProfile && (
+          <div className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center p-0 sm:p-6 bg-slate-900/80 backdrop-blur-md overflow-y-auto" onClick={() => setIsEditingProfile(false)}>
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 100 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 100 }}
+              className="bg-white dark:bg-slate-900 rounded-t-[2.5rem] sm:rounded-[3rem] w-full max-w-2xl shadow-2xl relative flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800 max-h-[95vh] sm:max-h-[85vh]"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between p-6 sm:p-8 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-600 text-white rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0">
+                    <UserCircle className="w-6 h-6 sm:w-7 sm:h-7" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">Настройки</h2>
+                    <p className="text-[10px] sm:text-sm text-slate-500">Управляйте своими данными</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setIsEditingProfile(false)}
+                  className="p-2 sm:p-3 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-xl sm:rounded-2xl hover:bg-slate-200 transition-all"
+                >
+                  <X className="w-5 h-5 sm:w-6 sm:h-6" />
+                </button>
+              </div>
+
+              <div className="p-6 sm:p-8 overflow-y-auto space-y-6 sm:space-y-8 flex-1 scrollbar-none">
+                {/* Academic Section */}
+                <div className="space-y-6">
+                  <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+                    <GraduationCap className="w-5 h-5" />
+                    <h3 className="font-black uppercase text-xs tracking-widest">Академические данные</h3>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Группа</label>
+                      <div className="relative group">
+                        <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+                        <select 
+                          value={tempGroup} 
+                          onChange={e => setTempGroup(e.target.value)}
+                          className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border-2 border-transparent focus:border-blue-600 focus:bg-white dark:focus:bg-slate-700 transition-all outline-none text-slate-800 dark:text-white font-bold"
+                        >
+                          {GROUPS.map(g => <option key={g} value={g}>{g}</option>)}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Ваш пол</label>
+                      <div className="flex gap-2 p-1 bg-slate-50 dark:bg-slate-800 rounded-2xl">
+                        <button 
+                          onClick={() => setTempGender('male')}
+                          className={`flex-1 py-3 rounded-xl font-bold transition-all ${tempGender === 'male' ? 'bg-white dark:bg-slate-700 shadow-md text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+                        >
+                          Мужской
+                        </button>
+                        <button 
+                          onClick={() => setTempGender('female')}
+                          className={`flex-1 py-3 rounded-xl font-bold transition-all ${tempGender === 'female' ? 'bg-white dark:bg-slate-700 shadow-md text-pink-600' : 'text-slate-400 hover:text-slate-600'}`}
+                        >
+                          Женский
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Кафедра</label>
+                    <div className="relative group">
+                      <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+                      <select 
+                        value={tempDepartment} 
+                        onChange={e => setTempDepartment(e.target.value)}
+                        className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border-2 border-transparent focus:border-blue-600 focus:bg-white dark:focus:bg-slate-700 transition-all outline-none text-slate-800 dark:text-white font-bold"
+                      >
+                        {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Interests Section */}
+                <div className="space-y-6 pt-4 border-t border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                    <Sparkles className="w-5 h-5" />
+                    <h3 className="font-black uppercase text-xs tracking-widest">Научные интересы</h3>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Добавить интерес..."
+                        value={newInterest}
+                        onChange={e => setNewInterest(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddInterestToTemp())}
+                        className="flex-1 px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-2xl border-2 border-transparent focus:border-blue-600 outline-none text-sm"
+                      />
+                      <button 
+                        onClick={handleAddInterestToTemp}
+                        className="px-6 py-3 bg-slate-900 dark:bg-slate-700 text-white rounded-2xl font-bold text-sm hover:bg-slate-800 transition-all"
+                      >
+                        <Plus className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {tempInterests.map(interest => (
+                        <span key={interest} className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-xl text-xs font-bold flex items-center gap-2 border border-blue-100 dark:border-blue-800">
+                          {interest}
+                          <button onClick={() => handleRemoveInterestFromTemp(interest)} className="hover:text-red-500">
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </span>
+                      ))}
+                      {tempInterests.length === 0 && (
+                        <p className="text-xs text-slate-400 italic py-2">Список интересов пуст</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Privacy Section */}
+                <div className="space-y-6 pt-4 border-t border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
+                    <Shield className="w-5 h-5" />
+                    <h3 className="font-black uppercase text-xs tracking-widest">Приватность</h3>
+                  </div>
+
+                  <div 
+                    onClick={() => setTempIsPrivate(!tempIsPrivate)}
+                    className={`p-6 rounded-[2rem] border-2 transition-all cursor-pointer flex items-center justify-between group ${tempIsPrivate ? 'border-indigo-600 bg-indigo-50/30 dark:bg-indigo-900/10' : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-200'}`}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${tempIsPrivate ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
+                        {tempIsPrivate ? <Shield className="w-6 h-6" /> : <Globe className="w-6 h-6" />}
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-800 dark:text-white">Приватный профиль</p>
+                        <p className="text-xs text-slate-500">Скрыть мои данные из общего рейтинга</p>
+                      </div>
+                    </div>
+                    <div className={`w-14 h-8 rounded-full relative transition-all duration-300 ${tempIsPrivate ? 'bg-indigo-600' : 'bg-slate-200 dark:bg-slate-800'}`}>
+                      <div className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow-md transition-all duration-300 ${tempIsPrivate ? 'left-7' : 'left-1'}`}></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 dark:bg-blue-900/10 p-6 rounded-[2rem] flex gap-4 border border-blue-100 dark:border-blue-900/30">
+                  <Info className="w-6 h-6 text-blue-600 shrink-0" />
+                  <p className="text-xs leading-relaxed text-blue-800 dark:text-blue-300">
+                    Данные о вашей группе и кафедре используются для участия в командных рейтингах. Выбор пола необходим для автоматической подстановки окончаний в официальных справках («студенту»/«студентке»).
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-6 sm:p-8 bg-slate-50 dark:bg-slate-800/50 flex gap-3 sm:gap-4 shrink-0">
+                <button 
+                  onClick={() => setIsEditingProfile(false)}
+                  className="flex-1 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-slate-600 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all text-sm sm:text-base"
+                >
+                  Отмена
+                </button>
+                <button 
+                  onClick={handleSaveProfile}
+                  className="flex-[2] py-3 sm:py-4 bg-blue-600 text-white rounded-xl sm:rounded-2xl font-bold hover:bg-blue-700 shadow-xl shadow-blue-600/20 flex items-center justify-center gap-2 text-sm sm:text-base"
+                >
+                  <Save className="w-5 h-5" />
+                  Сохранить
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
     </div>
   );

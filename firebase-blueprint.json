@@ -1,0 +1,123 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Student or staff user profile",
+      "type": "object",
+      "properties": {
+        "record_book_id": { "type": "string" },
+        "last_name": { "type": "string" },
+        "first_name": { "type": "string" },
+        "middle_name": { "type": "string" },
+        "role": { "type": "string", "enum": ["student", "activist", "snil_head", "coordinator", "admin"] },
+        "group": { "type": "string" },
+        "course": { "type": "integer" },
+        "faculty": { "type": "string" },
+        "department": { "type": "string" },
+        "scientific_interests": { "type": "array", "items": { "type": "string" } },
+        "avatar_url": { "type": "string" },
+        "telegram_chat_id": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["record_book_id", "last_name", "first_name", "role"]
+    },
+    "Publication": {
+      "title": "Publication",
+      "description": "Scientific publication",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "user_record_book": { "type": "string" },
+        "title": { "type": "string" },
+        "type": { "type": "string", "enum": ["тезисы", "статья", "монография", "учебное_пособие"] },
+        "journal": { "type": "string" },
+        "year": { "type": "integer" },
+        "url": { "type": "string" },
+        "is_confirmed": { "type": "boolean" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "user_record_book", "title", "type"]
+    },
+    "SNIL": {
+      "title": "SNIL",
+      "description": "Scientific Student Laboratory",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "head_record_book": { "type": "string" },
+        "head_name": { "type": "string" },
+        "department": { "type": "string" },
+        "description": { "type": "string" },
+        "research_directions": { "type": "array", "items": { "type": "string" } },
+        "member_record_books": { "type": "array", "items": { "type": "string" } },
+        "is_active": { "type": "boolean" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "head_record_book"]
+    },
+    "ScientificEvent": {
+      "title": "ScientificEvent",
+      "description": "Scientific conference or workshop",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "type": { "type": "string", "enum": ["конференция", "семинар", "круглый_стол", "олимпиада", "выставка"] },
+        "description": { "type": "string" },
+        "organizer": { "type": "string" },
+        "start_date": { "type": "string", "format": "date" },
+        "end_date": { "type": "string", "format": "date" },
+        "registration_deadline": { "type": "string", "format": "date" },
+        "location": { "type": "string" },
+        "is_active": { "type": "boolean" },
+        "max_participants": { "type": "integer" },
+        "participant_record_books": { "type": "array", "items": { "type": "string" } },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "type", "start_date"]
+    },
+    "SNONews": {
+      "title": "SNONews",
+      "description": "Scientific news and announcements",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "author_record_book": { "type": "string" },
+        "author_name": { "type": "string" },
+        "is_pinned": { "type": "boolean" },
+        "image_url": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "content"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/publications/{pubId}": {
+      "schema": "Publication",
+      "description": "Scientific publications"
+    },
+    "/snils/{snilId}": {
+      "schema": "SNIL",
+      "description": "Scientific Student Laboratories"
+    },
+    "/events/{eventId}": {
+      "schema": "ScientificEvent",
+      "description": "Scientific events"
+    },
+    "/news/{newsId}": {
+      "schema": "SNONews",
+      "description": "General news"
+    },
+    "/global_config/v1": {
+      "schema": "object",
+      "description": "Global application configuration and metadata"
+    }
+  }
+}

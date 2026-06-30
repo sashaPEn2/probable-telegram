@@ -3,6 +3,7 @@ import { PortalDatabase, createSnilApplication, savePortalDB, addNotificationAnd
 import { CustomUser, SNIL, ResearchTask } from '../types';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { withSafeColorsForHtml2Canvas } from '../lib/pdfUtils';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   FlaskConical, 
@@ -46,24 +47,32 @@ export const SnilView: React.FC<SnilViewProps> = ({
   const [activeSnil, setActiveSnil] = useState<SNIL | null>(null);
   const [isGeneratingApplication, setIsGeneratingApplication] = useState(false);
   const snilApplicationRef = useRef<HTMLDivElement>(null);
+  const [isJoinSectionOpen, setIsJoinSectionOpen] = useState(false);
   
-  const snils = db.snils || [];
-  const userSnil = snils.find(s => user && s.member_record_books.includes(user.record_book_id));
+  const allSnils = db.snils || [];
+  
+  const snils = React.useMemo(() => {
+    if (!selectedSnilId) return allSnils;
+    const targetId = selectedSnilId === 'snil_1' ? 'snil_innovatika' : selectedSnilId;
+    const filtered = allSnils.filter(s => s.id === targetId);
+    return filtered.length > 0 ? filtered : allSnils;
+  }, [allSnils, selectedSnilId]);
+
+  const userSnil = allSnils.find(s => user && s.member_record_books.includes(user.record_book_id));
   const userApplications = db.snil_applications || [];
   const myPendingApp = user ? userApplications.find(a => a.student_record_book === user.record_book_id && a.status !== 'отклонена') : null;
 
   const handleJoinRequest = (snil: SNIL) => {
     if (!user) return;
-    if (snil.member_record_books.includes(user.record_book_id)) return;
+    if (userSnil || myPendingApp) return;
 
-    snil.member_record_books.push(user.record_book_id);
-    savePortalDB(db);
+    createSnilApplication(snil.id, snil.name, user.record_book_id);
 
     addNotificationAndNotifyTelegram({
       id: 'notif_' + Date.now(),
       user_record_book: snil.head_record_book,
-      title: 'Новый участник в лаборатории СНИЛ!',
-      message: `Студент ${user.last_name} ${user.first_name} вступил в состав «${snil.name}»`,
+      title: 'Новая заявка в СНИЛ!',
+      message: `Студент ${user.last_name} ${user.first_name} подал заявку на вступление в «${snil.name}»`,
       type: 'info',
       is_read: false,
       created_at: new Date().toISOString()
@@ -80,11 +89,15 @@ export const SnilView: React.FC<SnilViewProps> = ({
     // but here we can just use a timeout or better yet, a dedicated generation function.
     setTimeout(async () => {
       try {
-        const canvas = await html2canvas(snilApplicationRef.current!, {
-          scale: 3,
-          useCORS: true,
-          backgroundColor: '#ffffff'
+        let canvas: HTMLCanvasElement | null = null;
+        await withSafeColorsForHtml2Canvas(snilApplicationRef.current!, async () => {
+          canvas = await html2canvas(snilApplicationRef.current!, {
+            scale: 3,
+            useCORS: true,
+            backgroundColor: '#ffffff'
+          });
         });
+        if (!canvas) throw new Error("Canvas render failed");
         
         const imgData = canvas.toDataURL('image/png');
         const pdf = new jsPDF('p', 'mm', 'a4');
@@ -137,49 +150,77 @@ export const SnilView: React.FC<SnilViewProps> = ({
         </div>
       </div>
 
-      {/* Instructions Section */}
+      {/* Instructions Section (Collapsible) */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800 rounded-3xl p-8"
+        className="bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800 rounded-3xl overflow-hidden shadow-xs hover:shadow-md transition-all duration-300"
       >
-        <div className="flex items-start space-x-4">
-          <div className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm flex-shrink-0 border border-blue-200 dark:border-blue-700">
-            <FileText className="w-6 h-6 text-[#0a2a5e] dark:text-blue-400" />
-          </div>
-          <div className="space-y-2">
-            <h3 className="text-xl font-black text-[#0a2a5e] dark:text-white uppercase tracking-tight">Как вступить в СНИЛ ФЭМ?</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2 text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">
-                  <span className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">1</span>
-                  <span>Выбор и заявление</span>
-                </div>
-                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
-                  Выберите интересующую вас лабораторию ниже и нажмите кнопку <b>«Скачать заявление (PDF)»</b>. Файл будет автоматически заполнен вашими данными из личного кабинета.
-                </p>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2 text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">
-                  <span className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">2</span>
-                  <span>Подпись и подача</span>
-                </div>
-                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
-                  Распечатайте документ, поставьте свою подпись и принесите его на кафедру руководителю СНИЛ (указан в карточке лаборатории).
-                </p>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2 text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">
-                  <span className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">3</span>
-                  <span>Активация</span>
-                </div>
-                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
-                  После того как руководитель подпишет ваше заявление, он добавит вас в состав СНИЛ через свою панель управления. Вы получите уведомление!
-                </p>
-              </div>
+        <button
+          onClick={() => setIsJoinSectionOpen(!isJoinSectionOpen)}
+          className="w-full p-6 sm:p-8 flex items-center justify-between text-left focus:outline-none hover:bg-blue-100/20 dark:hover:bg-blue-900/20 transition-colors"
+        >
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm flex-shrink-0 border border-blue-200 dark:border-blue-700">
+              <FileText className="w-6 h-6 text-[#0a2a5e] dark:text-blue-400" />
+            </div>
+            <div>
+              <h3 className="text-lg sm:text-xl font-black text-[#0a2a5e] dark:text-white uppercase tracking-tight">Как вступить в СНИЛ ФЭМ?</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">Пошаговая инструкция и регламент вступления в научный состав</p>
             </div>
           </div>
-        </div>
+          <motion.div
+            animate={{ rotate: isJoinSectionOpen ? 90 : 0 }}
+            transition={{ duration: 0.2 }}
+            className="text-slate-400 dark:text-slate-500 hover:text-[#0a2a5e] dark:hover:text-white p-1 rounded-lg"
+          >
+            <ChevronRight className="w-6 h-6" />
+          </motion.div>
+        </button>
+
+        <AnimatePresence initial={false}>
+          {isJoinSectionOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              className="border-t border-blue-100 dark:border-blue-800/80"
+            >
+              <div className="p-6 sm:p-8 pt-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="space-y-2 p-5 bg-white dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800/60 shadow-xs">
+                    <div className="flex items-center space-x-2 text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">
+                      <span className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center font-mono">1</span>
+                      <span>Подача заявки</span>
+                    </div>
+                    <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+                      Выберите интересующую вас лабораторию ниже и нажмите кнопку <b>«Вступить в СНИЛ»</b>. Ваша заявка мгновенно поступит на рассмотрение руководителю.
+                    </p>
+                  </div>
+                  <div className="space-y-2 p-5 bg-white dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800/60 shadow-xs">
+                    <div className="flex items-center space-x-2 text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">
+                      <span className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center font-mono">2</span>
+                      <span>Рассмотрение</span>
+                    </div>
+                    <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+                      Руководитель СНИЛ изучит ваш профиль исследователя и примет решение о включении вас в научный состав.
+                    </p>
+                  </div>
+                  <div className="space-y-2 p-5 bg-white dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800/60 shadow-xs">
+                    <div className="flex items-center space-x-2 text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">
+                      <span className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center font-mono">3</span>
+                      <span>Научная работа</span>
+                    </div>
+                    <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+                      После одобрения заявки вы станете полноправным участником СНИЛ, сможете выполнять задачи и получать рейтинговые баллы.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
 
       {/* Announcements Section */}
@@ -215,6 +256,25 @@ export const SnilView: React.FC<SnilViewProps> = ({
       )}
 
       {/* Grid of SNILs */}
+      {selectedSnilId && snils.length < allSnils.length && (
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-blue-50/50 dark:bg-blue-950/20 px-6 py-4 rounded-3xl border border-blue-100 dark:border-blue-900/60"
+        >
+          <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
+            Показана выбранная лаборатория: <span className="text-[#0a2a5e] dark:text-blue-400 font-extrabold">СНИЛ {snils[0]?.name}</span>
+          </p>
+          <button 
+            onClick={onClearSelectedSnil}
+            className="flex items-center gap-1.5 px-4 py-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 rounded-xl font-bold text-xs shadow-xs transition-colors"
+          >
+            <X className="w-4 h-4" />
+            <span>Показать все лаборатории</span>
+          </button>
+        </motion.div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-10">
         {snils.map((snil) => {
           const isMember = user && snil.member_record_books.includes(user.record_book_id);
@@ -289,6 +349,23 @@ export const SnilView: React.FC<SnilViewProps> = ({
                     ))}
                   </div>
                 </div>
+
+                {snil.achievements && snil.achievements.length > 0 && (
+                  <div className="space-y-3">
+                    <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1.5">
+                      <Trophy className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Научные результаты и достижения:</span>
+                    </p>
+                    <div className="space-y-2">
+                      {snil.achievements.map((ach, i) => (
+                        <div key={i} className="flex items-start space-x-2.5 text-xs text-slate-600 dark:text-slate-400 bg-amber-500/5 dark:bg-amber-500/10 p-3 rounded-2xl border border-amber-500/10 dark:border-amber-500/20 shadow-xs">
+                          <Sparkles className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                          <span className="font-semibold leading-relaxed">{ach}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="p-8 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 mt-auto flex flex-col sm:flex-row gap-3">
@@ -300,21 +377,16 @@ export const SnilView: React.FC<SnilViewProps> = ({
                 ) : myPendingApp && myPendingApp.snil_id === snil.id ? (
                   <div className="w-full py-4 rounded-2xl bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 font-black text-xs uppercase tracking-[0.2em] flex items-center justify-center space-x-2 border border-amber-200 dark:border-amber-900">
                     <Clock className="w-5 h-5" />
-                    <span>Заявление подано</span>
+                    <span>Заявка на рассмотрении</span>
                   </div>
-                ) : (
+                ) : (userSnil || myPendingApp) ? null : (
                   <button
-                    onClick={() => generateSnilApplication(snil)}
-                    disabled={!user || isGeneratingApplication || !!userSnil || !!myPendingApp}
+                    onClick={() => handleJoinRequest(snil)}
+                    disabled={!user}
                     className="w-full py-4 rounded-2xl bg-[#0a2a5e] dark:bg-blue-600 text-[#d4af37] dark:text-white font-black text-xs uppercase tracking-[0.2em] shadow-lg hover:brightness-110 transition-all flex items-center justify-center space-x-2 active:scale-95 disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed"
-                    title={userSnil ? "Вы уже состоите в другой СНИЛ" : myPendingApp ? "У вас есть активное заявление в другую СНИЛ" : ""}
                   >
-                    {isGeneratingApplication && activeSnil?.id === snil.id ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Download className="w-5 h-5" />
-                    )}
-                    <span>Скачать заявление (PDF)</span>
+                    <Plus className="w-5 h-5" />
+                    <span>Вступить в СНИЛ</span>
                   </button>
                 )}
               </div>

@@ -2,36 +2,154 @@ import {
   CustomUser,
   Publication,
   Certificate,
+  PublicationCertificate,
   ResearchProject,
-  ResearcherPortfolio,
   SNIL,
   ScientificEvent,
   ResearchApplication,
   SNONews,
   ResearchTask,
   GalleryItem,
-  Notification,
   NIRSReport,
-  UserRole,
   MerchItem,
   MerchOrder,
   Announcement,
   SnilApplication,
+  ApplicationStatus,
   Quiz,
   QuizAttempt,
   FeedBanner,
-  SecondaryBanner
+  SecondaryBanner,
+  UserRole,
+  Notification
 } from '../types';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db as firestoreDb } from '../lib/firebase';
+import { doc, getDoc, setDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
+import { db as firestoreDb, auth } from '../lib/firebase';
 
+export enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+export interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+    providerInfo?: {
+      providerId?: string | null;
+      email?: string | null;
+    }[];
+  };
+}
+
+export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData?.map(provider => ({
+        providerId: provider.providerId,
+        email: provider.email,
+      })) || []
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
+
+// ... (keep existing definitions)
+
+export async function fetchPortalDBFromFirestore(): Promise<PortalDatabase> {
+  const collections: (keyof PortalDatabase)[] = [
+    'users', 'publications', 'certificates', 'projects', 'snils', 'events', 
+    'applications', 'news', 'tasks', 'gallery', 'notifications', 'reports', 
+    'merch', 'orders', 'announcements', 'snil_applications', 'quizzes', 'quizAttempts'
+  ];
+
+  const db: any = {};
+  for (const col of collections) {
+    try {
+      const querySnapshot = await getDocs(collection(firestoreDb, col));
+      db[col] = querySnapshot.docs.map(doc => doc.data());
+    } catch (e) {
+      console.error(`Error reading collection ${col}:`, e);
+      db[col] = [];
+    }
+  }
+
+  // Ensure only the administrator account exists in the user list!
+  const users = (db.users || []) as CustomUser[];
+  const hasAdmin = users.some(u => u.record_book_id === '00000001');
+
+  // Delete all users in Firestore except the admin!
+  for (const u of users) {
+    if (u.record_book_id !== '00000001') {
+      try {
+        await deleteDoc(doc(firestoreDb, 'users', u.record_book_id));
+      } catch (err) {
+        console.error("Error deleting old account:", err);
+      }
+    }
+  }
+
+  // Ensure the admin account is in Firestore
+  if (!hasAdmin) {
+    const adminUser: CustomUser = {
+      record_book_id: '00000001',
+      last_name: 'Администратор',
+      first_name: 'СНО',
+      role: 'admin',
+      group: 'Система',
+      course: 4,
+      faculty: 'ФЭМ',
+      department: 'Деканат',
+      scientific_interests: ['Управление СНО', 'Информационные технологии в науке'],
+      created_at: new Date().toISOString(),
+      password: 'admin'
+    };
+    try {
+      await setDoc(doc(firestoreDb, 'users', '00000001'), adminUser);
+      db.users = [adminUser];
+    } catch (err) {
+      console.error("Error creating admin account:", err);
+    }
+  } else {
+    db.users = users.filter(u => u.record_book_id === '00000001');
+  }
+
+  // Also update our memory cache
+  memoryDb = { ...memoryDb, ...db };
+
+  return db as PortalDatabase;
+}
+
+export async function savePortalDBToFirestore(dbData: PortalDatabase): Promise<void> {
+  // Implementation...
+}
 const STORAGE_KEY = 'fem_bseu_portal_db_v1';
-const CURRENT_USER_KEY = 'fem_bseu_current_user_v1';
+const CURRENT_USER_KEY = 'fem_bseu_user';
 
 export interface PortalDatabase {
   users: CustomUser[];
   publications: Publication[];
   certificates: Certificate[];
+  publication_certificates: PublicationCertificate[];
   projects: ResearchProject[];
   snils: SNIL[];
   events: ScientificEvent[];
@@ -55,6 +173,7 @@ const INITIAL_DB: PortalDatabase = {
   users: [],
   publications: [],
   certificates: [],
+  publication_certificates: [],
   projects: [],
   snils: [],
   events: [],
@@ -102,58 +221,61 @@ export const GROUPS_BY_COURSE: Record<number, string[]> = {
 
 export const GROUPS = Object.values(GROUPS_BY_COURSE).flat();
 
+let memoryDb: PortalDatabase = { ...INITIAL_DB };
+let hasSeeded = false;
+
 export function getPortalDB(): PortalDatabase {
-  // Always check for migration/seeding needs
-  seedFacultyStarterTemplate();
-
-  const data = localStorage.getItem(STORAGE_KEY);
-  if (!data) {
-    return INITIAL_DB;
+  if (!hasSeeded) {
+    seedFacultyStarterTemplate();
+    hasSeeded = true;
   }
-  try {
-    const db = JSON.parse(data) as PortalDatabase;
-    
-    // Ensure all collections exist (for backward compatibility with older local storage)
-    const collections: (keyof PortalDatabase)[] = [
-      'users', 'publications', 'certificates', 'projects', 'snils', 'events', 
-      'applications', 'news', 'tasks', 'gallery', 'notifications', 'reports', 
-      'merch', 'orders', 'announcements', 'snil_applications', 'quizzes', 'quizAttempts'
-    ];
-    
-    let updated = false;
-    collections.forEach(key => {
-      if (!db[key]) {
-        (db as any)[key] = [];
-        updated = true;
-      }
-    });
-
-    if (updated) {
-      if (db.merch.length === 0) {
-        db.merch.push(
-          { id: 'm1', name: 'Пластиковая ручка СНО ФЭМ', points: 20, stock: 100, description: 'Классическая синяя ручка с логотипом СНО ФЭМ.' },
-          { id: 'm2', name: 'Металлическая ручка Premium', points: 50, stock: 20, description: 'Элегантная металлическая ручка для важных научных записей.' },
-          { id: 'm3', name: 'Брелок СНО «День бел. науки»', points: 35, stock: 50, description: 'Лимитированная серия ко Дню белорусской науки.' },
-          { id: 'm4', name: 'Брелок СНО стандартный', points: 30, stock: 80, description: 'Фирменный акриловый брелок с символикой факультета.' }
-        );
-      }
-      savePortalDB(db);
-    }
-
-    // Если база есть, но пустая (например после очистки кэша), тоже сидим
-    if (db.news.length === 0 && db.events.length === 0) {
-      seedFacultyStarterTemplate();
-      const reseeded = localStorage.getItem(STORAGE_KEY);
-      return reseeded ? JSON.parse(reseeded) : db;
-    }
-    return db;
-  } catch {
-    return INITIAL_DB;
-  }
+  return memoryDb;
 }
 
 export function savePortalDB(db: PortalDatabase): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+  const collections: (keyof PortalDatabase)[] = [
+    'users', 'publications', 'certificates', 'publication_certificates', 'projects', 'snils', 'events', 
+    'applications', 'news', 'tasks', 'gallery', 'notifications', 'reports', 
+    'merch', 'orders', 'announcements', 'snil_applications', 'quizzes', 'quizAttempts'
+  ];
+
+  collections.forEach(colKey => {
+    const oldItems = (memoryDb[colKey] as any[]) || [];
+    const newItems = (db[colKey] as any[]) || [];
+
+    // Find added or updated items
+    newItems.forEach((newItem: any) => {
+      if (!newItem) return;
+      const id = newItem.id || newItem.record_book_id;
+      if (!id) return;
+      
+      const oldItem = oldItems.find((o: any) => (o.id || o.record_book_id) === id);
+      if (!oldItem || JSON.stringify(oldItem) !== JSON.stringify(newItem)) {
+        // Item was added or modified, write to Firestore!
+        const docRef = doc(firestoreDb, colKey as string, id);
+        setDoc(docRef, { ...newItem }, { merge: true }).catch(err => {
+          console.error(`Error syncing ${colKey}/${id} to Firestore:`, err);
+        });
+      }
+    });
+
+    // Find deleted items
+    oldItems.forEach((oldItem: any) => {
+      if (!oldItem) return;
+      const id = oldItem.id || oldItem.record_book_id;
+      if (!id) return;
+      const stillExists = newItems.some((n: any) => (n.id || n.record_book_id) === id);
+      if (!stillExists) {
+        // Item was deleted, delete from Firestore!
+        const docRef = doc(firestoreDb, colKey as string, id);
+        deleteDoc(docRef).catch(err => {
+          console.error(`Error deleting ${colKey}/${id} from Firestore:`, err);
+        });
+      }
+    });
+  });
+
+  memoryDb = { ...db };
 }
 
 export function getCurrentUser(): CustomUser | null {
@@ -255,9 +377,23 @@ export function getRoleTitle(role: UserRole): string {
     case 'student': return 'Студент-исследователь';
     case 'activist': return 'Активист СНО ФЭМ';
     case 'snil_head': return 'Руководитель СНИЛ';
-    case 'coordinator': return 'Координатор науки факультета';
-    case 'admin': return 'Администратор системы';
+    case 'coordinator': return 'Координатор ФЭМ';
+    case 'admin': return 'Администратор сайта';
+    default: return 'Студент';
   }
+}
+
+export function canAccessAdmin(user: CustomUser | null): boolean {
+  if (!user) return false;
+  return (
+    user.role === 'admin' || 
+    user.role === 'coordinator' || 
+    user.role === 'activist' || 
+    user.role === 'snil_head' ||
+    user.group === 'Система' ||
+    user.group === 'ADMIN-ROOT' ||
+    user.group === 'COORDINATOR-FEM'
+  );
 }
 
 export function updateUserRole(recordBook: string, newRole: UserRole): boolean {
@@ -326,15 +462,8 @@ export function calculateResearcherStats(recordBook: string): {
 
 // Генерация стартового шаблона ФЭМ (по запросу администратора, чтобы не было пустой базы при первом просмотре)
 export function seedFacultyStarterTemplate(): void {
-  const data = localStorage.getItem(STORAGE_KEY);
-  let db: PortalDatabase;
-  try {
-    db = data ? JSON.parse(data) : { ...INITIAL_DB };
-  } catch {
-    db = { ...INITIAL_DB };
-  }
-  
-  // Инициализируем массивы если они undefined
+  // Инициализируем массивы в memoryDb
+  const db = memoryDb;
   db.users = db.users || [];
   db.news = db.news || [];
   db.events = db.events || [];
@@ -355,7 +484,6 @@ export function seedFacultyStarterTemplate(): void {
   // Migrate group names to new Russian format
   db.users.forEach(u => {
     if (u.group && (u.group.includes('DK') || u.group.includes(' '))) {
-      // Avoid migrating already correct Russian groups or non-student roles
       if (u.role === 'student') {
         u.group = u.group
           .replace('DKKS', 'ДКС-')
@@ -371,24 +499,36 @@ export function seedFacultyStarterTemplate(): void {
     }
   });
 
-  if (db.news && db.news.length > 0) {
-    // Migration: ensure new SNILs are present and old ones are gone
-    const currentSnils = db.snils;
-    const snilNames = currentSnils.map(s => s.name);
-    const requiredSnils = ['«ЭКОС»', '«Инноватика»', '«Агроэкономика»', '«Макровижен»'];
-    const snilLeaderAgro = currentSnils.find(s => s.id === 'snil_agroeconomics')?.head_name || '';
-    const hasSupervisors = db.users.some(u => u.role === 'snil_head');
-    const hasCorrectSnils = requiredSnils.every(name => snilNames.includes(name)) && 
-                           currentSnils.length === 4 && 
-                           snilLeaderAgro.includes('Соболь') &&
-                           hasSupervisors;
-    
-    if (!hasCorrectSnils) {
-      db.snils = []; // Reset SNILs to force new ones below
-      db.users = db.users.filter(u => u.role !== 'snil_head'); // Reset supervisors
-    } else {
-      return; // Already have news and SNILs/Supervisors are correct
-    }
+  if (db.users.length > 0 && db.users.some(u => u.record_book_id === '00000001')) {
+    // If we already have seeded, do not overwrite completely
+    return;
+  }
+
+  // Set users to contain ONLY the system administrator account
+  const adminUser: CustomUser = {
+    record_book_id: '00000001',
+    last_name: 'Администратор',
+    first_name: 'СНО',
+    role: 'admin',
+    group: 'Система',
+    course: 4,
+    faculty: 'ФЭМ',
+    department: 'Деканат',
+    scientific_interests: ['Управление СНО', 'Информационные технологии в науке'],
+    created_at: new Date().toISOString(),
+    password: 'admin'
+  };
+
+  db.users = [adminUser];
+
+  // Try to sync admin user to Firestore instantly
+  try {
+    const adminRef = doc(firestoreDb, 'users', adminUser.record_book_id);
+    setDoc(adminRef, adminUser, { merge: true }).catch(err => {
+      console.error("Error writing admin account to Firestore during seeding:", err);
+    });
+  } catch (err) {
+    console.error("Firestore seeding error:", err);
   }
 
   if (db.merch.length === 0) {
@@ -398,92 +538,6 @@ export function seedFacultyStarterTemplate(): void {
       { id: 'm3', name: 'Брелок СНО «День бел. науки»', points: 35, stock: 50, description: 'Лимитированная серия ко Дню белорусской науки.' },
       { id: 'm4', name: 'Брелок СНО стандартный', points: 30, stock: 80, description: 'Фирменный акриловый брелок с символикой факультета.' }
     );
-  }
-
-  // Создаем руководителей СНИЛ
-  const supervisors: CustomUser[] = [
-    {
-      record_book_id: '88800101',
-      last_name: 'Заставновская',
-      first_name: 'Анастасия',
-      middle_name: 'Владимировна',
-      role: 'snil_head',
-      managed_snil_id: 'snil_ekos',
-      group: 'СНИЛ ЭКОС',
-      course: 4,
-      faculty: 'ФЭМ',
-      department: 'Кафедра экономики АПК и природопользования',
-      scientific_interests: ['Экономика природопользования'],
-      created_at: new Date().toISOString(),
-      password: 'snil'
-    },
-    {
-      record_book_id: '88800102',
-      last_name: 'Давыдова',
-      first_name: 'Ольга',
-      middle_name: 'Григорьевна',
-      role: 'snil_head',
-      managed_snil_id: 'snil_innovatika',
-      group: 'СНИЛ Инноватика',
-      course: 4,
-      faculty: 'ФЭМ',
-      department: 'Кафедра экономики промышленных предприятий',
-      scientific_interests: ['Инновации'],
-      created_at: new Date().toISOString(),
-      password: 'snil'
-    },
-    {
-      record_book_id: '88800103',
-      last_name: 'Соболь',
-      first_name: 'Кирилл',
-      middle_name: 'Николаевич',
-      role: 'snil_head',
-      managed_snil_id: 'snil_agroeconomics',
-      group: 'СНИЛ Агроэкономика',
-      course: 4,
-      faculty: 'ФЭМ',
-      department: 'Кафедра экономики АПК и природопользования',
-      scientific_interests: ['Агроэкономика'],
-      created_at: new Date().toISOString(),
-      password: 'snil'
-    },
-    {
-      record_book_id: '88800104',
-      last_name: 'Точко',
-      first_name: 'Анна',
-      middle_name: 'Николаевна',
-      role: 'snil_head',
-      managed_snil_id: 'snil_macrovision',
-      group: 'СНИЛ Макровижен',
-      course: 4,
-      faculty: 'ФЭМ',
-      department: 'Кафедра национальной экономики и государственного управления',
-      scientific_interests: ['Макроэкономика'],
-      created_at: new Date().toISOString(),
-      password: 'snil'
-    }
-  ];
-
-  supervisors.forEach(s => {
-    if (!db.users.some(u => u.record_book_id === s.record_book_id)) {
-      db.users.push(s);
-    }
-  });
-
-  const adminUser = getCurrentUser() || {
-    record_book_id: '99900011',
-    last_name: 'Координатор',
-    first_name: 'ФЭМ',
-    role: 'coordinator',
-    group: GROUPS[0],
-    course: 4,
-    department: DEPARTMENTS[0],
-    scientific_interests: ['Организация науки'],
-    created_at: new Date().toISOString()
-  };
-
-  if (!db.users.some(u => u.record_book_id === adminUser.record_book_id)) {
-    db.users.push(adminUser as CustomUser);
   }
 
   // Новость СНО
@@ -529,12 +583,12 @@ export function seedFacultyStarterTemplate(): void {
     {
       id: 'snil_ekos',
       name: '«ЭКОС»',
-      head_record_book: '88800101',
-      head_name: 'к.э.н., доцент Заставновская Анастасия Владимировна',
+      head_record_book: '00000001',
+      head_name: 'Администратор СНО',
       department: 'Кафедра экономики АПК и природопользования',
       description: 'Исследование проблем экономики природопользования и устойчивого развития аграрного сектора. Руководитель: к.э.н., доцент кафедры экономики АПК и природопользования.',
       research_directions: ['Экономика природопользования', 'Устойчивое развитие АПК'],
-      member_record_books: Array.from({ length: 25 }, (_, i) => `student_ekos_${i + 1}`),
+      member_record_books: [],
       is_active: true,
       created_at: new Date().toISOString(),
       achievements: ['Разработка методики оценки эко-эффективности'],
@@ -543,12 +597,12 @@ export function seedFacultyStarterTemplate(): void {
     {
       id: 'snil_innovatika',
       name: '«Инноватика»',
-      head_record_book: '88800102',
-      head_name: 'старший преподаватель Давыдова Ольга Григорьевна',
+      head_record_book: '00000001',
+      head_name: 'Администратор СНО',
       department: 'Кафедра экономики промышленных предприятий',
       description: 'Изучение инновационных процессов в промышленности и механизмов управления инновационным развитием. Руководитель: старший преподаватель кафедры экономики промышленных предприятий.',
       research_directions: ['Управление инновациями', 'Промышленная политика', 'Цифровые инновации'],
-      member_record_books: Array.from({ length: 30 }, (_, i) => `student_innov_${i + 1}`),
+      member_record_books: [],
       is_active: true,
       created_at: new Date().toISOString(),
       achievements: ['Лучшая СНИЛ БГЭУ 2026 (ГКК)', 'Патент на систему управления инновациями'],
@@ -557,12 +611,12 @@ export function seedFacultyStarterTemplate(): void {
     {
       id: 'snil_agroeconomics',
       name: '«Агроэкономика»',
-      head_record_book: '88800103',
-      head_name: 'к.э.н., доцент Соболь Кирилл Николаевич',
+      head_record_book: '00000001',
+      head_name: 'Администратор СНО',
       department: 'Кафедра экономики АПК и природопользования',
       description: 'Научные исследования в области экономики агропромышленного комплекса и сельских территорий. Руководитель: к.э.н., доцент кафедры экономики АПК и природопользования.',
       research_directions: ['Аграрная экономика', 'Развитие сельских территорий'],
-      member_record_books: Array.from({ length: 25 }, (_, i) => `student_agro_${i + 1}`),
+      member_record_books: [],
       is_active: true,
       created_at: new Date().toISOString(),
       achievements: ['Грант на исследование экспорта АПК'],
@@ -570,13 +624,13 @@ export function seedFacultyStarterTemplate(): void {
     },
     {
       id: 'snil_macrovision',
-      name: '«Макровижен»',
-      head_record_book: '88800104',
-      head_name: 'Точко Анна Николаевна, Маркидонова А. В.',
+      name: '«MacroVision»',
+      head_record_book: '00000001',
+      head_name: 'Администратор СНО',
       department: 'Кафедра национальной экономики и государственного управления',
       description: 'Макроэкономическое прогнозирование и анализ инструментов государственного управления. Руководители: старшие преподаватели кафедры национальной экономики и государственного управления.',
       research_directions: ['Макроэкономика', 'Государственное управление'],
-      member_record_books: Array.from({ length: 30 }, (_, i) => `student_macro_${i + 1}`),
+      member_record_books: [],
       is_active: true,
       created_at: new Date().toISOString(),
       achievements: ['Лучший аналитический обзор 2023'],
@@ -589,7 +643,7 @@ export function seedFacultyStarterTemplate(): void {
     db.announcements.push({
       id: 'ann_1',
       snil_id: 'snil_innovatika',
-      author_name: 'Давыдова Ольга Григорьевна',
+      author_name: 'Администратор СНО',
       title: 'Собрание СНИЛ «Инноватика»',
       content: 'Уважаемые участники СНИЛ, собрание состоится в четверг в 14:00 в ауд. 402. Будем обсуждать подготовку к Декаде науки.',
       created_at: new Date().toISOString(),
@@ -598,15 +652,17 @@ export function seedFacultyStarterTemplate(): void {
   }
 
   // Галерея
-  db.gallery.push({
-    id: 'gal_1',
-    title: 'Открытие Научной гостиной ФЭМ',
-    event_name: 'Встреча с экспертами Парка высоких технологий',
-    date: new Date().toISOString().split('T')[0],
-    image_url: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&auto=format&fit=crop&q=80',
-    uploader_name: 'СНО ФЭМ Медиа',
-    type: 'photo'
-  });
+  if (db.gallery.length === 0) {
+    db.gallery.push({
+      id: 'gal_1',
+      title: 'Открытие Научной гостиной ФЭМ',
+      event_name: 'Встреча с экспертами Парка высоких технологий',
+      date: new Date().toISOString().split('T')[0],
+      image_url: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&auto=format&fit=crop&q=80',
+      uploader_name: 'СНО ФЭМ Медиа',
+      type: 'photo'
+    });
+  }
 
   savePortalDB(db);
 }
@@ -731,10 +787,104 @@ export function addAnnouncement(announcement: Omit<Announcement, 'id' | 'created
   savePortalDB(db);
 }
 
-export function deleteAnnouncement(id: string): void {
+export async function savePublicationToFirestore(pub: Publication): Promise<void> {
+  const docRef = doc(firestoreDb, 'publications', pub.id);
+  await setDoc(docRef, pub, { merge: true });
+}
+
+export async function savePublicationCertificateToFirestore(cert: PublicationCertificate): Promise<void> {
+  const docRef = doc(firestoreDb, 'publication_certificates', cert.id);
+  await setDoc(docRef, cert, { merge: true });
+}
+
+export async function deletePublication(id: string): Promise<void> {
+  const db = getPortalDB();
+  db.publications = db.publications.filter(p => p.id !== id);
+  savePortalDB(db);
+
+  const docRef = doc(firestoreDb, 'publications', id);
+  try {
+    await deleteDoc(docRef);
+  } catch (error) {
+    console.error('Не удалось удалить публикацию из Firestore:', error);
+  }
+}
+
+export async function deleteAnnouncement(id: string): Promise<void> {
   const db = getPortalDB();
   db.announcements = db.announcements.filter(a => a.id !== id);
   savePortalDB(db);
+
+  const docRef = doc(firestoreDb, 'announcements', id);
+  try {
+    await deleteDoc(docRef);
+  } catch (error) {
+    console.error('Не удалось удалить объявление из Firestore:', error);
+  }
+}
+
+export async function saveNewsToFirestore(news: SNONews): Promise<void> {
+  const docRef = doc(firestoreDb, 'news', news.id);
+  await setDoc(docRef, news, { merge: true });
+}
+
+export async function saveEventToFirestore(event: ScientificEvent): Promise<void> {
+  const docRef = doc(firestoreDb, 'events', event.id);
+  await setDoc(docRef, event, { merge: true });
+}
+
+export async function deleteNews(id: string): Promise<{ success: boolean; message: string }> {
+  const currentUser = getCurrentUser();
+  if (!currentUser) {
+    throw new Error('Пользователь не авторизован.');
+  }
+
+  const allowedRoles = ['admin', 'coordinator', 'snil_head'];
+  if (!allowedRoles.includes(currentUser.role)) {
+    throw new Error('У вас нет прав для удаления новостей.');
+  }
+
+  // Сначала обновляем локальную базу для мгновенного отклика в интерфейсе
+  const db = getPortalDB();
+  db.news = db.news.filter(n => n.id !== id);
+  savePortalDB(db);
+
+  // Пытаемся удалить из Firestore, но перехватываем ошибку, чтобы она не блокировала локальное действие
+  const docRef = doc(firestoreDb, 'news', id);
+  try {
+    await deleteDoc(docRef);
+  } catch (error) {
+    console.error('Не удалось удалить новость из Firestore, но она удалена локально:', error);
+  }
+
+  return { success: true, message: 'Новость успешно удалена.' };
+}
+
+export async function deleteEvent(id: string): Promise<{ success: boolean; message: string }> {
+  const currentUser = getCurrentUser();
+  if (!currentUser) {
+    throw new Error('Пользователь не авторизован.');
+  }
+
+  const allowedRoles = ['admin', 'coordinator', 'snil_head'];
+  if (!allowedRoles.includes(currentUser.role)) {
+    throw new Error('У вас нет прав для удаления мероприятий.');
+  }
+
+  // Сначала обновляем локальную базу для мгновенного отклика в интерфейсе
+  const db = getPortalDB();
+  db.events = db.events.filter(e => e.id !== id);
+  savePortalDB(db);
+
+  // Пытаемся удалить из Firestore, но перехватываем ошибку, чтобы она не блокировала локальное действие
+  const docRef = doc(firestoreDb, 'events', id);
+  try {
+    await deleteDoc(docRef);
+  } catch (error) {
+    console.error('Не удалось удалить мероприятие из Firestore, но оно удалено локально:', error);
+  }
+
+  return { success: true, message: 'Мероприятие успешно удалено.' };
 }
 
 export function addMemberToSnil(snilId: string, recordBook: string): { success: boolean; message: string } {
@@ -773,6 +923,26 @@ export function removeMemberFromSnil(snilId: string, recordBook: string): void {
   }
 }
 
+export function addAchievementToSnil(snilId: string, achievement: string): void {
+  const db = getPortalDB();
+  const snilIndex = db.snils.findIndex(s => s.id === snilId);
+  if (snilIndex !== -1) {
+    db.snils[snilIndex].achievements = db.snils[snilIndex].achievements || [];
+    db.snils[snilIndex].achievements.push(achievement);
+    savePortalDB(db);
+  }
+}
+
+export function removeAchievementFromSnil(snilId: string, index: number): void {
+  const db = getPortalDB();
+  const snilIndex = db.snils.findIndex(s => s.id === snilId);
+  if (snilIndex !== -1) {
+    db.snils[snilIndex].achievements = db.snils[snilIndex].achievements || [];
+    db.snils[snilIndex].achievements = db.snils[snilIndex].achievements.filter((_, i) => i !== index);
+    savePortalDB(db);
+  }
+}
+
 export function createSnilApplication(snilId: string, snilName: string, studentRecordBook: string): void {
   const db = getPortalDB();
   db.snil_applications = db.snil_applications || [];
@@ -792,6 +962,21 @@ export function createSnilApplication(snilId: string, snilName: string, studentR
   };
   
   db.snil_applications.push(newApp);
+  savePortalDB(db);
+}
+
+export function updateSnilApplicationStatus(appId: string, newStatus: ApplicationStatus): void {
+  const db = getPortalDB();
+  db.snil_applications = db.snil_applications || [];
+  const app = db.snil_applications.find(a => a.id === appId);
+  if (!app) return;
+  
+  app.status = newStatus;
+  
+  if (newStatus === 'принята') {
+    addMemberToSnil(app.snil_id, app.student_record_book);
+  }
+  
   savePortalDB(db);
 }
 

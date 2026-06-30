@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { loginUser, GROUPS_BY_COURSE, FACULTIES } from '../services/storage';
 import { CustomUser } from '../types';
 import { GraduationCap, ArrowRight, ShieldAlert, Sparkles, BookOpen, X, School, Loader2 } from 'lucide-react';
+import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
+import { db as firestoreDb } from '../lib/firebase';
 
 interface LoginModalProps {
   onLoginSuccess: (user: CustomUser) => Promise<void> | void;
@@ -33,8 +35,47 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess, onClose 
         return;
       }
 
+      const searchId = recordBook.trim();
       const db = JSON.parse(localStorage.getItem('fem_bseu_portal_db_v1') || '{}');
-      const existingUser = db.users?.find((u: any) => u.record_book_id === recordBook.trim());
+      
+      const normalize = (s: string) => {
+        if (!s) return '';
+        // Handle common Cyrillic <-> Latin visual lookalikes and remove spaces
+        return s.toLowerCase()
+          .replace(/\s+/g, '') // Remove all whitespace
+          .replace(/dks/g, 'дкс') // 25DKS -> 25дкс
+          .replace(/dkp/g, 'дкп')
+          .replace(/dke/g, 'дкэ')
+          .replace(/dkt/g, 'дкт')
+          .replace(/dka/g, 'дка')
+          .replace(/dku/g, 'дку')
+          .replace(/dkr/g, 'дкр')
+          .replace(/c/g, 'с') // Latin c -> Cyrillic с
+          .replace(/a/g, 'а') // Latin a -> Cyrillic а
+          .replace(/p/g, 'р') // Latin p -> Cyrillic р
+          .replace(/x/g, 'х') // Latin x -> Cyrillic х
+          .replace(/e/g, 'е'); // Latin e -> Cyrillic е
+      };
+
+      const searchNorm = normalize(searchId);
+
+      let existingUser = db.users?.find((u: any) => normalize(u.record_book_id) === searchNorm);
+
+      // If not in localstorage, fallback to firestore
+      if (!existingUser) {
+        try {
+          const userDoc = await getDoc(doc(firestoreDb, 'users', searchId));
+          if (userDoc.exists()) {
+             existingUser = userDoc.data() as CustomUser;
+          } else {
+             // Fallback to searching all users with normalization
+             const usersSnap = await getDocs(collection(firestoreDb, 'users'));
+             existingUser = usersSnap.docs.map(d => d.data() as CustomUser).find(u => normalize(u.record_book_id) === searchNorm);
+          }
+        } catch (err) {
+          console.error("Firestore lookup failed", err);
+        }
+      }
 
       if (isRegister) {
         if (existingUser) {
@@ -67,50 +108,24 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess, onClose 
         return;
       }
 
-      const user = loginUser(
-        recordBook,
-        isRegister ? lastName : (existingUser ? existingUser.last_name : ''),
-        isRegister ? firstName : (existingUser ? existingUser.first_name : ''),
-        isRegister ? group : (existingUser ? existingUser.group : ''),
-        isRegister ? faculty : (existingUser ? existingUser.faculty : 'ФЭМ')
-      );
+      let user: CustomUser;
+      
+      if (!isRegister && existingUser) {
+        user = existingUser;
+      } else {
+        user = loginUser(
+          recordBook,
+          lastName,
+          firstName,
+          group,
+          faculty
+        );
+      }
+      
       await onLoginSuccess(user);
     } catch (e) {
       console.error("Login error:", e);
       setError('Произошла непредвиденная ошибка при входе. Попробуйте еще раз.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleQuickLogin = async (roleType: 'student' | 'activist' | 'snil_head' | 'coordinator' | 'admin') => {
-    if (isLoading) return;
-    setError('');
-    setIsLoading(true);
-
-    try {
-      let rec = '2601001';
-      let last = 'Иванов';
-      let first = 'Иван';
-      let grp = '26 DKKS 1';
-
-      if (roleType === 'activist') { rec = '2601002'; last = 'Смирнова'; first = 'Анна'; grp = '26 DKP 1'; }
-      else if (roleType === 'snil_head') { 
-        // Давыдова Ольга Григорьевна (СНИЛ Инноватика)
-        rec = '88800102'; last = 'Давыдова'; first = 'Ольга'; grp = 'СНИЛ Инноватика'; 
-      }
-      else if (roleType === 'coordinator') { rec = '99900011'; last = 'Координатор'; first = 'ФЭМ'; grp = 'Деканат'; }
-      else if (roleType === 'admin') { rec = '00000001'; last = 'Администратор'; first = 'БГЭУ'; grp = 'Система'; }
-
-      const user = loginUser(rec, last, first, grp, 'ФЭМ');
-      // Принудительно устанавливаем выбранную роль если она отличается
-      if (user.role !== roleType) {
-        user.role = roleType;
-      }
-      await onLoginSuccess(user);
-    } catch (e) {
-      console.error("Quick login error:", e);
-      setError('Ошибка демо-входа.');
     } finally {
       setIsLoading(false);
     }
@@ -283,58 +298,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess, onClose 
               )}
             </button>
         </form>
-
-        {/* Панель демо-доступа для проверки всех 5 ролей */}
-        {!isRegister && (
-          <div className="mt-6 pt-4 border-t border-slate-800 text-center relative z-10">
-            <p className="text-[10px] font-mono text-amber-400/90 mb-2 flex items-center justify-center space-x-1">
-              <Sparkles className="w-3 h-3 text-[#d4af37]" />
-              <span>{isLoading ? 'ПОДОЖДИТЕ...' : 'БЫСТРЫЙ ДЕМО-ВХОД ДЛЯ ПРОВЕРКИ РОЛЕЙ'}</span>
-            </p>
-            <div className="flex flex-wrap gap-1 justify-center opacity-80 hover:opacity-100 transition-opacity">
-              <button
-                type="button"
-                disabled={isLoading}
-                onClick={() => handleQuickLogin('student')}
-                className="px-2.5 py-1.5 rounded-lg border text-[9px] font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 shadow-sm min-h-[32px] flex items-center justify-center bg-blue-900/40 text-blue-200 border-blue-800/50 disabled:opacity-50"
-              >
-                Студент
-              </button>
-              <button
-                type="button"
-                disabled={isLoading}
-                onClick={() => handleQuickLogin('activist')}
-                className="px-2.5 py-1.5 rounded-lg border text-[9px] font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 shadow-sm min-h-[32px] flex items-center justify-center bg-teal-900/40 text-teal-200 border-teal-800/50 disabled:opacity-50"
-              >
-                Активист
-              </button>
-              <button
-                type="button"
-                disabled={isLoading}
-                onClick={() => handleQuickLogin('snil_head')}
-                className="px-2.5 py-1.5 rounded-lg border text-[9px] font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 shadow-sm min-h-[32px] flex items-center justify-center bg-purple-900/40 text-purple-200 border-purple-800/50 disabled:opacity-50"
-              >
-                Руководитель
-              </button>
-              <button
-                type="button"
-                disabled={isLoading}
-                onClick={() => handleQuickLogin('coordinator')}
-                className="px-2.5 py-1.5 rounded-lg border text-[9px] font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 shadow-sm min-h-[32px] flex items-center justify-center bg-amber-900/40 text-amber-200 border-amber-800/50 disabled:opacity-50"
-              >
-                Координатор
-              </button>
-              <button
-                type="button"
-                disabled={isLoading}
-                onClick={() => handleQuickLogin('admin')}
-                className="px-2.5 py-1.5 rounded-lg border text-[9px] font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 shadow-sm min-h-[32px] flex items-center justify-center bg-red-900/40 text-red-200 border-red-800/50 disabled:opacity-50"
-              >
-                Админ
-              </button>
-            </div>
-          </div>
-        )}
 
         </div>
       </div>

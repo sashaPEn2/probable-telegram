@@ -18,6 +18,7 @@ export interface CustomUser {
   avatar_url?: string;
   password?: string;
   is_private?: boolean;
+  gender?: 'male' | 'female';
 }
 
 export interface Announcement {
@@ -43,6 +44,20 @@ export interface Publication {
   file_name?: string;
   is_confirmed: boolean;
   created_at: string;
+}
+
+export interface PublicationCertificate {
+  id: string;
+  number: string;
+  user_record_book: string;
+  user_name: string;
+  publication_id: string;
+  publication_title: string;
+  publication_type: string;
+  publication_journal: string;
+  publication_year: number;
+  issue_date: string;
+  status: 'issued' | 'printed';
 }
 
 export interface Certificate {
@@ -115,6 +130,7 @@ export interface ScientificEvent {
   max_participants: number;
   participant_record_books: string[];
   materials_links: { title: string; url: string }[];
+  attachments?: { title: string; url: string }[];
   created_at: string;
 }
 
@@ -155,6 +171,7 @@ export interface SNONews {
   created_at: string;
   image_url?: string;
   published_to_telegram: boolean;
+  attachments?: { title: string; url: string }[];
 }
 
 export type TaskStatus = 'новая' | 'в_работе' | 'выполнена' | 'проверена';

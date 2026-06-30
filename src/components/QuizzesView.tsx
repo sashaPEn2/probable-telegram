@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom';
 import { 
   PortalDatabase, 
   savePortalDB, 
-  addNotificationAndNotifyTelegram 
+  addNotificationAndNotifyTelegram,
+  canAccessAdmin 
 } from '../services/storage';
 import { 
   CustomUser, 
@@ -52,7 +53,7 @@ interface QuizzesViewProps {
 
 export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh }) => {
   const [activeSubTab, setActiveSubTab] = useState<'all' | 'create'>('all');
-  const isAdmin = user && (user.role === 'coordinator' || user.role === 'admin');
+  const isAdmin = user && canAccessAdmin(user);
 
   // Multi-question quiz creation state
   const [title, setTitle] = useState('');

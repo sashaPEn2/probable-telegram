@@ -1,0 +1,22 @@
+{
+  "name": "FEM BSEU Scientific Portal",
+  "short_name": "FEM Portal",
+  "description": "Digital Science Portal for FEM BSEU students and researchers.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/pwa_icon_512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/pwa_icon_192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { PortalDatabase, savePortalDB, addNotificationAndNotifyTelegram } from '../services/storage';
-import { CustomUser, Publication, ResearchApplication, ResearchTask, MerchOrder } from '../types';
+import React, { useState, useEffect } from 'react';
+import { PortalDatabase, savePortalDB, getPortalDB, addNotificationAndNotifyTelegram, deleteNews, deleteEvent, saveNewsToFirestore, saveEventToFirestore, deletePublication, savePublicationToFirestore, updateUserRole, getRoleTitle, canAccessAdmin, updateSnilApplicationStatus } from '../services/storage';
+import { PublicationCertificateModal } from './PublicationCertificateModal';
+import { CustomUser, Publication, ResearchApplication, ResearchTask, MerchOrder, PublicationCertificate, SnilApplication } from '../types';
 import { UserAvatar } from './UserAvatar';
 import { 
   Shield, 
@@ -13,11 +14,16 @@ import {
   Briefcase, 
   Send, 
   AlertCircle,
+  Pencil,
   Plus,
   Trash2,
   ShoppingBag,
   PackageCheck,
-  CheckCircle
+  CheckCircle,
+  Award,
+  Printer,
+  Search,
+  Download
 } from 'lucide-react';
 
 interface AdminViewProps {
@@ -27,7 +33,38 @@ interface AdminViewProps {
 }
 
 export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => {
-  const [activeAdminTab, setActiveAdminTab] = useState<'pubs' | 'apps' | 'tasks' | 'broadcast' | 'merch' | 'banner' | 'news' | 'events'>('pubs');
+  const [activeAdminTab, setActiveAdminTab] = useState<'pubs' | 'apps' | 'snil_apps' | 'tasks' | 'broadcast' | 'merch' | 'banner' | 'news' | 'events' | 'pub_certs' | 'system'>('pubs');
+  const [userSearch, setUserSearch] = useState('');
+  const [editingNewsId, setEditingNewsId] = useState<string | null>(null);
+  const [adminViewingPubCert, setAdminViewingPubCert] = useState<PublicationCertificate | null>(null);
+  const [certFilterMonth, setCertFilterMonth] = useState<string>('all');
+  const [certFilterYear, setCertFilterYear] = useState<string>('all');
+  const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
+  const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [newUserForm, setNewUserForm] = useState({
+    record_book_id: '',
+    last_name: '',
+    first_name: '',
+    middle_name: '',
+    role: 'student' as any,
+    group: '',
+    faculty: 'ФЭМ',
+    department: '',
+    password: ''
+  });
+  
+  const [confirmModalState, setConfirmModalState] = useState<{isOpen: boolean, message: string, onConfirm: () => void}>({
+    isOpen: false,
+    message: '',
+    onConfirm: () => {}
+  });
+
+  const showConfirm = (message: string, onConfirm: () => void) => {
+    setConfirmModalState({ isOpen: true, message, onConfirm });
+  };
+  
+  useEffect(() => console.log('User role:', user.role), [user]);
+  const isCoordinatorOrAdmin = canAccessAdmin(user);
   
   // Форма рассылки уведомлений
   const [broadcastTitle, setBroadcastTitle] = useState('');
@@ -82,7 +119,8 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
     title: '',
     content: '',
     is_pinned: false,
-    image_url: ''
+    image_url: '',
+    attachments: [] as { title: string; url: string }[]
   });
 
   // Форма мероприятий
@@ -100,6 +138,12 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
 
   const pendingPubs = db.publications.filter(p => !p.is_confirmed);
   const pendingApps = db.applications.filter(a => a.status === 'на_рассмотрении');
+  
+  const snilApplications = (db.snil_applications || []).filter(app => {
+    if (user.role === 'admin' || user.role === 'coordinator') return app.status === 'подана';
+    if (user.role === 'snil_head') return app.status === 'подана' && app.snil_id === user.managed_snil_id;
+    return false;
+  });
 
   const handleSaveBanner = () => {
     db.feed_banner = { ...bannerForm };
@@ -109,34 +153,65 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
     alert('Баннеры успешно обновлены');
   };
 
-  const handleApprovePub = (pub: Publication) => {
-    pub.is_confirmed = true;
+  const handleApprovePub = async (pub: Publication) => {
+    setProcessingIds(prev => new Set(prev).add(pub.id));
+    
     addNotificationAndNotifyTelegram({
       id: 'notif_' + Date.now(),
       user_record_book: pub.user_record_book,
-      title: 'Публикация подтверждена ВАК/Деканатом',
+      title: 'Публикация верифицирована СНО',
       message: `Ваша работа «${pub.title}» верифицирована. Вам начислены рейтинговые баллы!`,
       type: 'success',
       is_read: false,
       created_at: new Date().toISOString()
     });
-    localStorage.setItem('fem_bseu_portal_db_v1', JSON.stringify(db));
+    
+    const dbCopy = { ...db, publications: [...db.publications] };
+    const pubIdx = dbCopy.publications.findIndex(p => p.id === pub.id);
+    if (pubIdx !== -1) {
+      dbCopy.publications[pubIdx] = { ...dbCopy.publications[pubIdx], is_confirmed: true };
+    }
+    
+    localStorage.setItem('fem_bseu_portal_db_v1', JSON.stringify(dbCopy));
     onRefresh();
+
+    try {
+      await savePublicationToFirestore({ ...pub, is_confirmed: true });
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setTimeout(() => {
+        setProcessingIds(prev => {
+          const next = new Set(prev);
+          next.delete(pub.id);
+          return next;
+        });
+      }, 500);
+    }
   };
 
-  const handleRejectPub = (pubId: string, studentRecord: string, title: string) => {
-    db.publications = db.publications.filter(p => p.id !== pubId);
+  const handleRejectPub = async (pubId: string, studentRecord: string, title: string) => {
+    setProcessingIds(prev => new Set(prev).add(pubId));
+    await deletePublication(pubId);
+    onRefresh();
+    
     addNotificationAndNotifyTelegram({
       id: 'notif_' + Date.now(),
       user_record_book: studentRecord,
-      title: 'Отклонена заявка на публикацию',
+      title: 'Публикация отклонена СНО',
       message: `Работа «${title}» отклонена модератором (неверные данные издания или дубликат)`,
       type: 'warning',
       is_read: false,
       created_at: new Date().toISOString()
     });
-    localStorage.setItem('fem_bseu_portal_db_v1', JSON.stringify(db));
-    onRefresh();
+
+    setTimeout(() => {
+      setProcessingIds(prev => {
+        const next = new Set(prev);
+        next.delete(pubId);
+        return next;
+      });
+    }, 500);
   };
 
   const handleReviewApp = (app: ResearchApplication, newStatus: 'принята' | 'отклонена') => {
@@ -151,6 +226,24 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
       created_at: new Date().toISOString()
     });
     localStorage.setItem('fem_bseu_portal_db_v1', JSON.stringify(db));
+    onRefresh();
+  };
+
+  const handleReviewSnilApp = (app: SnilApplication, newStatus: 'принята' | 'отклонена') => {
+    updateSnilApplicationStatus(app.id, newStatus);
+    
+    addNotificationAndNotifyTelegram({
+      id: 'notif_' + Date.now(),
+      user_record_book: app.student_record_book,
+      title: newStatus === 'принята' ? 'Вы приняты в СНИЛ!' : 'Заявка в СНИЛ отклонена',
+      message: newStatus === 'принята' 
+        ? `Поздравляем! Ваша заявка в «${app.snil_name}» одобрена. Теперь вы участник лаборатории!`
+        : `К сожалению, ваша заявка в «${app.snil_name}» была отклонена руководителем.`,
+      type: newStatus === 'принята' ? 'success' : 'warning',
+      is_read: false,
+      created_at: new Date().toISOString()
+    });
+    
     onRefresh();
   };
 
@@ -251,45 +344,87 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
     onRefresh();
   };
 
-  const handleAddNews = () => {
+  const handleSaveNews = async () => {
     if (!newsForm.title || !newsForm.content) {
       alert('Заполните обязательные поля');
       return;
     }
     
-    db.news.push({
-      id: 'news_' + Date.now(),
-      title: newsForm.title,
-      content: newsForm.content,
-      author_record_book: user.record_book,
-      author_name: `${user.last_name} ${user.first_name}`,
-      is_pinned: newsForm.is_pinned,
-      created_at: new Date().toISOString(),
-      image_url: newsForm.image_url,
-      published_to_telegram: false
-    });
-    
-    savePortalDB(db);
-    setNewsForm({ title: '', content: '', is_pinned: false, image_url: '' });
-    onRefresh();
-    alert('Новость успешно добавлена!');
-  };
-
-  const handleDeleteNews = (id: string) => {
-    if (confirm('Удалить новость?')) {
-      db.news = db.news.filter(n => n.id !== id);
+    if (editingNewsId) {
+      const idx = db.news.findIndex(n => n.id === editingNewsId);
+      if (idx !== -1) {
+        db.news[idx] = {
+          ...db.news[idx],
+          title: newsForm.title,
+          content: newsForm.content,
+          is_pinned: newsForm.is_pinned,
+          image_url: newsForm.image_url,
+          attachments: newsForm.attachments
+        };
+        savePortalDB(db);
+        try {
+          await saveNewsToFirestore(db.news[idx]);
+        } catch (e) {
+          console.error("Failed to sync news to Firestore", e);
+        }
+        setEditingNewsId(null);
+        setNewsForm({ title: '', content: '', is_pinned: false, image_url: '' });
+        onRefresh();
+        alert('Новость успешно обновлена!');
+      }
+    } else {
+      const newNews = {
+        id: 'news_' + Date.now(),
+        title: newsForm.title,
+        content: newsForm.content,
+        author_record_book: user.record_book_id,
+        author_name: `${user.last_name} ${user.first_name}`,
+        is_pinned: newsForm.is_pinned,
+        created_at: new Date().toISOString(),
+        image_url: newsForm.image_url,
+        attachments: newsForm.attachments,
+        published_to_telegram: false
+      };
+      db.news.push(newNews);
+      
       savePortalDB(db);
+      try {
+        await saveNewsToFirestore(newNews);
+      } catch (e) {
+        console.error("Failed to sync news to Firestore", e);
+      }
+      setNewsForm({ title: '', content: '', is_pinned: false, image_url: '', attachments: [] });
       onRefresh();
+      alert('Новость успешно добавлена!');
     }
   };
 
-  const handleAddEvent = () => {
+  const handleDeleteNews = async (id: string) => {
+    const allowedRoles = ['admin', 'coordinator', 'snil_head'];
+    if (!allowedRoles.includes(user.role)) {
+      alert('У вас нет прав для удаления новостей.');
+      return;
+    }
+
+    showConfirm('Удалить новость?', async () => {
+      try {
+        await deleteNews(id);
+        onRefresh();
+        alert('Новость успешно удалена!');
+      } catch (error) {
+        console.error(error);
+        alert('Ошибка при удалении новости: ' + (error instanceof Error ? error.message : String(error)));
+      }
+    });
+  };
+
+  const handleAddEvent = async () => {
     if (!eventForm.title || !eventForm.description || !eventForm.start_date || !eventForm.end_date) {
       alert('Заполните обязательные поля');
       return;
     }
 
-    db.events.push({
+    const newEvent = {
       id: 'event_' + Date.now(),
       title: eventForm.title,
       type: eventForm.type as any,
@@ -304,9 +439,15 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
       participant_record_books: [],
       materials_links: [],
       created_at: new Date().toISOString(),
-    });
+    };
+    db.events.push(newEvent);
 
     savePortalDB(db);
+    try {
+      await saveEventToFirestore(newEvent);
+    } catch (e) {
+      console.error("Failed to sync event to Firestore", e);
+    }
     setEventForm({
       title: '', type: 'конференция', description: '', organizer: '', start_date: '', end_date: '', registration_deadline: '', location: '', max_participants: 100
     });
@@ -314,12 +455,23 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
     alert('Мероприятие успешно добавлено!');
   };
 
-  const handleDeleteEvent = (id: string) => {
-    if (confirm('Удалить мероприятие?')) {
-      db.events = db.events.filter(e => e.id !== id);
-      savePortalDB(db);
-      onRefresh();
+  const handleDeleteEvent = async (id: string) => {
+    const allowedRoles = ['admin', 'coordinator', 'snil_head'];
+    if (!allowedRoles.includes(user.role)) {
+      alert('У вас нет прав для удаления мероприятий.');
+      return;
     }
+
+    showConfirm('Удалить мероприятие?', async () => {
+      try {
+        await deleteEvent(id);
+        onRefresh();
+        alert('Мероприятие успешно удалено!');
+      } catch (error) {
+        console.error(error);
+        alert('Ошибка при удалении мероприятия: ' + (error instanceof Error ? error.message : String(error)));
+      }
+    });
   };
 
   return (
@@ -362,6 +514,15 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
           <FileText className="w-4 h-4" />
           <span>Заявки на доклады</span>
           <span className="px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 font-mono">{pendingApps.length}</span>
+        </button>
+
+        <button
+          onClick={() => setActiveAdminTab('snil_apps')}
+          className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl transition-all ${activeAdminTab === 'snil_apps' ? 'bg-[#0a2a5e] text-[#d4af37]' : 'hover:bg-slate-100 text-slate-600'}`}
+        >
+          <Users className="w-4 h-4" />
+          <span>Заявки в СНИЛ</span>
+          <span className="px-1.5 py-0.2 rounded bg-blue-100 text-blue-800 font-mono">{snilApplications.length}</span>
         </button>
 
         <button
@@ -414,6 +575,24 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
           <Briefcase className="w-4 h-4" />
           <span>Мероприятия</span>
         </button>
+
+        <button
+          onClick={() => setActiveAdminTab('pub_certs')}
+          className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl transition-all ${activeAdminTab === 'pub_certs' ? 'bg-[#0a2a5e] text-[#d4af37]' : 'hover:bg-slate-100 text-slate-600'}`}
+        >
+          <Award className="w-4 h-4" />
+          <span>Справки (Труды)</span>
+        </button>
+
+        {(user.role === 'admin' || user.role === 'coordinator' || user.group === 'Система' || user.group === 'ADMIN-ROOT') && (
+          <button
+            onClick={() => setActiveAdminTab('system')}
+            className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl transition-all ${activeAdminTab === 'system' ? 'bg-red-900 text-white' : 'hover:bg-slate-100 text-red-600'}`}
+          >
+            <Shield className="w-4 h-4" />
+            <span>Система и Роли</span>
+          </button>
+        )}
       </div>
 
       {/* Контент 1: Модерация работ */}
@@ -427,7 +606,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
             </div>
           ) : (
             <div className="space-y-3">
-              {pendingPubs.map(pb => {
+              {pendingPubs.filter(pb => !processingIds.has(pb.id)).map(pb => {
                 const authorUser = db.users.find(u => u.record_book_id === pb.user_record_book);
                 return (
                   <div key={pb.id} className="p-5 rounded-2xl border border-amber-200 bg-amber-50/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -500,6 +679,58 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
         </div>
       )}
 
+      {/* Контент 2.1: Заявки в СНИЛ */}
+      {activeAdminTab === 'snil_apps' && (
+        <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm space-y-4">
+          <h3 className="text-lg font-bold text-[#0a2a5e]">Заявки на вступление в научные лаборатории (СНИЛ)</h3>
+          {snilApplications.length === 0 ? (
+            <div className="text-center py-12 text-slate-400 bg-slate-50 rounded-2xl">
+              <CheckCircle2 className="w-10 h-10 text-green-500 mx-auto mb-2" />
+              <p>Новых заявок на вступление в СНИЛ нет.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {snilApplications.map(ap => {
+                const student = db.users.find(u => u.record_book_id === ap.student_record_book);
+                return (
+                  <div key={ap.id} className="p-5 rounded-2xl border border-blue-200 bg-blue-50/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center space-x-4">
+                      <UserAvatar user={student || { first_name: '?', last_name: 'Студент' }} size="md" />
+                      <div>
+                        <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Лаборатория: {ap.snil_name}</span>
+                        <h4 className="font-extrabold text-base text-[#0a2a5e]">
+                          {student ? `${student.last_name} ${student.first_name}` : ap.student_record_book}
+                        </h4>
+                        <div className="flex items-center space-x-3 mt-0.5">
+                          <span className="text-xs text-slate-500 font-mono">Зачётка: {ap.student_record_book}</span>
+                          {student && <span className="text-xs text-slate-500 font-bold bg-white px-2 py-0.5 rounded border border-slate-100">{student.group}</span>}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex space-x-2 self-end sm:self-center">
+                      <button
+                        onClick={() => handleReviewSnilApp(ap, 'принята')}
+                        className="px-5 py-2.5 bg-green-600 text-white font-black text-xs rounded-xl shadow-md hover:bg-green-700 flex items-center space-x-2"
+                      >
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>Принять в СНИЛ</span>
+                      </button>
+                      <button
+                        onClick={() => handleReviewSnilApp(ap, 'отклонена')}
+                        className="px-5 py-2.5 bg-white text-red-600 border border-red-100 font-black text-xs rounded-xl hover:bg-red-50"
+                      >
+                        Отклонить
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Контент 3: Назначение поручений СНИЛ */}
       {activeAdminTab === 'tasks' && (
         <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm max-w-2xl">
@@ -521,10 +752,9 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
               <div>
                 <label className="block text-xs font-bold uppercase text-slate-600 mb-1">Лаборатория / Кружок</label>
                 <select value={taskSnil} onChange={e => setTaskSnil(e.target.value)} className="w-full px-3.5 py-2.5 rounded-xl border text-xs font-medium">
-                  <option value="СНИЛ «Маркетинг инноваций»">СНИЛ «Маркетинг инноваций»</option>
-                  <option value="СНИЛ «Экономика устойчивого развития»">СНИЛ «Экономика устойчивого развития»</option>
-                  <option value="СНИЛ «Управление человеческими ресурсами»">СНИЛ «Управление человеческими ресурсами»</option>
-                  <option value="Дискуссионный клуб «Экономист»">Дискуссионный клуб «Экономист»</option>
+                  {db.snils.map(snil => (
+                    <option key={snil.id} value={snil.name}>{snil.name}</option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -907,13 +1137,24 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
                 <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Ссылка на изображение (опционально)</label>
                 <input type="text" value={newsForm.image_url} onChange={(e) => setNewsForm({...newsForm, image_url: e.target.value})} className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="https://..." />
               </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Вложения (ссылки)</label>
+                {newsForm.attachments?.map((att, idx) => (
+                  <div key={idx} className="flex gap-2 mb-2">
+                    <input type="text" placeholder="Название" value={att.title} onChange={(e) => { const atts = [...newsForm.attachments]; atts[idx].title = e.target.value; setNewsForm({...newsForm, attachments: atts}); }} className="w-1/2 p-2 rounded-lg border border-slate-200 text-sm" />
+                    <input type="text" placeholder="URL" value={att.url} onChange={(e) => { const atts = [...newsForm.attachments]; atts[idx].url = e.target.value; setNewsForm({...newsForm, attachments: atts}); }} className="w-1/2 p-2 rounded-lg border border-slate-200 text-sm" />
+                    <button onClick={() => { const atts = newsForm.attachments.filter((_, i) => i !== idx); setNewsForm({...newsForm, attachments: atts}); }} className="text-red-500 hover:text-red-700">Удалить</button>
+                  </div>
+                ))}
+                <button onClick={() => setNewsForm({...newsForm, attachments: [...newsForm.attachments, {title: '', url: ''}]})} className="text-blue-600 hover:text-blue-800 text-sm font-bold">+ Добавить вложение</button>
+              </div>
               <div className="flex items-center space-x-2">
                 <input type="checkbox" id="is_pinned" checked={newsForm.is_pinned} onChange={(e) => setNewsForm({...newsForm, is_pinned: e.target.checked})} className="w-4 h-4 text-blue-600 rounded border-slate-300" />
                 <label htmlFor="is_pinned" className="text-sm font-semibold text-slate-700">Закрепить новость (важное)</label>
               </div>
-              <button onClick={handleAddNews} className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all shadow-md flex items-center space-x-2">
+              <button onClick={handleSaveNews} className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all shadow-md flex items-center space-x-2">
                 <Plus className="w-4 h-4" />
-                <span>Опубликовать новость</span>
+                <span>{editingNewsId ? 'Сохранить изменения' : 'Опубликовать новость'}</span>
               </button>
             </div>
           </div>
@@ -934,6 +1175,9 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
                       <p className="text-sm text-slate-500 line-clamp-2">{news.content}</p>
                       <p className="text-xs text-slate-400">{new Date(news.created_at).toLocaleString('ru-RU')} • Автор: {news.author_name}</p>
                     </div>
+                    <button onClick={() => { setEditingNewsId(news.id); setNewsForm({title: news.title, content: news.content, is_pinned: news.is_pinned, image_url: news.image_url || '', attachments: news.attachments || []}); }} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors flex-shrink-0">
+                      <Pencil className="w-5 h-5" />
+                    </button>
                     <button onClick={() => handleDeleteNews(news.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0">
                       <Trash2 className="w-5 h-5" />
                     </button>
@@ -1018,7 +1262,509 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
           </div>
         </div>
       )}
+      
+      {activeAdminTab === 'pub_certs' && (
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
+            <div>
+              <h3 className="text-2xl font-black text-[#0a2a5e]">Журнал справок</h3>
+              <p className="text-sm text-slate-500 mt-1">Реестр выданных справок о наличии научных публикаций</p>
+            </div>
+            
+            <div className="flex items-center space-x-3 print:hidden">
+              <select 
+                value={certFilterMonth}
+                onChange={e => setCertFilterMonth(e.target.value)}
+                className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700 outline-none"
+              >
+                <option value="all">Все месяцы</option>
+                {Array.from({ length: 12 }, (_, i) => (
+                  <option key={i} value={i.toString()}>{new Date(2000, i).toLocaleString('ru-RU', { month: 'long' })}</option>
+                ))}
+              </select>
+              <select 
+                value={certFilterYear}
+                onChange={e => setCertFilterYear(e.target.value)}
+                className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700 outline-none"
+              >
+                <option value="all">Все годы</option>
+                {Array.from(new Set((db.publication_certificates || []).map(c => new Date(c.issue_date).getFullYear()))).map(year => (
+                  <option key={year} value={year.toString()}>{year}</option>
+                ))}
+              </select>
+              <button
+                onClick={() => {
+                  const filteredCerts = (db.publication_certificates || [])
+                    .filter(cert => {
+                      const d = new Date(cert.issue_date);
+                      if (certFilterMonth !== 'all' && d.getMonth().toString() !== certFilterMonth) return false;
+                      if (certFilterYear !== 'all' && d.getFullYear().toString() !== certFilterYear) return false;
+                      return true;
+                    });
+                  
+                  const headers = ['Номер', 'Дата', 'Студент', 'Зачетка', 'Публикация', 'Журнал', 'Год'];
+                  const csvContent = [
+                    headers.join(','),
+                    ...filteredCerts.map(c => [
+                      c.number,
+                      new Date(c.issue_date).toLocaleDateString('ru-RU'),
+                      `"${c.user_name}"`,
+                      c.user_record_book,
+                      `"${c.publication_title}"`,
+                      `"${c.publication_journal}"`,
+                      c.publication_year
+                    ].join(','))
+                  ].join('\n');
+                  
+                  const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+                  const link = document.createElement('a');
+                  link.href = URL.createObjectURL(blob);
+                  link.setAttribute('download', `certificates_report_${certFilterMonth}_${certFilterYear}.csv`);
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold text-sm shadow-md hover:bg-blue-700 flex items-center justify-center space-x-2 transition-colors"
+                title="Экспорт в CSV для Excel"
+              >
+                <Download className="w-4 h-4" />
+                <span>Экспорт CSV</span>
+              </button>
+              <button
+                onClick={() => {
+                  window.print();
+                }}
+                className="px-4 py-2 bg-slate-800 text-white rounded-xl font-bold text-sm shadow-md hover:bg-slate-700 flex items-center justify-center space-x-2 transition-colors"
+              >
+                <Printer className="w-4 h-4" />
+                <span>Распечатать журнал</span>
+              </button>
+            </div>
+          </div>
 
+          <div className="overflow-x-auto print:overflow-visible">
+            <table className="w-full text-left text-sm text-slate-600">
+              <thead className="bg-slate-50 text-slate-700 text-xs uppercase font-bold border-b border-slate-200">
+                <tr>
+                  <th className="px-4 py-3">№ Справки</th>
+                  <th className="px-4 py-3">Дата выдачи</th>
+                  <th className="px-4 py-3">Студент</th>
+                  <th className="px-4 py-3">Зачетная книжка</th>
+                  <th className="px-4 py-3">Публикация</th>
+                  <th className="px-4 py-3 text-right print:hidden">Действия</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {(db.publication_certificates || [])
+                  .filter(cert => {
+                    const d = new Date(cert.issue_date);
+                    if (certFilterMonth !== 'all' && d.getMonth().toString() !== certFilterMonth) return false;
+                    if (certFilterYear !== 'all' && d.getFullYear().toString() !== certFilterYear) return false;
+                    return true;
+                  })
+                  .map(cert => (
+                  <tr key={cert.id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="px-4 py-4 font-mono font-bold text-[#0a2a5e]">{cert.number}</td>
+                    <td className="px-4 py-4 whitespace-nowrap">{new Date(cert.issue_date).toLocaleDateString('ru-RU')}</td>
+                    <td className="px-4 py-4 font-medium text-slate-800">{cert.user_name}</td>
+                    <td className="px-4 py-4 font-mono text-xs">{cert.user_record_book}</td>
+                    <td className="px-4 py-4 max-w-xs truncate" title={cert.publication_title}>{cert.publication_title}</td>
+                    <td className="px-4 py-4 text-right print:hidden">
+                      <button
+                        onClick={() => setAdminViewingPubCert(cert)}
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        title="Просмотр и печать справки"
+                      >
+                        <FileText className="w-5 h-5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {(!db.publication_certificates || db.publication_certificates.length === 0) && (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-8 text-center text-slate-500 italic">
+                      Журнал пуст. Выданных справок пока нет.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Модальное окно подтверждения */}
+      {confirmModalState.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl p-6 shadow-2xl max-w-sm w-full animate-in fade-in zoom-in duration-200">
+            <h3 className="text-xl font-bold text-slate-900 mb-2">Подтверждение</h3>
+            <p className="text-slate-600 mb-6">{confirmModalState.message}</p>
+            <div className="flex justify-end space-x-3">
+              <button 
+                onClick={() => setConfirmModalState(prev => ({ ...prev, isOpen: false }))}
+                className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors font-medium"
+              >
+                Отмена
+              </button>
+              <button 
+                onClick={() => {
+                  confirmModalState.onConfirm();
+                  setConfirmModalState(prev => ({ ...prev, isOpen: false }));
+                }}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium shadow-sm hover:shadow-md"
+              >
+                Удалить
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeAdminTab === 'system' && (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-sm border border-slate-200 dark:border-slate-800">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                  <Shield className="w-6 h-6 text-red-600" />
+                  <span>Управление ролями и доступом</span>
+                </h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                  Просмотр всех зарегистрированных пользователей и назначение административных полномочий.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Поиск по ФИО или № зачётки..."
+                    value={userSearch}
+                    onChange={(e) => setUserSearch(e.target.value)}
+                    className="pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0a2a5e] dark:focus:ring-[#d4af37] w-full md:w-64 transition-all"
+                  />
+                </div>
+                <button
+                  onClick={() => setShowAddUserModal(true)}
+                  className="px-4 py-2 bg-[#0a2a5e] dark:bg-[#d4af37] text-white dark:text-slate-900 rounded-xl text-sm font-bold flex items-center space-x-2 hover:opacity-90 transition-all shadow-md"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Добавить</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto rounded-2xl border border-slate-100 dark:border-slate-800">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-[10px] uppercase font-bold tracking-wider">
+                    <th className="px-4 py-4">Пользователь</th>
+                    <th className="px-4 py-4">№ Зачётки</th>
+                    <th className="px-4 py-4">Группа</th>
+                    <th className="px-4 py-4">Роль в системе</th>
+                    <th className="px-4 py-4 text-right">Действия</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {db.users.filter(u => 
+                    `${u.last_name} ${u.first_name}`.toLowerCase().includes(userSearch.toLowerCase()) ||
+                    u.record_book_id.toLowerCase().includes(userSearch.toLowerCase())
+                  ).sort((a, b) => {
+                    const roleOrder = { 'admin': 0, 'coordinator': 1, 'snil_head': 2, 'activist': 3, 'student': 4 };
+                    return (roleOrder[a.role as keyof typeof roleOrder] || 99) - (roleOrder[b.role as keyof typeof roleOrder] || 99);
+                  }).map(u => (
+                    <tr key={u.record_book_id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                      <td className="px-4 py-4">
+                        <div className="flex items-center space-x-3">
+                          <UserAvatar user={u} size="sm" />
+                          <div>
+                            <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{u.last_name} {u.first_name}</p>
+                            <p className="text-[10px] text-slate-500">{u.faculty}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 font-mono text-xs font-bold text-[#0a2a5e] dark:text-blue-400">{u.record_book_id}</td>
+                      <td className="px-4 py-4 text-xs font-medium">{u.group}</td>
+                      <td className="px-4 py-4">
+                        <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm ${
+                          u.role === 'admin' ? 'bg-red-600 text-white shadow-red-200' :
+                          u.role === 'coordinator' ? 'bg-amber-500 text-[#0a2a5e] shadow-amber-200' :
+                          u.role === 'snil_head' ? 'bg-purple-600 text-white shadow-purple-200' :
+                          u.role === 'activist' ? 'bg-teal-600 text-white shadow-teal-200' :
+                          'bg-blue-600 text-white shadow-blue-200'
+                        }`}>
+                          {getRoleTitle(u.role)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 text-right">
+                        <div className="flex items-center justify-end space-x-2">
+                          <select
+                            value={u.role}
+                            onChange={(e) => {
+                              if (confirm(`Вы уверены, что хотите изменить роль пользователя ${u.last_name} на ${e.target.value}?`)) {
+                                updateUserRole(u.record_book_id, e.target.value as any);
+                                onRefresh();
+                              }
+                            }}
+                            className="text-[10px] font-bold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 focus:outline-none"
+                          >
+                            <option value="student">Студент-исследователь</option>
+                            <option value="activist">Активист СНО ФЭМ</option>
+                            <option value="snil_head">Руководитель СНИЛ</option>
+                            <option value="coordinator">Координатор ФЭМ</option>
+                            <option value="admin">Администратор сайта</option>
+                          </select>
+                          {u.record_book_id !== '00000001' && (
+                            <button
+                              onClick={() => {
+                                if (confirm(`Вы уверены, что хотите полностью удалить пользователя ${u.last_name} ${u.first_name}?`)) {
+                                  const storageDb = getPortalDB();
+                                  storageDb.users = storageDb.users.filter(x => x.record_book_id !== u.record_book_id);
+                                  savePortalDB(storageDb);
+                                  onRefresh();
+                                }
+                              }}
+                              className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-all"
+                              title="Удалить пользователя"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {adminViewingPubCert && (
+        <PublicationCertificateModal
+          certificate={adminViewingPubCert}
+          publication={db.publications.find(p => p.id === adminViewingPubCert.publication_id) || null}
+          user={db.users.find(u => u.record_book_id === adminViewingPubCert.user_record_book) || null}
+          onClose={() => setAdminViewingPubCert(null)}
+          onGenerate={(pubId, gender) => {
+            // Admin doesn't typically generate, but we provide the signature to avoid TS errors
+            console.log("Admin clicked generate for", pubId, gender);
+          }}
+        />
+      )}
+
+      {showAddUserModal && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-sm">
+          <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl overflow-y-auto max-h-[90vh] text-slate-800 dark:text-slate-100">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Добавление нового пользователя</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Номер зачётки / Студ. билета *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Например, 2301042"
+                  value={newUserForm.record_book_id}
+                  onChange={(e) => setNewUserForm({ ...newUserForm, record_book_id: e.target.value })}
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0a2a5e]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Фамилия *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Иванов"
+                    value={newUserForm.last_name}
+                    onChange={(e) => setNewUserForm({ ...newUserForm, last_name: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0a2a5e]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Имя *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Иван"
+                    value={newUserForm.first_name}
+                    onChange={(e) => setNewUserForm({ ...newUserForm, first_name: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0a2a5e]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Отчество (при наличии)</label>
+                <input
+                  type="text"
+                  placeholder="Иванович"
+                  value={newUserForm.middle_name}
+                  onChange={(e) => setNewUserForm({ ...newUserForm, middle_name: e.target.value })}
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0a2a5e]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Роль в системе *</label>
+                  <select
+                    value={newUserForm.role}
+                    onChange={(e) => setNewUserForm({ ...newUserForm, role: e.target.value as any })}
+                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0a2a5e] text-slate-800 dark:text-white font-medium"
+                  >
+                    <option value="student">Студент-исследователь</option>
+                    <option value="activist">Активист СНО ФЭМ</option>
+                    <option value="snil_head">Руководитель СНИЛ</option>
+                    <option value="coordinator">Координатор ФЭМ</option>
+                    <option value="admin">Администратор сайта</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Учебная группа</label>
+                  <input
+                    type="text"
+                    placeholder="Например, 23ДКС-1"
+                    value={newUserForm.group}
+                    onChange={(e) => setNewUserForm({ ...newUserForm, group: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0a2a5e]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Кафедра / Структурное подразделение</label>
+                <input
+                  type="text"
+                  placeholder="Кафедра экономики промышленных предприятий"
+                  value={newUserForm.department}
+                  onChange={(e) => setNewUserForm({ ...newUserForm, department: e.target.value })}
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0a2a5e]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Пароль для входа *</label>
+                <input
+                  type="password"
+                  required
+                  placeholder="Минимум 4 символа"
+                  value={newUserForm.password}
+                  onChange={(e) => setNewUserForm({ ...newUserForm, password: e.target.value })}
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0a2a5e]"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end space-x-3 mt-6">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAddUserModal(false);
+                  setNewUserForm({
+                    record_book_id: '',
+                    last_name: '',
+                    first_name: '',
+                    middle_name: '',
+                    role: 'student',
+                    group: '',
+                    faculty: 'ФЭМ',
+                    department: '',
+                    password: ''
+                  });
+                }}
+                className="px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all font-bold"
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const { record_book_id, last_name, first_name, password } = newUserForm;
+                  if (!record_book_id.trim() || !last_name.trim() || !first_name.trim() || !password.trim()) {
+                    alert('Заполните все обязательные поля (*)');
+                    return;
+                  }
+                  if (db.users.some(u => u.record_book_id === record_book_id.trim())) {
+                    alert('Пользователь с таким номером зачётки уже зарегистрирован!');
+                    return;
+                  }
+
+                  const newUserObj: CustomUser = {
+                    record_book_id: record_book_id.trim(),
+                    last_name: last_name.trim(),
+                    first_name: first_name.trim(),
+                    middle_name: newUserForm.middle_name.trim() || undefined,
+                    role: newUserForm.role,
+                    group: newUserForm.group.trim() || 'Система',
+                    course: 4,
+                    faculty: newUserForm.faculty.trim() || 'ФЭМ',
+                    department: newUserForm.department.trim() || 'Деканат',
+                    scientific_interests: [],
+                    created_at: new Date().toISOString(),
+                    password: password.trim()
+                  };
+
+                  const storageDb = getPortalDB();
+                  storageDb.users.push(newUserObj);
+                  savePortalDB(storageDb);
+
+                  onRefresh();
+                  setShowAddUserModal(false);
+                  setNewUserForm({
+                    record_book_id: '',
+                    last_name: '',
+                    first_name: '',
+                    middle_name: '',
+                    role: 'student',
+                    group: '',
+                    faculty: 'ФЭМ',
+                    department: '',
+                    password: ''
+                  });
+                }}
+                className="px-4 py-2 bg-[#0a2a5e] dark:bg-[#d4af37] text-white dark:text-slate-900 rounded-xl text-sm font-bold hover:opacity-90 transition-all shadow-md"
+              >
+                Создать
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      <style dangerouslySetInnerHTML={{__html: `
+        @media print {
+          .no-print, nav, aside, header, footer, button, .print\\:hidden {
+            display: none !important;
+          }
+          body {
+            background: white !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+          .bg-white, .bg-slate-50 {
+            background-color: white !important;
+          }
+          .shadow-sm, .shadow-xl, .shadow-2xl {
+            box-shadow: none !important;
+          }
+          .rounded-3xl, .rounded-2xl, .rounded-xl {
+            border-radius: 0 !important;
+          }
+          table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+          }
+          th, td {
+            border: 1px solid #e2e8f0 !important;
+            padding: 8px !important;
+          }
+          .print\\:overflow-visible {
+            overflow: visible !important;
+          }
+        }
+      `}} />
     </div>
   );
 };

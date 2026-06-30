@@ -4,7 +4,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { getPortalDB, savePortalDB, PortalDatabase } from './services/storage';
+import { getPortalDB, savePortalDB, fetchPortalDBFromFirestore, PortalDatabase, canAccessAdmin } from './services/storage';
+import { migrateLocalStorageToFirestore } from './services/migration';
 import { CustomUser } from './types';
 import { Navbar } from './components/Navbar';
 import { Code2 } from 'lucide-react';
@@ -41,8 +42,15 @@ export default function App() {
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
 
-  // Пытаемся восстановить сессию из localStorage
+  // Восстанавливаем данные из Firestore и сессию из localStorage
   useEffect(() => {
+    fetchPortalDBFromFirestore().then(firestoreDbData => {
+      if (firestoreDbData && Object.keys(firestoreDbData).length > 0) {
+        setDb(firestoreDbData);
+        savePortalDB(firestoreDbData);
+      }
+    }).catch(console.error);
+
     const savedUser = localStorage.getItem('fem_bseu_user');
     if (savedUser) {
       setUser(JSON.parse(savedUser));
@@ -292,11 +300,12 @@ export default function App() {
                 db={db} 
                 user={user} 
                 onUpdateUser={handleUpdateUser} 
-                onRefresh={refreshDB} 
+                onRefresh={refreshDB}
+                onLogout={handleLogout}
               />
             )}
 
-            {activeTab === 'admin' && user && (user.role === 'coordinator' || user.role === 'admin') && (
+            {activeTab === 'admin' && user && canAccessAdmin(user) && (
               <AdminView db={db} user={user} onRefresh={refreshDB} />
             )}
           </motion.div>
