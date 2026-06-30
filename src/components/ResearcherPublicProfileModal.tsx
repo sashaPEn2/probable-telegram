@@ -26,7 +26,7 @@ export const ResearcherPublicProfileModal: React.FC<ResearcherPublicProfileModal
           <div className="flex items-center space-x-4">
             <UserAvatar size="lg" user={researcher} />
             <div>
-              <h2 className="text-xl font-bold text-[#0a2a5e] dark:text-blue-100">
+              <h2 className="text-xl font-bold text-[#052e16] dark:text-emerald-100">
                 {researcher.last_name} {researcher.first_name} {researcher.middle_name || ''}
               </h2>
               <p className="text-xs text-slate-500 font-medium">
@@ -43,8 +43,8 @@ export const ResearcherPublicProfileModal: React.FC<ResearcherPublicProfileModal
         <div className="flex-1 overflow-y-auto p-6">
           {isPrivate ? (
             <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
-              <div className="w-20 h-20 bg-amber-50 dark:bg-amber-950/30 rounded-full flex items-center justify-center border border-amber-200 dark:border-amber-900">
-                <ShieldOff className="w-10 h-10 text-amber-600" />
+              <div className="w-20 h-20 bg-blue-50/50 dark:bg-blue-950/30 rounded-full flex items-center justify-center border border-emerald-200 dark:border-amber-900">
+                <ShieldOff className="w-10 h-10 text-emerald-600" />
               </div>
               <div className="space-y-2 max-w-sm">
                 <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">Профиль скрыт</h3>
@@ -58,8 +58,8 @@ export const ResearcherPublicProfileModal: React.FC<ResearcherPublicProfileModal
               
               {/* Публикации */}
               <section className="space-y-4">
-                <div className="flex items-center space-x-2 text-[#0a2a5e] dark:text-blue-300">
-                  <BookOpen className="w-5 h-5 text-[#d4af37]" />
+                <div className="flex items-center space-x-2 text-[#052e16] dark:text-emerald-300">
+                  <BookOpen className="w-5 h-5 text-[#10b981]" />
                   <h3 className="font-bold text-base">Научные публикации ({pubs.length})</h3>
                 </div>
                 
@@ -68,19 +68,19 @@ export const ResearcherPublicProfileModal: React.FC<ResearcherPublicProfileModal
                     <p className="text-sm text-slate-400 italic">Подтвержденных публикаций пока нет.</p>
                   ) : (
                     pubs.map(pub => (
-                      <div key={pub.id} className="p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 hover:border-blue-200 dark:hover:border-blue-900 transition-colors">
+                      <div key={pub.id} className="p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 hover:border-emerald-200 dark:hover:border-emerald-900 transition-colors">
                         <div className="flex items-start justify-between gap-4">
                           <div className="space-y-1">
                             <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200 leading-snug">{pub.title}</h4>
                             <p className="text-xs text-slate-500">{pub.journal}, {pub.year}</p>
                             <div className="flex flex-wrap gap-2 pt-1">
-                              <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300">
+                              <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-emerald-100 dark:bg-blue-950 text-emerald-800 dark:text-emerald-300">
                                 {pub.type}
                               </span>
                             </div>
                           </div>
                           {pub.link && (
-                            <a href={pub.link} target="_blank" rel="noreferrer" className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950 rounded-lg transition-colors">
+                            <a href={pub.link} target="_blank" rel="noreferrer" className="p-2 text-emerald-500 hover:bg-blue-50 dark:hover:bg-blue-950 rounded-lg transition-colors">
                               <ExternalLink className="w-4 h-4" />
                             </a>
                           )}
@@ -93,8 +93,8 @@ export const ResearcherPublicProfileModal: React.FC<ResearcherPublicProfileModal
 
               {/* Доклады / Участие в конференциях */}
               <section className="space-y-4">
-                <div className="flex items-center space-x-2 text-[#0a2a5e] dark:text-blue-300">
-                  <FileText className="w-5 h-5 text-amber-600" />
+                <div className="flex items-center space-x-2 text-[#052e16] dark:text-emerald-300">
+                  <FileText className="w-5 h-5 text-emerald-600" />
                   <h3 className="font-bold text-base">Выступления на конференциях ({reports.length})</h3>
                 </div>
                 
@@ -103,10 +103,10 @@ export const ResearcherPublicProfileModal: React.FC<ResearcherPublicProfileModal
                     <p className="text-sm text-slate-400 italic">Сведений об участии в конференциях пока нет.</p>
                   ) : (
                     reports.map(report => (
-                      <div key={report.id} className="p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-amber-50/10 dark:bg-amber-950/5 hover:border-amber-200 dark:hover:border-amber-900 transition-colors">
+                      <div key={report.id} className="p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-blue-50/50/10 dark:bg-amber-950/5 hover:border-emerald-200 dark:hover:border-amber-900 transition-colors">
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest">{report.event_title}</span>
+                            <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">{report.event_title}</span>
                             <span className="text-[10px] text-slate-400 font-mono">{new Date(report.created_at).toLocaleDateString('ru-RU')}</span>
                           </div>
                           <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">{report.topic}</h4>
@@ -120,8 +120,8 @@ export const ResearcherPublicProfileModal: React.FC<ResearcherPublicProfileModal
               {/* Научные интересы */}
               {researcher.scientific_interests.length > 0 && (
                 <section className="space-y-3">
-                   <div className="flex items-center space-x-2 text-[#0a2a5e] dark:text-blue-300">
-                    <Sparkles className="w-5 h-5 text-blue-500" />
+                   <div className="flex items-center space-x-2 text-[#052e16] dark:text-emerald-300">
+                    <Sparkles className="w-5 h-5 text-emerald-500" />
                     <h3 className="font-bold text-base">Научные интересы</h3>
                   </div>
                   <div className="flex flex-wrap gap-2">

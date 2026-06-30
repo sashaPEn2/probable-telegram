@@ -89,28 +89,28 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <>
-      <header className="bg-[#0a2a5e] text-white sticky top-0 z-[60] shadow-lg border-b border-[#d4af37]/30 backdrop-blur-md bg-opacity-95 h-16 sm:h-24 flex flex-col justify-center transition-all">
+      <header className="bg-[#052e16] text-white sticky top-0 z-[60] shadow-lg border-b border-[#10b981]/30 backdrop-blur-md bg-opacity-95 h-16 sm:h-24 flex flex-col justify-center transition-all">
         {/* Mobile secondary branding bar */}
-        <div className="lg:hidden w-full bg-blue-950/50 border-b border-blue-900/30 py-1 px-4">
-          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#d4af37] text-center">Цифровой портал студента-исследователя</p>
+        <div className="lg:hidden w-full bg-blue-950/50 border-b border-emerald-900/30 py-1 px-4">
+          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#10b981] text-center">Цифровой портал студента-исследователя</p>
         </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           <div className="flex items-center justify-between">
             
             {/* Logo Section */}
             <div className="flex items-center space-x-3 sm:space-x-4 cursor-pointer group" onClick={() => setActiveTab('feed')}>
-              <div className="relative flex items-center justify-center w-9 h-9 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#d4af37] via-amber-500 to-amber-600 p-0.5 shadow-[0_0_15px_rgba(212,175,55,0.2)] group-hover:scale-105 group-hover:shadow-[0_0_30px_rgba(212,175,55,0.5)] transition-all">
-                <div className="w-full h-full bg-[#0a2a5e] rounded-[10px] sm:rounded-[14px] flex items-center justify-center">
-                  <GraduationCap className="w-5 h-5 sm:w-8 sm:h-8 text-[#d4af37]" />
+              <div className="relative flex items-center justify-center w-9 h-9 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#10b981] via-amber-500 to-emerald-700 p-0.5 shadow-[0_0_15px_rgba(212,175,55,0.2)] group-hover:scale-105 group-hover:shadow-[0_0_30px_rgba(212,175,55,0.5)] transition-all">
+                <div className="w-full h-full bg-[#052e16] rounded-[10px] sm:rounded-[14px] flex items-center justify-center">
+                  <GraduationCap className="w-5 h-5 sm:w-8 sm:h-8 text-[#10b981]" />
                 </div>
               </div>
               <div className="block">
                 <div className="flex items-center space-x-2">
-                  <span className="font-black tracking-tight text-base sm:text-2xl uppercase leading-none">ФЭМ <span className="text-[#d4af37]">СНО</span></span>
+                  <span className="font-black tracking-tight text-base sm:text-2xl uppercase leading-none">ФЭМ <span className="text-[#10b981]">СНО</span></span>
                   <div className="h-4 w-[1px] bg-white/20 hidden md:block mx-1"></div>
-                  <span className="text-[10px] px-2 py-1 rounded-lg bg-[#d4af37] text-[#0a2a5e] font-black hidden md:inline shadow-sm">SNO / FMGL</span>
+                  <span className="text-[10px] px-2 py-1 rounded-lg bg-[#10b981] text-[#052e16] font-black hidden md:inline shadow-sm">SNO / FMGL</span>
                 </div>
-                <p className="text-[10px] sm:text-[12px] text-blue-200 font-bold tracking-wide mt-1 hidden sm:block opacity-90">Цифровой портал студента-исследователя</p>
+                <p className="text-[10px] sm:text-[12px] text-emerald-200 font-bold tracking-wide mt-1 hidden sm:block opacity-90">Цифровой портал студента-исследователя</p>
               </div>
             </div>
 
@@ -149,8 +149,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                   type="button"
                   className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all ${
                     showHubMenu || ['gallery', 'snil', 'faq', 'merch', 'admin'].includes(activeTab)
-                      ? 'bg-blue-800 text-white shadow-inner border border-blue-600'
-                      : 'text-blue-100 hover:bg-blue-900/60 hover:text-white'
+                      ? 'bg-emerald-800 text-white shadow-inner border border-emerald-600'
+                      : 'text-emerald-100 hover:bg-emerald-900/60 hover:text-white'
                   }`}
                 >
                   <LayoutGrid className="w-4 h-4" />
@@ -189,7 +189,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         <HubItem 
                           active={activeTab === 'admin'} 
                           onClick={() => { setActiveTab('admin'); setShowHubMenu(false); }} 
-                          icon={<ShieldCheck className="w-4 h-4 text-[#d4af37]" />} 
+                          icon={<ShieldCheck className="w-4 h-4 text-[#10b981]" />} 
                           label="Управление" 
                         />
                       </div>
@@ -204,9 +204,9 @@ export const Navbar: React.FC<NavbarProps> = ({
               
               <button
                 onClick={onToggleDarkMode}
-                className="p-1.5 sm:p-2 rounded-lg bg-blue-900/50 hover:bg-blue-800 text-blue-200 hover:text-white transition-colors cursor-pointer min-w-[32px] sm:min-w-[40px] flex items-center justify-center"
+                className="p-1.5 sm:p-2 rounded-lg bg-emerald-900/50 hover:bg-emerald-800 text-emerald-200 hover:text-white transition-colors cursor-pointer min-w-[32px] sm:min-w-[40px] flex items-center justify-center"
               >
-                {darkMode ? <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" /> : <Moon className="w-4 h-4 sm:w-5 sm:h-5 text-blue-200" />}
+                {darkMode ? <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" /> : <Moon className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-200" />}
               </button>
 
               {user ? (
@@ -214,22 +214,22 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <div className="relative" ref={notifRef}>
                     <button
                       onClick={() => setShowNotifDropdown(!showNotifDropdown)}
-                      className="relative p-1.5 sm:p-2 rounded-lg bg-blue-900/50 hover:bg-blue-800 text-blue-200 hover:text-white transition-colors min-w-[32px] sm:min-w-[40px] flex items-center justify-center cursor-pointer"
+                      className="relative p-1.5 sm:p-2 rounded-lg bg-emerald-900/50 hover:bg-emerald-800 text-emerald-200 hover:text-white transition-colors min-w-[32px] sm:min-w-[40px] flex items-center justify-center cursor-pointer"
                     >
                       <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
-                      {unreadCount > 0 && <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500 animate-pulse border border-[#0a2a5e]"></span>}
+                      {unreadCount > 0 && <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-green-500 animate-pulse border border-[#052e16]"></span>}
                     </button>
 
                     {showNotifDropdown && (
                       <div className="absolute right-0 mt-3 w-72 xs:w-80 sm:w-[420px] rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl py-0 z-[70] animate-fadeIn origin-top-right overflow-hidden">
                         {/* Header */}
-                        <div className="bg-gradient-to-r from-[#0a2a5e] to-blue-900 px-4 py-3 text-white flex items-center justify-between">
+                        <div className="bg-gradient-to-r from-[#052e16] to-emerald-900 px-4 py-3 text-white flex items-center justify-between">
                           <div className="flex items-center space-x-2">
-                            <Bell className="w-4 h-4 text-[#d4af37]" />
+                            <Bell className="w-4 h-4 text-[#10b981]" />
                             <span className="font-bold text-xs sm:text-sm">Центр уведомлений ФЭМ</span>
                           </div>
                           {unreadCount > 0 && (
-                            <span className="text-[10px] bg-red-500 text-white font-black px-1.5 py-0.5 rounded-full font-mono animate-pulse">
+                            <span className="text-[10px] bg-green-500 text-white font-black px-1.5 py-0.5 rounded-full font-mono animate-pulse">
                               {unreadCount}
                             </span>
                           )}
@@ -242,7 +242,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                             <div className="flex space-x-3">
                               <button 
                                 onClick={() => onMarkRead()} 
-                                className="text-blue-700 dark:text-blue-400 hover:underline flex items-center space-x-1 cursor-pointer"
+                                className="text-emerald-700 dark:text-emerald-400 hover:underline flex items-center space-x-1 cursor-pointer"
                               >
                                 <CheckCheck className="w-3 h-3" />
                                 <span>Прочитать все</span>
@@ -252,7 +252,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                                   onClearAll();
                                   setShowNotifDropdown(false);
                                 }} 
-                                className="text-red-600 dark:text-red-400 hover:underline flex items-center space-x-1 cursor-pointer"
+                                className="text-green-600 dark:text-green-400 hover:underline flex items-center space-x-1 cursor-pointer"
                               >
                                 <Trash2 className="w-3 h-3" />
                                 <span>Очистить</span>
@@ -278,19 +278,19 @@ export const Navbar: React.FC<NavbarProps> = ({
                                 onClick={() => onMarkRead(n.id)}
                                 className={`p-3 rounded-xl border transition-all cursor-pointer flex items-start space-x-2.5 text-left ${
                                   !n.is_read 
-                                    ? 'bg-blue-50/70 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800/40 shadow-sm' 
+                                    ? 'bg-blue-50/70 dark:bg-blue-950/20 border-emerald-200 dark:border-emerald-800/40 shadow-sm' 
                                     : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 opacity-75 hover:opacity-100'
                                 }`}
                               >
                                 <div className="mt-0.5 flex-shrink-0">
                                   {n.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-green-600" /> :
-                                   n.type === 'warning' ? <AlertCircle className="w-4 h-4 text-amber-600" /> :
-                                   <Info className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
+                                   n.type === 'warning' ? <AlertCircle className="w-4 h-4 text-emerald-600" /> :
+                                   <Info className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}
                                 </div>
 
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center justify-between">
-                                    <h4 className="font-bold text-[11px] sm:text-xs text-[#0a2a5e] dark:text-blue-300 truncate pr-2">{n.title}</h4>
+                                    <h4 className="font-bold text-[11px] sm:text-xs text-[#052e16] dark:text-emerald-300 truncate pr-2">{n.title}</h4>
                                     <span className="text-[9px] font-mono text-slate-400 flex-shrink-0">
                                       {new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </span>
@@ -301,7 +301,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                                 </div>
 
                                 {!n.is_read && (
-                                  <div className="w-1.5 h-1.5 rounded-full bg-[#d4af37] self-center flex-shrink-0"></div>
+                                  <div className="w-1.5 h-1.5 rounded-full bg-[#10b981] self-center flex-shrink-0"></div>
                                 )}
                               </div>
                             ))
@@ -316,8 +316,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                       onClick={() => setShowUserMenu(!showUserMenu)}
                       className={`flex items-center space-x-2 p-1 rounded-lg transition-all ${
                         activeTab === 'profile' || showUserMenu
-                          ? 'bg-[#d4af37] text-[#0a2a5e] font-bold shadow-lg'
-                          : 'bg-blue-900/50 text-white hover:bg-blue-800'
+                          ? 'bg-[#10b981] text-[#052e16] font-bold shadow-lg'
+                          : 'bg-emerald-900/50 text-white hover:bg-emerald-800'
                       }`}
                     >
                       <UserAvatar size="xs" user={user} />
@@ -330,9 +330,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                       <div className="absolute right-0 mt-3 w-64 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl py-2 z-[70] animate-fadeIn origin-top-right">
                         <div className="px-4 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 rounded-t-2xl">
                           <div className="flex items-center space-x-3">
-                            <UserAvatar size="md" user={user} className="border border-[#d4af37]/40 shadow-sm" />
+                            <UserAvatar size="md" user={user} className="border border-[#10b981]/40 shadow-sm" />
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-black text-[#0a2a5e] dark:text-blue-200 truncate leading-tight">{user.last_name} {user.first_name}</p>
+                              <p className="text-sm font-black text-[#052e16] dark:text-emerald-200 truncate leading-tight">{user.last_name} {user.first_name}</p>
                               <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">{getRoleTitle(user.role)}</p>
                             </div>
                           </div>
@@ -344,7 +344,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                           {canAccessAdmin(user) && (
                             <MenuAction 
                               onClick={() => { setActiveTab('admin'); setShowUserMenu(false); }} 
-                              icon={<ShieldCheck className="w-4 h-4 text-[#d4af37]" />} 
+                              icon={<ShieldCheck className="w-4 h-4 text-[#10b981]" />} 
                               label="Управление" 
                               highlight 
                             />
@@ -356,7 +356,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                                 setShowUserMenu(false); 
                                 onLogout(); 
                               }} 
-                              icon={<LogOut className="w-4 h-4 text-red-500 dark:text-red-400" />} 
+                              icon={<LogOut className="w-4 h-4 text-green-500 dark:text-green-400" />} 
                               label="Выйти" 
                             />
                           </div>
@@ -368,7 +368,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               ) : (
                 <button
                   onClick={onLoginClick}
-                  className="flex items-center space-x-1 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg bg-[#d4af37] text-[#0a2a5e] font-bold shadow-md hover:brightness-110 transition-all text-[10px] sm:text-sm"
+                  className="flex items-center space-x-1 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg bg-[#10b981] text-[#052e16] font-bold shadow-md hover:brightness-110 transition-all text-[10px] sm:text-sm"
                 >
                   <User className="w-3 h-3 sm:w-4 sm:h-4" />
                   <span>Вход</span>
@@ -451,7 +451,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <HubItem 
                     active={activeTab === 'admin'} 
                     onClick={() => { setActiveTab('admin'); setShowHubMenu(false); }} 
-                    icon={<ShieldCheck className="w-4 h-4 text-[#d4af37]" />} 
+                    icon={<ShieldCheck className="w-4 h-4 text-[#10b981]" />} 
                     label="Управление" 
                   />
                 </div>
@@ -461,7 +461,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <HubItem 
                     active={false} 
                     onClick={() => { setShowHubMenu(false); onLogout(); }} 
-                    icon={<LogOut className="w-4 h-4 text-red-500" />} 
+                    icon={<LogOut className="w-4 h-4 text-green-500" />} 
                     label="Выйти" 
                   />
                 </div>
@@ -480,11 +480,11 @@ const HubItem: React.FC<{ active: boolean; onClick: () => void; icon: React.Reac
     type="button"
     className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-bold transition-all text-left ${
       active 
-      ? 'text-[#0a2a5e] dark:text-blue-200 bg-blue-50 dark:bg-blue-900/20' 
-      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-[#0a2a5e] dark:hover:text-blue-200'
+      ? 'text-[#052e16] dark:text-emerald-200 bg-blue-50 dark:bg-emerald-900/20' 
+      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-[#052e16] dark:hover:text-emerald-200'
     }`}
   >
-    <div className={active ? 'text-[#d4af37]' : 'text-slate-400'}>{icon}</div>
+    <div className={active ? 'text-[#10b981]' : 'text-slate-400'}>{icon}</div>
     <span>{label}</span>
   </button>
 );
@@ -495,12 +495,12 @@ const BottomNavBtn: React.FC<{ active: boolean; onClick: () => void; icon: React
     className={`flex flex-col items-center justify-center px-2 py-1 rounded-xl transition-all min-w-[64px] ${
       highlightQuiz
         ? active 
-          ? 'text-amber-400 font-black scale-105' 
-          : 'text-amber-350 font-bold bg-amber-500/10 rounded-xl border border-amber-500/25 px-2.5 py-1'
-        : active ? 'text-[#d4af37]' : 'text-slate-400 dark:text-slate-500'
+          ? 'text-emerald-400 font-black scale-105' 
+          : 'text-amber-350 font-bold bg-emerald-600/10 rounded-xl border border-emerald-500/25 px-2.5 py-1'
+        : active ? 'text-[#10b981]' : 'text-slate-400 dark:text-slate-500'
     }`}
   >
-    <div className={`mb-0.5 transition-transform ${active ? 'scale-110' : ''} ${highlightQuiz ? 'text-amber-400' : ''}`}>{icon}</div>
+    <div className={`mb-0.5 transition-transform ${active ? 'scale-110' : ''} ${highlightQuiz ? 'text-emerald-400' : ''}`}>{icon}</div>
     <span className={`text-[10px] font-bold ${active ? 'opacity-100' : 'opacity-70'}`}>{label}</span>
   </button>
 );
@@ -517,7 +517,7 @@ interface NavButtonProps {
 const MenuAction: React.FC<{ onClick: () => void; icon: React.ReactNode; label: string }> = ({ onClick, icon, label }) => (
   <button
     onClick={onClick}
-    className="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-[#0a2a5e] dark:hover:text-blue-300 transition-all text-left"
+    className="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-[#052e16] dark:hover:text-emerald-300 transition-all text-left"
   >
     <div className="text-slate-400">{icon}</div>
     <span>{label}</span>
@@ -530,15 +530,15 @@ const NavButton: React.FC<NavButtonProps> = ({ active, onClick, icon, label, hig
     className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all ${
       highlightQuiz
         ? active
-          ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-[#0a2a5e] font-black shadow-[0_0_15px_rgba(245,158,11,0.4)] border border-amber-400'
-          : 'bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 border border-amber-500/40 font-bold shadow-[0_0_10px_rgba(245,158,11,0.15)] hover:scale-105'
+          ? 'bg-gradient-to-r from-emerald-400 to-emerald-600 text-[#052e16] font-black shadow-[0_0_15px_rgba(245,158,11,0.4)] border border-emerald-400'
+          : 'bg-emerald-600/10 text-emerald-300 hover:bg-emerald-600/20 border border-emerald-500/40 font-bold shadow-[0_0_10px_rgba(245,158,11,0.15)] hover:scale-105'
         : active
           ? highlight 
-            ? 'bg-amber-500 text-[#0a2a5e] font-bold shadow-md'
-            : 'bg-blue-800 text-white shadow-inner border border-blue-600'
+            ? 'bg-emerald-600 text-[#052e16] font-bold shadow-md'
+            : 'bg-emerald-800 text-white shadow-inner border border-emerald-600'
           : highlight
-            ? 'text-amber-300 hover:bg-blue-900/80 border border-amber-500/30'
-            : 'text-blue-100 hover:bg-blue-900/60 hover:text-white'
+            ? 'text-emerald-300 hover:bg-emerald-900/80 border border-emerald-500/30'
+            : 'text-emerald-100 hover:bg-emerald-900/60 hover:text-white'
     }`}
   >
     {icon}

@@ -136,7 +136,10 @@ export async function fetchPortalDBFromFirestore(): Promise<PortalDatabase> {
   // Also update our memory cache
   memoryDb = { ...memoryDb, ...db };
 
-  return db as PortalDatabase;
+  // Run the seeding check to auto-fill any empty collections and sync back to Firestore
+  seedFacultyStarterTemplate();
+
+  return memoryDb;
 }
 
 export async function savePortalDBToFirestore(dbData: PortalDatabase): Promise<void> {
@@ -462,8 +465,8 @@ export function calculateResearcherStats(recordBook: string): {
 
 // Генерация стартового шаблона ФЭМ (по запросу администратора, чтобы не было пустой базы при первом просмотре)
 export function seedFacultyStarterTemplate(): void {
-  // Инициализируем массивы в memoryDb
-  const db = memoryDb;
+  // Clone memoryDb so that savePortalDB can compare old and new states and sync to Firestore
+  const db: PortalDatabase = JSON.parse(JSON.stringify(memoryDb));
   db.users = db.users || [];
   db.news = db.news || [];
   db.events = db.events || [];
@@ -499,36 +502,31 @@ export function seedFacultyStarterTemplate(): void {
     }
   });
 
-  if (db.users.length > 0 && db.users.some(u => u.record_book_id === '00000001')) {
-    // If we already have seeded, do not overwrite completely
-    return;
-  }
+  let adminUser = db.users.find(u => u.record_book_id === '00000001');
+  if (!adminUser) {
+    adminUser = {
+      record_book_id: '00000001',
+      last_name: 'Администратор',
+      first_name: 'СНО',
+      role: 'admin',
+      group: 'Система',
+      course: 4,
+      faculty: 'ФЭМ',
+      department: 'Деканат',
+      scientific_interests: ['Управление СНО', 'Информационные технологии в науке'],
+      created_at: new Date().toISOString(),
+      password: 'admin'
+    };
+    db.users.push(adminUser);
 
-  // Set users to contain ONLY the system administrator account
-  const adminUser: CustomUser = {
-    record_book_id: '00000001',
-    last_name: 'Администратор',
-    first_name: 'СНО',
-    role: 'admin',
-    group: 'Система',
-    course: 4,
-    faculty: 'ФЭМ',
-    department: 'Деканат',
-    scientific_interests: ['Управление СНО', 'Информационные технологии в науке'],
-    created_at: new Date().toISOString(),
-    password: 'admin'
-  };
-
-  db.users = [adminUser];
-
-  // Try to sync admin user to Firestore instantly
-  try {
-    const adminRef = doc(firestoreDb, 'users', adminUser.record_book_id);
-    setDoc(adminRef, adminUser, { merge: true }).catch(err => {
-      console.error("Error writing admin account to Firestore during seeding:", err);
-    });
-  } catch (err) {
-    console.error("Firestore seeding error:", err);
+    try {
+      const adminRef = doc(firestoreDb, 'users', adminUser.record_book_id);
+      setDoc(adminRef, adminUser, { merge: true }).catch(err => {
+        console.error("Error writing admin account to Firestore during seeding:", err);
+      });
+    } catch (err) {
+      console.error("Firestore seeding error:", err);
+    }
   }
 
   if (db.merch.length === 0) {
@@ -579,64 +577,66 @@ export function seedFacultyStarterTemplate(): void {
   }
 
   // СНИЛ ФЭМ БГЭУ (4 Лаборатории)
-  db.snils = [
-    {
-      id: 'snil_ekos',
-      name: '«ЭКОС»',
-      head_record_book: '00000001',
-      head_name: 'Администратор СНО',
-      department: 'Кафедра экономики АПК и природопользования',
-      description: 'Исследование проблем экономики природопользования и устойчивого развития аграрного сектора. Руководитель: к.э.н., доцент кафедры экономики АПК и природопользования.',
-      research_directions: ['Экономика природопользования', 'Устойчивое развитие АПК'],
-      member_record_books: [],
-      is_active: true,
-      created_at: new Date().toISOString(),
-      achievements: ['Разработка методики оценки эко-эффективности'],
-      is_best_snil_nominee: false
-    },
-    {
-      id: 'snil_innovatika',
-      name: '«Инноватика»',
-      head_record_book: '00000001',
-      head_name: 'Администратор СНО',
-      department: 'Кафедра экономики промышленных предприятий',
-      description: 'Изучение инновационных процессов в промышленности и механизмов управления инновационным развитием. Руководитель: старший преподаватель кафедры экономики промышленных предприятий.',
-      research_directions: ['Управление инновациями', 'Промышленная политика', 'Цифровые инновации'],
-      member_record_books: [],
-      is_active: true,
-      created_at: new Date().toISOString(),
-      achievements: ['Лучшая СНИЛ БГЭУ 2026 (ГКК)', 'Патент на систему управления инновациями'],
-      is_best_snil_nominee: true
-    },
-    {
-      id: 'snil_agroeconomics',
-      name: '«Агроэкономика»',
-      head_record_book: '00000001',
-      head_name: 'Администратор СНО',
-      department: 'Кафедра экономики АПК и природопользования',
-      description: 'Научные исследования в области экономики агропромышленного комплекса и сельских территорий. Руководитель: к.э.н., доцент кафедры экономики АПК и природопользования.',
-      research_directions: ['Аграрная экономика', 'Развитие сельских территорий'],
-      member_record_books: [],
-      is_active: true,
-      created_at: new Date().toISOString(),
-      achievements: ['Грант на исследование экспорта АПК'],
-      is_best_snil_nominee: false
-    },
-    {
-      id: 'snil_macrovision',
-      name: '«MacroVision»',
-      head_record_book: '00000001',
-      head_name: 'Администратор СНО',
-      department: 'Кафедра национальной экономики и государственного управления',
-      description: 'Макроэкономическое прогнозирование и анализ инструментов государственного управления. Руководители: старшие преподаватели кафедры национальной экономики и государственного управления.',
-      research_directions: ['Макроэкономика', 'Государственное управление'],
-      member_record_books: [],
-      is_active: true,
-      created_at: new Date().toISOString(),
-      achievements: ['Лучший аналитический обзор 2023'],
-      is_best_snil_nominee: false
-    }
-  ];
+  if (db.snils.length === 0) {
+    db.snils = [
+      {
+        id: 'snil_ekos',
+        name: '«ЭКОС»',
+        head_record_book: '00000001',
+        head_name: 'Администратор СНО',
+        department: 'Кафедра экономики АПК и природопользования',
+        description: 'Исследование проблем экономики природопользования и устойчивого развития аграрного сектора. Руководитель: к.э.н., доцент кафедры экономики АПК и природопользования.',
+        research_directions: ['Экономика природопользования', 'Устойчивое развитие АПК'],
+        member_record_books: [],
+        is_active: true,
+        created_at: new Date().toISOString(),
+        achievements: ['Разработка методики оценки эко-эффективности'],
+        is_best_snil_nominee: false
+      },
+      {
+        id: 'snil_innovatika',
+        name: '«Инноватика»',
+        head_record_book: '00000001',
+        head_name: 'Администратор СНО',
+        department: 'Кафедра экономики промышленных предприятий',
+        description: 'Изучение инновационных процессов в промышленности и механизмов управления инновационным развитием. Руководитель: старший преподаватель кафедры экономики промышленных предприятий.',
+        research_directions: ['Управление инновациями', 'Промышленная политика', 'Цифровые инновации'],
+        member_record_books: [],
+        is_active: true,
+        created_at: new Date().toISOString(),
+        achievements: ['Лучшая СНИЛ БГЭУ 2026 (ГКК)', 'Патент на систему управления инновациями'],
+        is_best_snil_nominee: true
+      },
+      {
+        id: 'snil_agroeconomics',
+        name: '«Агроэкономика»',
+        head_record_book: '00000001',
+        head_name: 'Администратор СНО',
+        department: 'Кафедра экономики АПК и природопользования',
+        description: 'Научные исследования в области экономики агропромышленного комплекса и сельских территорий. Руководитель: к.э.н., доцент кафедры экономики АПК и природопользования.',
+        research_directions: ['Аграрная экономика', 'Развитие сельских территорий'],
+        member_record_books: [],
+        is_active: true,
+        created_at: new Date().toISOString(),
+        achievements: ['Грант на исследование экспорта АПК'],
+        is_best_snil_nominee: false
+      },
+      {
+        id: 'snil_macrovision',
+        name: '«MacroVision»',
+        head_record_book: '00000001',
+        head_name: 'Администратор СНО',
+        department: 'Кафедра национальной экономики и государственного управления',
+        description: 'Макроэкономическое прогнозирование и анализ инструментов государственного управления. Руководители: старшие преподаватели кафедры национальной экономики и государственного управления.',
+        research_directions: ['Макроэкономика', 'Государственное управление'],
+        member_record_books: [],
+        is_active: true,
+        created_at: new Date().toISOString(),
+        achievements: ['Лучший аналитический обзор 2023'],
+        is_best_snil_nominee: false
+      }
+    ];
+  }
 
   // Начальные объявления
   if (db.announcements.length === 0) {

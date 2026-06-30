@@ -41,11 +41,11 @@ const ICON_TEMPLATES = [
 ];
 
 const GRADIENTS = [
-  { id: 'g1', css: 'from-blue-600 to-indigo-800', start: '#2563eb', end: '#1e1b4b' },
+  { id: 'g1', css: 'from-emerald-600 to-indigo-800', start: '#2563eb', end: '#1e1b4b' },
   { id: 'g2', css: 'from-emerald-500 to-teal-800', start: '#10b981', end: '#115e59' },
   { id: 'g3', css: 'from-purple-600 to-pink-800', start: '#9333ea', end: '#9d174d' },
-  { id: 'g4', css: 'from-amber-500 to-rose-700', start: '#f59e0b', end: '#be123c' },
-  { id: 'g5', css: 'from-cyan-500 to-blue-700', start: '#06b6d4', end: '#1d4ed8' },
+  { id: 'g4', css: 'from-emerald-600 to-rose-700', start: '#f59e0b', end: '#be123c' },
+  { id: 'g5', css: 'from-cyan-500 to-emerald-700', start: '#06b6d4', end: '#1d4ed8' },
   { id: 'g6', css: 'from-violet-600 to-fuchsia-800', start: '#7c3aed', end: '#86198f' },
   { id: 'g7', css: 'from-slate-700 to-slate-900', start: '#334155', end: '#0f172a' },
 ];
@@ -100,7 +100,7 @@ export const AvatarModal: React.FC<AvatarModalProps> = ({
         <path d="M44 25 C30 25, 25 35, 30 45 C25 50, 25 60, 32 65 C32 75, 42 75, 47 70 C49 72, 51 72, 53 70 C58 75, 68 75, 68 65 C75 60, 75 50, 70 45 C75 35, 70 25, 56 25 Z" fill="none" stroke="#ffffff" stroke-width="3" stroke-linejoin="round"/>
         <path d="M50 25 L50 72" stroke="#ffffff" stroke-width="2" stroke-dasharray="3 3"/>
         <circle cx="36" cy="38" r="4.5" fill="#38bdf8" stroke="#ffffff" stroke-width="1"/>
-        <circle cx="64" cy="38" r="4.5" fill="#f43f5e" stroke="#ffffff" stroke-width="1"/>
+        <circle cx="64" cy="38" r="4.5" fill="#10b981" stroke="#ffffff" stroke-width="1"/>
         <circle cx="38" cy="58" r="4.5" fill="#10b981" stroke="#ffffff" stroke-width="1"/>
         <circle cx="62" cy="58" r="4.5" fill="#fbbf24" stroke="#ffffff" stroke-width="1"/>
         <path d="M36 38 L50 48 L64 38 M38 58 L50 48 L62 58" stroke="#ffffff" stroke-width="1.5" opacity="0.6"/>
@@ -117,7 +117,7 @@ export const AvatarModal: React.FC<AvatarModalProps> = ({
       iconContent = `
         <path d="M50 15 C55 25, 65 35, 65 55 L65 72 L35 72 L35 55 C35 35, 45 25, 50 15 Z" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"/>
         <path d="M35 58 L24 68 L24 75 L35 72 M65 58 L76 68 L76 75 L65 72" fill="#fbbf24" stroke="#ffffff" stroke-width="1.5"/>
-        <path d="M44 72 L50 85 L56 72" fill="#ef4444" stroke="#ffffff" stroke-width="1.5"/>
+        <path d="M44 72 L50 85 L56 72" fill="#10b981" stroke="#ffffff" stroke-width="1.5"/>
         <circle cx="50" cy="40" r="6" fill="#0284c7" stroke="#ffffff" stroke-width="2"/>
       `;
     } else if (selectedIcon === 'code') {
@@ -235,7 +235,7 @@ export const AvatarModal: React.FC<AvatarModalProps> = ({
         <div className="flex-1 flex flex-col p-6 min-w-0">
           <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 mb-4">
             <div>
-              <h3 className="text-lg font-extrabold text-[#0a2a5e] dark:text-blue-300">Редактор аватара</h3>
+              <h3 className="text-lg font-extrabold text-[#052e16] dark:text-emerald-300">Редактор аватара</h3>
               <p className="text-xs text-slate-400 mt-0.5">Выберите способ создания своего научного портрета</p>
             </div>
             <button 
@@ -252,7 +252,7 @@ export const AvatarModal: React.FC<AvatarModalProps> = ({
               onClick={() => setActiveTab('icons')}
               className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center space-x-1.5 ${
                 activeTab === 'icons' 
-                  ? 'bg-white dark:bg-slate-900 text-[#0a2a5e] dark:text-blue-300 shadow' 
+                  ? 'bg-white dark:bg-slate-900 text-[#052e16] dark:text-emerald-300 shadow' 
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
               }`}
             >
@@ -263,7 +263,7 @@ export const AvatarModal: React.FC<AvatarModalProps> = ({
               onClick={() => setActiveTab('seed')}
               className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center space-x-1.5 ${
                 activeTab === 'seed' 
-                  ? 'bg-white dark:bg-slate-900 text-[#0a2a5e] dark:text-blue-300 shadow' 
+                  ? 'bg-white dark:bg-slate-900 text-[#052e16] dark:text-emerald-300 shadow' 
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
               }`}
             >
@@ -290,7 +290,7 @@ export const AvatarModal: React.FC<AvatarModalProps> = ({
                           onClick={() => setSelectedIcon(item.id)}
                           className={`p-2.5 rounded-xl border flex flex-col items-center justify-center space-y-1 cursor-pointer transition-all ${
                             isSelected 
-                              ? 'border-[#d4af37] bg-amber-500/5 text-[#0a2a5e] dark:text-amber-400 font-bold' 
+                              ? 'border-[#10b981] bg-emerald-600/5 text-[#052e16] dark:text-emerald-400 font-bold' 
                               : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-500 dark:text-slate-400'
                           }`}
                         >
@@ -360,7 +360,7 @@ export const AvatarModal: React.FC<AvatarModalProps> = ({
                         onClick={() => setSeedType(style.id as any)}
                         className={`py-2 px-3 rounded-xl border text-xs text-center cursor-pointer transition-all ${
                           seedType === style.id
-                            ? 'border-blue-500 bg-blue-500/5 text-blue-600 dark:text-blue-400 font-bold'
+                            ? 'border-emerald-500 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 font-bold'
                             : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-500 dark:text-slate-400'
                         }`}
                       >
@@ -384,7 +384,7 @@ export const AvatarModal: React.FC<AvatarModalProps> = ({
             <button
               onClick={() => onSave(previewAvatar)}
               disabled={!previewAvatar}
-              className="px-5 py-2.5 rounded-xl bg-[#0a2a5e] hover:bg-blue-800 text-white font-bold text-xs shadow transition-all flex items-center space-x-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="px-5 py-2.5 rounded-xl bg-[#052e16] hover:bg-emerald-800 text-white font-bold text-xs shadow transition-all flex items-center space-x-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <Save className="w-3.5 h-3.5" />
               <span>Сохранить аватар</span>

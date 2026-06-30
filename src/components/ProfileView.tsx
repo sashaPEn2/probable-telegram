@@ -509,12 +509,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               toast.type === 'success' 
                 ? 'border-emerald-200 dark:border-emerald-800/80 text-emerald-800 dark:text-emerald-300 shadow-emerald-500/10' 
                 : toast.type === 'error'
-                  ? 'border-red-200 dark:border-red-800/80 text-red-800 dark:text-red-300 shadow-red-500/10'
-                  : 'border-blue-200 dark:border-blue-800/80 text-blue-800 dark:text-blue-300 shadow-blue-500/10'
+                  ? 'border-green-200 dark:border-green-800/80 text-green-800 dark:text-green-300 shadow-red-500/10'
+                  : 'border-emerald-200 dark:border-emerald-800/80 text-emerald-800 dark:text-emerald-300 shadow-blue-500/10'
             }`}>
               {toast.type === 'success' && <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />}
-              {toast.type === 'error' && <ShieldAlert className="w-5 h-5 text-red-500 flex-shrink-0" />}
-              {toast.type === 'info' && <Sparkles className="w-5 h-5 text-blue-500 flex-shrink-0" />}
+              {toast.type === 'error' && <ShieldAlert className="w-5 h-5 text-green-500 flex-shrink-0" />}
+              {toast.type === 'info' && <Sparkles className="w-5 h-5 text-emerald-500 flex-shrink-0" />}
               <span className="flex-1 leading-normal">{toast.message}</span>
             </div>
           </motion.div>
@@ -522,8 +522,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       </AnimatePresence>
       
       {/* Профиль карточка исследователя */}
-      <div className="bg-gradient-to-r from-[#0a2a5e] via-blue-900 to-slate-900 rounded-3xl p-6 sm:p-10 text-white shadow-xl border border-[#d4af37]/40 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative overflow-hidden">
-        <div className="absolute -top-20 -right-20 w-72 h-72 bg-[#d4af37]/15 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="bg-gradient-to-r from-[#052e16] via-emerald-900 to-slate-900 rounded-3xl p-6 sm:p-10 text-white shadow-xl border border-[#10b981]/40 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative overflow-hidden">
+        <div className="absolute -top-20 -right-20 w-72 h-72 bg-[#10b981]/15 rounded-full blur-3xl pointer-events-none"></div>
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 relative z-10 w-full lg:w-auto">
           <div 
@@ -532,7 +532,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             title="Изменить аватар"
           >
             <UserAvatar size="2xl" user={user} className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-[10px] font-bold text-[#d4af37] font-mono text-center px-1">
+            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-[10px] font-bold text-[#10b981] font-mono text-center px-1">
               <Sparkles className="w-4 h-4 mb-1" />
               <span>ИЗМЕНИТЬ</span>
             </div>
@@ -540,23 +540,23 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <div className="space-y-1 w-full text-center sm:text-left">
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 sm:gap-2">
               <span className={`px-2 py-0.5 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-wider border ${
-                user.role === 'admin' ? 'bg-red-500/20 text-red-300 border-red-500/30' :
-                user.role === 'coordinator' ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' :
+                user.role === 'admin' ? 'bg-green-500/20 text-green-300 border-green-500/30' :
+                user.role === 'coordinator' ? 'bg-emerald-600/20 text-emerald-300 border-emerald-500/30' :
                 user.role === 'snil_head' ? 'bg-purple-500/20 text-purple-300 border-purple-500/30' :
                 user.role === 'activist' ? 'bg-teal-500/20 text-teal-300 border-teal-500/30' :
-                'bg-blue-500/20 text-blue-300 border-blue-500/30'
+                'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
               }`}>
                 {getRoleTitle(user.role)}
               </span>
-              <span className="px-2 sm:px-3 py-0.5 rounded-full bg-[#d4af37] text-[#0a2a5e] font-bold text-[9px] sm:text-xs uppercase tracking-wider whitespace-nowrap">
+              <span className="px-2 sm:px-3 py-0.5 rounded-full bg-[#10b981] text-[#052e16] font-bold text-[9px] sm:text-xs uppercase tracking-wider whitespace-nowrap">
                 Зачётка № {user.record_book_id}
               </span>
-              <span className="text-[9px] sm:text-xs font-mono bg-blue-950 px-2 py-0.5 rounded text-blue-300 flex items-center gap-2 whitespace-nowrap">
+              <span className="text-[9px] sm:text-xs font-mono bg-blue-950 px-2 py-0.5 rounded text-emerald-300 flex items-center gap-2 whitespace-nowrap">
                 Группа: {user.group}
               </span>
             </div>
             <h1 className="text-xl sm:text-4xl font-extrabold tracking-tight leading-tight">{user.last_name} {user.first_name}</h1>
-            <div className="text-blue-200 text-[10px] sm:text-sm opacity-90 flex flex-wrap items-center justify-center sm:justify-start gap-2">
+            <div className="text-emerald-200 text-[10px] sm:text-sm opacity-90 flex flex-wrap items-center justify-center sm:justify-start gap-2">
                 {user.faculty} • {user.department}
             </div>
           </div>
@@ -567,7 +567,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             onClick={() => setIsEditingProfile(true)} 
             className="flex items-center justify-center gap-2 bg-white/10 text-white border border-white/20 text-xs sm:text-sm px-4 py-2.5 rounded-xl hover:bg-white/20 transition-all font-bold shadow-lg w-full sm:w-auto group"
           >
-            <Settings className="w-4 h-4 text-[#d4af37] group-hover:rotate-90 transition-transform duration-500" /> Настройки
+            <Settings className="w-4 h-4 text-[#10b981] group-hover:rotate-90 transition-transform duration-500" /> Настройки
           </button>
 
           {user.role === 'student' && (
@@ -580,12 +580,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 generateSnoApplication();
               }}
               disabled={isGeneratingApplication}
-              className={`px-4 py-2 rounded-xl ${myPubs.length < 2 ? 'bg-slate-500/50 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20'} text-white font-bold text-xs sm:text-sm shadow-lg flex items-center justify-center space-x-2 transition-all disabled:opacity-70 w-full sm:w-auto`}
+              className={`px-4 py-2 rounded-xl ${myPubs.length < 2 ? 'bg-slate-500/50 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 shadow-blue-600/20'} text-white font-bold text-xs sm:text-sm shadow-lg flex items-center justify-center space-x-2 transition-all disabled:opacity-70 w-full sm:w-auto`}
             >
               {isGeneratingApplication ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <Sparkles className="w-4 h-4 text-amber-400" />
+                <Sparkles className="w-4 h-4 text-emerald-400" />
               )}
               <div className="flex flex-col items-start text-left leading-none">
                 <span>Вступить в СНО</span>
@@ -597,7 +597,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <button
             onClick={exportPortfolioToPdf}
             disabled={isExporting}
-            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#d4af37] to-amber-500 text-[#0a2a5e] font-extrabold text-xs sm:text-sm shadow-lg hover:brightness-110 flex items-center justify-center space-x-2 transition-all group disabled:opacity-70 disabled:cursor-not-allowed w-full sm:w-auto sm:col-span-2 lg:col-span-1"
+            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#10b981] to-emerald-500 text-[#052e16] font-extrabold text-xs sm:text-sm shadow-lg hover:brightness-110 flex items-center justify-center space-x-2 transition-all group disabled:opacity-70 disabled:cursor-not-allowed w-full sm:w-auto sm:col-span-2 lg:col-span-1"
             title="Выгрузить полный отчет о научной активности"
           >
             {isExporting ? (
@@ -609,11 +609,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </button>
 
           {showLogoutConfirm ? (
-            <div className="flex items-center justify-center gap-2 bg-red-500/10 border border-red-500/30 px-3 py-2 rounded-xl w-full sm:w-auto">
-              <span className="text-xs font-bold text-red-400">Выйти?</span>
+            <div className="flex items-center justify-center gap-2 bg-green-500/10 border border-green-500/30 px-3 py-2 rounded-xl w-full sm:w-auto">
+              <span className="text-xs font-bold text-green-400">Выйти?</span>
               <button
                 onClick={onLogout}
-                className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-black shadow-sm transition-colors"
+                className="px-2.5 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-black shadow-sm transition-colors"
               >
                 Да
               </button>
@@ -627,7 +627,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           ) : (
             <button
               onClick={() => setShowLogoutConfirm(true)}
-              className="flex items-center justify-center gap-2 bg-red-500/10 text-red-400 border border-red-500/20 text-xs sm:text-sm px-4 py-2.5 rounded-xl hover:bg-red-500/20 transition-all font-bold shadow-lg w-full sm:w-auto group"
+              className="flex items-center justify-center gap-2 bg-green-500/10 text-green-400 border border-green-500/20 text-xs sm:text-sm px-4 py-2.5 rounded-xl hover:bg-green-500/20 transition-all font-bold shadow-lg w-full sm:w-auto group"
             >
               <LogOut className="w-4 h-4 group-hover:translate-x-1 transition-transform" /> Выйти
             </button>
@@ -701,20 +701,20 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           className="w-[800px] p-12 bg-white text-[#0f172a] font-sans"
           style={{ fontFamily: 'Inter, system-ui, sans-serif', backgroundColor: '#ffffff' }}
         >
-          <div className="flex items-center justify-between pb-6 mb-8" style={{ borderBottom: '2px solid #0a2a5e' }}>
+          <div className="flex items-center justify-between pb-6 mb-8" style={{ borderBottom: '2px solid #052e16' }}>
             <div>
-              <h1 className="text-2xl font-black uppercase tracking-tighter" style={{ color: '#0a2a5e' }}>SNO.PORTAL</h1>
+              <h1 className="text-2xl font-black uppercase tracking-tighter" style={{ color: '#052e16' }}>SNO.PORTAL</h1>
               <p className="text-xs font-bold text-[#64748b]">БЕЛОРУССКИЙ ГОСУДАРСТВЕННЫЙ ЭКОНОМИЧЕСКИЙ УНИВЕРСИТЕТ</p>
             </div>
             <div className="text-right">
               <p className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-widest">Электронный документ</p>
-              <p className="text-xs font-black text-[#d4af37]">ФАКУЛЬТЕТ ЭКОНОМИКИ И МЕНЕДЖМЕНТА</p>
+              <p className="text-xs font-black text-[#10b981]">ФАКУЛЬТЕТ ЭКОНОМИКИ И МЕНЕДЖМЕНТА</p>
             </div>
           </div>
 
           <div className="mb-10">
             <h2 className="text-3xl font-black text-[#0f172a] mb-2 uppercase tracking-tight">ЭЛЕКТРОННОЕ ПОРТФОЛИО ИССЛЕДОВАТЕЛЯ</h2>
-            <div className="h-1.5 w-24 rounded-full" style={{ backgroundColor: '#d4af37' }}></div>
+            <div className="h-1.5 w-24 rounded-full" style={{ backgroundColor: '#10b981' }}></div>
           </div>
 
           <div className="grid grid-cols-3 gap-8 mb-10">
@@ -739,25 +739,25 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               </div>
             </div>
             <div className="rounded-2xl p-6 border border-[#f1f5f9]" style={{ backgroundColor: '#f8fafc' }}>
-              <p className="text-[10px] font-black uppercase tracking-widest mb-4 text-center" style={{ color: '#0a2a5e' }}>Научный статус</p>
+              <p className="text-[10px] font-black uppercase tracking-widest mb-4 text-center" style={{ color: '#052e16' }}>Научный статус</p>
               <div className="space-y-3">
                 <div className="flex justify-between items-center pb-2" style={{ borderBottom: '1px solid #e2e8f0' }}>
                   <span className="text-[10px] font-bold text-[#64748b] uppercase">Публикации</span>
-                  <span className="text-sm font-black text-[#0a2a5e]">{myPubs.length}</span>
+                  <span className="text-sm font-black text-[#052e16]">{myPubs.length}</span>
                 </div>
                 <div className="flex justify-between items-center pb-2" style={{ borderBottom: '1px solid #e2e8f0' }}>
                   <span className="text-[10px] font-bold text-[#64748b] uppercase">Доклады</span>
-                  <span className="text-sm font-black text-[#0a2a5e]">{myApps.length}</span>
+                  <span className="text-sm font-black text-[#052e16]">{myApps.length}</span>
                 </div>
                 {mySnilMembership && (
                   <div className="flex justify-between items-center pb-2" style={{ borderBottom: '1px solid #e2e8f0' }}>
                     <span className="text-[10px] font-bold text-[#64748b] uppercase">СНИЛ</span>
-                    <span className="text-[10px] font-black text-blue-600 uppercase">Участник</span>
+                    <span className="text-[10px] font-black text-emerald-600 uppercase">Участник</span>
                   </div>
                 )}
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-bold text-[#64748b] uppercase">Рейтинг ФЭМ</span>
-                  <span className="text-sm font-black text-[#d4af37]">{stats.ratingPoints}</span>
+                  <span className="text-sm font-black text-[#10b981]">{stats.ratingPoints}</span>
                 </div>
               </div>
             </div>
@@ -765,7 +765,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
           {user.scientific_interests.length > 0 && (
             <div className="mb-10">
-              <h3 className="text-lg font-black text-[#1e293b] mb-4 pl-3 uppercase tracking-tight" style={{ borderLeft: '4px solid #0a2a5e' }}>Научные интересы</h3>
+              <h3 className="text-lg font-black text-[#1e293b] mb-4 pl-3 uppercase tracking-tight" style={{ borderLeft: '4px solid #052e16' }}>Научные интересы</h3>
               <div className="flex flex-wrap gap-2">
                 {user.scientific_interests.map(interest => (
                   <span key={interest} className="px-3 py-1 bg-slate-50 text-slate-600 rounded-full text-[10px] font-bold border border-slate-200 uppercase tracking-wide">
@@ -777,13 +777,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           )}
 
           <div className="mb-10">
-            <h3 className="text-lg font-black text-[#1e293b] mb-4 pl-3 uppercase tracking-tight" style={{ borderLeft: '4px solid #0a2a5e' }}>Список опубликованных научных работ</h3>
+            <h3 className="text-lg font-black text-[#1e293b] mb-4 pl-3 uppercase tracking-tight" style={{ borderLeft: '4px solid #052e16' }}>Список опубликованных научных работ</h3>
             <div className="space-y-4">
               {myPubs.length > 0 ? myPubs.map((p, idx) => (
                 <div key={p.id} className="p-4 rounded-xl border border-[#f1f5f9]" style={{ backgroundColor: '#f8fafc' }}>
                   <div className="flex justify-between items-start mb-1">
                     <p className="text-sm font-bold text-[#1e293b] leading-tight">
-                      <span className="mr-2" style={{ color: '#0a2a5e' }}>{idx + 1}.</span> {p.title}
+                      <span className="mr-2" style={{ color: '#052e16' }}>{idx + 1}.</span> {p.title}
                     </p>
                     <span className="text-[9px] font-black text-[#94a3b8] uppercase ml-4 flex-shrink-0">{p.year} г.</span>
                   </div>
@@ -804,7 +804,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </div>
 
           <div className="mb-10">
-            <h3 className="text-lg font-black text-[#1e293b] mb-4 pl-3 uppercase tracking-tight" style={{ borderLeft: '4px solid #0a2a5e' }}>Участие в научных мероприятиях</h3>
+            <h3 className="text-lg font-black text-[#1e293b] mb-4 pl-3 uppercase tracking-tight" style={{ borderLeft: '4px solid #052e16' }}>Участие в научных мероприятиях</h3>
             <div className="space-y-4">
               {myApps.length > 0 ? myApps.map((a, idx) => (
                 <div key={a.id} className="p-4 rounded-xl border border-[#f1f5f9]">
@@ -815,7 +815,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                         <span className="font-bold uppercase mr-1" style={{ color: '#475569' }}>Доклад:</span> {a.report_title}
                       </p>
                     </div>
-                    <span className="text-[9px] font-black uppercase" style={{ color: '#d4af37' }}>{a.status}</span>
+                    <span className="text-[9px] font-black uppercase" style={{ color: '#10b981' }}>{a.status}</span>
                   </div>
                 </div>
               )) : (
@@ -826,7 +826,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
           {(mySnilMembership || mySnilApps.length > 0) && (
             <div className="mb-10">
-              <h3 className="text-lg font-black text-[#1e293b] mb-4 pl-3 uppercase tracking-tight" style={{ borderLeft: '4px solid #0a2a5e' }}>Участие в деятельности СНИЛ</h3>
+              <h3 className="text-lg font-black text-[#1e293b] mb-4 pl-3 uppercase tracking-tight" style={{ borderLeft: '4px solid #052e16' }}>Участие в деятельности СНИЛ</h3>
               <div className="space-y-4">
                 {mySnilMembership && (
                   <div className="p-4 rounded-xl border border-blue-50" style={{ backgroundColor: '#f0f9ff' }}>
@@ -853,7 +853,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                       <div className="text-right">
                         <span className={`text-[9px] px-2 py-0.5 rounded-full font-black uppercase ${
                           app.status === 'pending' ? 'bg-slate-100 text-slate-600' : 
-                          app.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                          app.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-green-100 text-green-700'
                         }`}>
                           {app.status === 'pending' ? 'На рассмотрении' : (app.status === 'approved' ? 'Одобрено' : 'Отклонено')}
                         </span>
@@ -868,7 +868,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
           {myTasks.length > 0 && (
             <div className="mb-10">
-              <h3 className="text-lg font-black text-[#1e293b] mb-4 pl-3 uppercase tracking-tight" style={{ borderLeft: '4px solid #0a2a5e' }}>Индивидуальные научные задачи</h3>
+              <h3 className="text-lg font-black text-[#1e293b] mb-4 pl-3 uppercase tracking-tight" style={{ borderLeft: '4px solid #052e16' }}>Индивидуальные научные задачи</h3>
               <div className="space-y-3">
                 {myTasks.map((t, idx) => (
                   <div key={t.id} className="p-3 rounded-xl border border-slate-50 flex items-center justify-between" style={{ backgroundColor: '#fafafa' }}>
@@ -878,7 +878,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     </div>
                     <div className="flex flex-col items-end">
                       <span className={`text-[8px] px-2 py-0.5 rounded font-black uppercase tracking-tighter ${
-                        t.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                        t.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-emerald-100/50 text-emerald-700'
                       }`}>
                         {t.status === 'completed' ? 'Выполнено' : 'В работе'}
                       </span>
@@ -891,13 +891,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           )}
 
           <div className="mb-10">
-            <h3 className="text-lg font-black text-[#1e293b] mb-4 pl-3 uppercase tracking-tight" style={{ borderLeft: '4px solid #0a2a5e' }}>Достижения и сертификаты</h3>
+            <h3 className="text-lg font-black text-[#1e293b] mb-4 pl-3 uppercase tracking-tight" style={{ borderLeft: '4px solid #052e16' }}>Достижения и сертификаты</h3>
             <div className="space-y-4">
               {myCerts.length > 0 ? myCerts.map((c, idx) => (
                 <div key={c.id} className="p-4 rounded-xl border border-[#f1f5f9]" style={{ backgroundColor: '#f8fafc' }}>
                   <div className="flex justify-between items-start mb-1">
                     <p className="text-sm font-bold text-[#1e293b] leading-tight">
-                      <span className="mr-2" style={{ color: '#0a2a5e' }}>{idx + 1}.</span> {c.title}
+                      <span className="mr-2" style={{ color: '#052e16' }}>{idx + 1}.</span> {c.title}
                     </p>
                     <span className="text-[9px] font-black text-[#94a3b8] uppercase ml-4 flex-shrink-0">{new Date(c.issue_date).getFullYear()} г.</span>
                   </div>
@@ -910,7 +910,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     </span>
                     <button 
                       onClick={() => setViewingCert(c)}
-                      className="text-[10px] font-black text-[#0a2a5e] hover:text-blue-800 uppercase tracking-widest flex items-center space-x-1 border border-[#0a2a5e]/20 px-2.5 py-1 rounded bg-white hover:bg-[#0a2a5e]/5 transition-all"
+                      className="text-[10px] font-black text-[#052e16] hover:text-emerald-800 uppercase tracking-widest flex items-center space-x-1 border border-[#052e16]/20 px-2.5 py-1 rounded bg-white hover:bg-[#052e16]/5 transition-all"
                     >
                       <span>Смотреть</span>
                       <ExternalLink className="w-3 h-3" />
@@ -958,21 +958,21 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-3">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-blue-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
               <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
-              <h3 className="font-extrabold text-sm sm:text-base text-slate-800 dark:text-blue-100 tracking-tight">Научная активность</h3>
+              <h3 className="font-extrabold text-sm sm:text-base text-slate-800 dark:text-emerald-100 tracking-tight">Научная активность</h3>
               <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 leading-tight">Динамика публикаций и заявок</p>
             </div>
           </div>
           <div className="flex items-center space-x-4 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">
              <div className="flex items-center space-x-1.5">
-               <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-[#d4af37]"></div>
+               <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-[#10b981]"></div>
                <span className="text-slate-500 dark:text-slate-400">Труды</span>
              </div>
              <div className="flex items-center space-x-1.5">
-               <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-blue-600"></div>
+               <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-emerald-600"></div>
                <span className="text-slate-500 dark:text-slate-400">Заявки</span>
              </div>
           </div>
@@ -983,8 +983,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <AreaChart data={activityData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorPubs" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#d4af37" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#d4af37" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
                 </linearGradient>
                 <linearGradient id="colorApps" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#2563eb" stopOpacity={0.3}/>
@@ -1019,7 +1019,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               <Area 
                 type="monotone" 
                 dataKey="Публикации" 
-                stroke="#d4af37" 
+                stroke="#10b981" 
                 strokeWidth={4}
                 fillOpacity={1} 
                 fill="url(#colorPubs)" 
@@ -1056,15 +1056,15 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-sm space-y-6 transition-colors">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
             <div>
-              <h3 className="text-xl font-bold text-[#0a2a5e] dark:text-blue-300 flex items-center space-x-2">
-                <GraduationCap className="w-6 h-6 text-[#d4af37]" />
+              <h3 className="text-xl font-bold text-[#052e16] dark:text-emerald-300 flex items-center space-x-2">
+                <GraduationCap className="w-6 h-6 text-[#10b981]" />
                 <span>Электронный реестр публикаций исследователя</span>
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Все труды автоматически отправляются координатору науки ФЭМ для верификации</p>
             </div>
             <button
               onClick={() => setShowAddPub(!showAddPub)}
-              className="px-4 py-2 rounded-xl bg-[#0a2a5e] text-[#d4af37] font-bold text-xs shadow hover:bg-blue-900 transition-colors flex items-center space-x-1 self-start"
+              className="px-4 py-2 rounded-xl bg-[#052e16] text-[#10b981] font-bold text-xs shadow hover:bg-emerald-900 transition-colors flex items-center space-x-1 self-start"
             >
               <Plus className="w-4 h-4" /> <span>Добавить труд</span>
             </button>
@@ -1072,8 +1072,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
           {/* Форма добавления работы */}
           {showAddPub && (
-            <form onSubmit={handleAddPublication} className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-blue-200 dark:border-blue-900 shadow-inner space-y-4 animate-fadeIn transition-colors">
-              <h4 className="font-bold text-sm text-[#0a2a5e] dark:text-blue-300">Регистрация нового научного труда</h4>
+            <form onSubmit={handleAddPublication} className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-emerald-200 dark:border-emerald-900 shadow-inner space-y-4 animate-fadeIn transition-colors">
+              <h4 className="font-bold text-sm text-[#052e16] dark:text-emerald-300">Регистрация нового научного труда</h4>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="sm:col-span-2">
                   <label className="block text-[10px] font-mono uppercase text-slate-600 dark:text-slate-400 mb-1">Название работы / статьи *</label>
@@ -1108,7 +1108,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
               <div className="flex flex-col sm:flex-row justify-end gap-3 pt-2">
                 <button type="button" onClick={() => setShowAddPub(false)} className="px-5 py-2.5 text-sm text-slate-600 dark:text-slate-400 font-semibold order-2 sm:order-1">Отмена</button>
-                <button type="submit" className="px-6 py-3 bg-[#d4af37] text-[#0a2a5e] font-bold text-sm rounded-xl shadow hover:brightness-105 transition-all order-1 sm:order-2">Сохранить в портфолио</button>
+                <button type="submit" className="px-6 py-3 bg-[#10b981] text-[#052e16] font-bold text-sm rounded-xl shadow hover:brightness-105 transition-all order-1 sm:order-2">Сохранить в портфолио</button>
               </div>
             </form>
           )}
@@ -1122,36 +1122,36 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           ) : (
             <div className="space-y-4">
               {myPubs.map(pb => (
-                <div key={pb.id} className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-[#0a2a5e] dark:hover:border-blue-700 bg-slate-50/50 dark:bg-slate-900/30 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div key={pb.id} className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-[#052e16] dark:hover:border-emerald-700 bg-slate-50/50 dark:bg-slate-900/30 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="space-y-1">
                     <div className="flex items-center space-x-2 text-xs font-mono">
-                      <span className="px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-400 font-bold uppercase">{pb.type}</span>
+                      <span className="px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-900 dark:text-emerald-400 font-bold uppercase">{pb.type}</span>
                       <span className="text-slate-500 dark:text-slate-400">{pb.year} г.</span>
                       {pb.is_confirmed ? (
                         <span className="text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded font-bold flex items-center space-x-1">
                           <CheckCircle2 className="w-3 h-3" /> <span>Верифицировано СНО</span>
                         </span>
                       ) : (
-                        <span className="text-amber-800 dark:text-amber-500 bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 rounded font-bold flex items-center space-x-1">
+                        <span className="text-amber-800 dark:text-emerald-500 bg-emerald-100/50 dark:bg-emerald-900/30 px-2 py-0.5 rounded font-bold flex items-center space-x-1">
                           <Clock className="w-3 h-3" /> <span>На рассмотрении координатора</span>
                         </span>
                       )}
                     </div>
-                    <h4 className="font-bold text-base text-[#0a2a5e] dark:text-blue-200 leading-snug">{pb.title}</h4>
+                    <h4 className="font-bold text-base text-[#052e16] dark:text-emerald-200 leading-snug">{pb.title}</h4>
                     <p className="text-xs text-slate-600 dark:text-slate-400">📖 Издание: <strong>{pb.journal}</strong></p>
                   </div>
 
                   <div className="flex items-center space-x-2 self-end sm:self-center">
                     <button
                       onClick={() => handleOpenPubCert(pb)}
-                      className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                       title={pb.is_confirmed ? "Справка о наличии публикации" : "Ожидайте верификации СНО"}
                       disabled={!pb.is_confirmed}
                     >
                       <FileText className="w-4 h-4" />
                     </button>
                     {pb.link && (
-                      <a href={pb.link} target="_blank" rel="noreferrer" className="p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all" title="Открыть ссылку">
+                      <a href={pb.link} target="_blank" rel="noreferrer" className="p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-emerald-600 dark:text-emerald-400 hover:bg-blue-50 dark:hover:bg-emerald-900/30 transition-all" title="Открыть ссылку">
                         <ExternalLink className="w-4 h-4" />
                       </a>
                     )}
@@ -1160,7 +1160,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                         await deletePublication(pb.id);
                         onRefresh();
                       }}
-                      className="p-2 rounded-xl bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                      className="p-2 rounded-xl bg-red-50 dark:bg-red-950/20 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
                       title="Удалить из портфолио"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -1178,8 +1178,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">
           <div className="flex items-center justify-between border-b border-slate-100 pb-4">
             <div>
-              <h3 className="text-xl font-bold text-[#0a2a5e] flex items-center space-x-2">
-                <Award className="w-6 h-6 text-[#d4af37]" />
+              <h3 className="text-xl font-bold text-[#052e16] flex items-center space-x-2">
+                <Award className="w-6 h-6 text-[#10b981]" />
                 <span>Награды, дипломы и сертификаты</span>
               </h3>
               <p className="text-xs text-slate-500 mt-1">Подтверждение участия в конкурсах, олимпиадах и научных проектах</p>
@@ -1197,7 +1197,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               {myCerts.map(c => (
                 <div key={c.id} className="p-5 rounded-2xl border border-slate-200 bg-slate-50 hover:shadow-md transition-all">
                   <div className="flex justify-between items-start mb-3">
-                    <div className="p-2 rounded-lg bg-blue-100 text-blue-700">
+                    <div className="p-2 rounded-lg bg-emerald-100 text-emerald-700">
                       <Award className="w-5 h-5" />
                     </div>
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{new Date(c.issue_date).toLocaleDateString()}</span>
@@ -1206,13 +1206,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   <p className="text-xs text-slate-500 mb-3">{c.event_name}</p>
                   <div className="flex items-center justify-between mt-auto pt-3 border-t border-slate-200">
                     <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
-                      c.type.startsWith('диплом') ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'
+                      c.type.startsWith('диплом') ? 'bg-emerald-100/50 text-emerald-700' : 'bg-emerald-100 text-emerald-700'
                     }`}>
                       {c.type.replace(/_/g, ' ')}
                     </span>
                     <button 
                       onClick={() => setViewingCert(c)}
-                      className="text-blue-600 hover:text-blue-800 transition-colors flex items-center space-x-1 border border-blue-100 bg-blue-50/50 hover:bg-blue-100/50 px-2.5 py-1.5 rounded-xl text-xs font-bold"
+                      className="text-emerald-600 hover:text-emerald-800 transition-colors flex items-center space-x-1 border border-emerald-100 bg-blue-50/50 hover:bg-emerald-100/50 px-2.5 py-1.5 rounded-xl text-xs font-bold"
                       title="Посмотреть электронный диплом/сертификат"
                     >
                       <span>Просмотр</span>
@@ -1230,8 +1230,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       {activeSubTab === 'apps' && (
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-sm space-y-8 animate-fadeIn transition-colors">
           <div className="space-y-6">
-            <h3 className="text-xl font-bold text-[#0a2a5e] dark:text-blue-300 flex items-center space-x-2">
-              <FlaskConical className="w-6 h-6 text-[#d4af37]" />
+            <h3 className="text-xl font-bold text-[#052e16] dark:text-emerald-300 flex items-center space-x-2">
+              <FlaskConical className="w-6 h-6 text-[#10b981]" />
               <span>Заявления на вступление в СНИЛ</span>
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1239,14 +1239,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 <p className="text-sm text-slate-400 text-center py-8 col-span-2 italic bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">У вас нет активных заявлений в СНИЛ.</p>
               ) : (
                 mySnilApps.map(app => (
-                  <div key={app.id} className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 shadow-sm flex justify-between items-center group hover:border-[#0a2a5e] transition-all">
+                  <div key={app.id} className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 shadow-sm flex justify-between items-center group hover:border-[#052e16] transition-all">
                     <div>
-                      <h4 className="font-black text-[#0a2a5e] dark:text-white uppercase text-[10px] tracking-widest mb-1">СНИЛ «{app.snil_name}»</h4>
+                      <h4 className="font-black text-[#052e16] dark:text-white uppercase text-[10px] tracking-widest mb-1">СНИЛ «{app.snil_name}»</h4>
                       <p className="text-[10px] text-slate-400">Подано: {new Date(app.created_at).toLocaleDateString()}</p>
                     </div>
                     <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${
                       app.status === 'принята' ? 'bg-green-100 text-green-700' : 
-                      app.status === 'отклонена' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
+                      app.status === 'отклонена' ? 'bg-green-100 text-green-700' : 'bg-emerald-100 text-emerald-700'
                     }`}>
                       {app.status}
                     </span>
@@ -1257,8 +1257,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </div>
 
           <div className="space-y-6 border-t border-slate-100 dark:border-slate-800 pt-8">
-            <h3 className="text-xl font-bold text-[#0a2a5e] dark:text-blue-300 flex items-center space-x-2">
-              <FileText className="w-6 h-6 text-[#d4af37]" />
+            <h3 className="text-xl font-bold text-[#052e16] dark:text-emerald-300 flex items-center space-x-2">
+              <FileText className="w-6 h-6 text-[#10b981]" />
               <span>Мои заявки на участие в конференциях</span>
             </h3>
             <div className="space-y-4">
@@ -1269,21 +1269,21 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 </div>
               ) : (
                 myApps.map(ap => (
-                  <div key={ap.id} className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 shadow-sm hover:border-blue-400 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div key={ap.id} className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 shadow-sm hover:border-emerald-400 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="space-y-1">
                       <div className="flex items-center space-x-2 text-[10px] font-mono text-slate-400 uppercase">
                         <span>{new Date(ap.created_at).toLocaleDateString()}</span>
                         <span className="w-1 h-1 rounded-full bg-slate-300"></span>
                         <span>ID: {ap.id.slice(-8)}</span>
                       </div>
-                      <h4 className="font-bold text-[#0a2a5e] dark:text-blue-200">{ap.event_title}</h4>
+                      <h4 className="font-bold text-[#052e16] dark:text-emerald-200">{ap.event_title}</h4>
                       <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">Тема: «{ap.topic}»</p>
                     </div>
                     <div className="flex flex-col items-end gap-2">
                       <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
                         ap.status === 'принята' ? 'bg-green-100 text-green-700' : 
-                        ap.status === 'отклонена' ? 'bg-red-100 text-red-700' : 
-                        'bg-amber-100 text-amber-700'
+                        ap.status === 'отклонена' ? 'bg-green-100 text-green-700' : 
+                        'bg-emerald-100/50 text-emerald-700'
                       }`}>
                         {ap.status}
                       </span>
@@ -1304,7 +1304,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       {/* Вкладка 3: Задачи в лабораториях СНИЛ */}
       {activeSubTab === 'tasks' && (
         <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm space-y-4">
-          <h3 className="text-lg font-bold text-[#0a2a5e]">Мои исследовательские поручения в СНИЛ</h3>
+          <h3 className="text-lg font-bold text-[#052e16]">Мои исследовательские поручения в СНИЛ</h3>
           {myTasks.length === 0 ? (
             <p className="text-xs text-slate-400 py-6 text-center">Вам пока не назначено задач от руководителей лабораторий.</p>
           ) : (
@@ -1313,11 +1313,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 <div key={t.id} className="p-4 rounded-2xl border border-slate-200 bg-white shadow-sm flex items-center justify-between">
                   <div>
                     <span className="text-[10px] font-mono text-teal-600 font-bold uppercase">{t.snil_name}</span>
-                    <h4 className="font-bold text-sm text-[#0a2a5e]">{t.title}</h4>
+                    <h4 className="font-bold text-sm text-[#052e16]">{t.title}</h4>
                     <p className="text-xs text-slate-600">{t.description}</p>
                   </div>
                   <div className="text-right">
-                    <span className={`px-2.5 py-1 rounded text-[11px] font-mono font-bold ${t.status === 'выполнена' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
+                    <span className={`px-2.5 py-1 rounded text-[11px] font-mono font-bold ${t.status === 'выполнена' ? 'bg-green-100 text-green-800' : 'bg-emerald-100 text-emerald-800'}`}>
                       {t.status}
                     </span>
                     <p className="text-[10px] text-slate-400 font-mono mt-1">До: {t.deadline}</p>
@@ -1340,7 +1340,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               
               {/* Announcements Form */}
               <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 shadow-sm space-y-6">
-                <div className="flex items-center space-x-3 text-[#0a2a5e] dark:text-blue-300">
+                <div className="flex items-center space-x-3 text-[#052e16] dark:text-emerald-300">
                   <Megaphone className="w-6 h-6" />
                   <h3 className="text-xl font-black uppercase tracking-tight">Разместить объявление</h3>
                 </div>
@@ -1354,7 +1354,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                       placeholder="Например: Срочное собрание СНИЛ"
                       value={annTitle}
                       onChange={e => setAnnTitle(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-sm focus:outline-none focus:border-blue-500 transition-all dark:text-white"
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-sm focus:outline-none focus:border-emerald-500 transition-all dark:text-white"
                     />
                   </div>
                   <div className="space-y-2">
@@ -1365,7 +1365,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                       placeholder="Текст сообщения для участников вашей лаборатории..."
                       value={annContent}
                       onChange={e => setAnnContent(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-sm focus:outline-none focus:border-blue-500 transition-all dark:text-white"
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-sm focus:outline-none focus:border-emerald-500 transition-all dark:text-white"
                     />
                   </div>
                   <div className="flex items-center justify-between">
@@ -1374,11 +1374,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                         type="checkbox" 
                         checked={isAnnUrgent}
                         onChange={e => setIsAnnUrgent(e.target.checked)}
-                        className="w-5 h-5 rounded border-slate-300 text-[#0a2a5e] focus:ring-[#0a2a5e]"
+                        className="w-5 h-5 rounded border-slate-300 text-[#052e16] focus:ring-[#052e16]"
                       />
-                      <span className="text-xs font-bold text-slate-600 dark:text-slate-400 group-hover:text-[#0a2a5e] transition-colors">Отметить как срочное</span>
+                      <span className="text-xs font-bold text-slate-600 dark:text-slate-400 group-hover:text-[#052e16] transition-colors">Отметить как срочное</span>
                     </label>
-                    <button type="submit" className="px-8 py-3 bg-[#0a2a5e] text-[#d4af37] font-black text-xs uppercase tracking-widest rounded-xl hover:bg-blue-900 shadow-lg transition-all active:scale-95">
+                    <button type="submit" className="px-8 py-3 bg-[#052e16] text-[#10b981] font-black text-xs uppercase tracking-widest rounded-xl hover:bg-emerald-900 shadow-lg transition-all active:scale-95">
                       Опубликовать
                     </button>
                   </div>
@@ -1387,19 +1387,19 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
               {/* Announcements List */}
               <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 shadow-sm space-y-6">
-                <h3 className="text-lg font-black text-[#0a2a5e] dark:text-blue-300 uppercase tracking-tight">Ваши публикации</h3>
+                <h3 className="text-lg font-black text-[#052e16] dark:text-emerald-300 uppercase tracking-tight">Ваши публикации</h3>
                 <div className="space-y-4">
                   {mySnilAnnouncements.length === 0 ? (
                     <p className="text-sm text-slate-400 text-center py-8">Вы еще не размещали объявлений.</p>
                   ) : (
                     mySnilAnnouncements.map(ann => (
-                      <div key={ann.id} className={`p-5 rounded-2xl border ${ann.is_urgent ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700'} flex justify-between items-start gap-4`}>
+                      <div key={ann.id} className={`p-5 rounded-2xl border ${ann.is_urgent ? 'bg-blue-50/50 dark:bg-emerald-900/10 border-emerald-200 dark:border-amber-800' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700'} flex justify-between items-start gap-4`}>
                         <div className="space-y-1">
                           <div className="flex items-center space-x-2">
-                            {ann.is_urgent && <span className="px-2 py-0.5 rounded bg-amber-200 text-amber-800 text-[9px] font-black uppercase">Срочно</span>}
+                            {ann.is_urgent && <span className="px-2 py-0.5 rounded bg-emerald-200/50 text-amber-800 text-[9px] font-black uppercase">Срочно</span>}
                             <span className="text-[10px] font-bold text-slate-400">{new Date(ann.created_at).toLocaleDateString()}</span>
                           </div>
-                          <h4 className="font-bold text-[#0a2a5e] dark:text-white">{ann.title}</h4>
+                          <h4 className="font-bold text-[#052e16] dark:text-white">{ann.title}</h4>
                           <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">{ann.content}</p>
                         </div>
                         <button 
@@ -1407,7 +1407,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                             await deleteAnnouncement(ann.id);
                             onRefresh();
                           }}
-                          className="p-2 text-slate-400 hover:text-red-500 transition-colors"
+                          className="p-2 text-slate-400 hover:text-green-500 transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -1419,8 +1419,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
               {/* Achievements Management Card */}
               <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 shadow-sm space-y-6">
-                <div className="flex items-center space-x-3 text-[#0a2a5e] dark:text-blue-300">
-                  <Trophy className="w-6 h-6 text-amber-500" />
+                <div className="flex items-center space-x-3 text-[#052e16] dark:text-emerald-300">
+                  <Trophy className="w-6 h-6 text-emerald-500" />
                   <h3 className="text-xl font-black uppercase tracking-tight">Достижения и результаты СНИЛ</h3>
                 </div>
 
@@ -1431,9 +1431,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     placeholder="Например: Разработка новой экономической модели или патент"
                     value={newSnilAchievement}
                     onChange={e => setNewSnilAchievement(e.target.value)}
-                    className="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-sm focus:outline-none focus:border-blue-500 transition-all dark:text-white"
+                    className="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-sm focus:outline-none focus:border-emerald-500 transition-all dark:text-white"
                   />
-                  <button type="submit" className="px-5 py-3 bg-[#0a2a5e] text-[#d4af37] font-black rounded-xl hover:bg-blue-900 transition-all flex items-center gap-1">
+                  <button type="submit" className="px-5 py-3 bg-[#052e16] text-[#10b981] font-black rounded-xl hover:bg-emerald-900 transition-all flex items-center gap-1">
                     <Plus className="w-4 h-4" />
                     <span className="hidden sm:inline text-xs uppercase tracking-widest">Добавить</span>
                   </button>
@@ -1446,12 +1446,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     mySnil.achievements.map((ach, index) => (
                       <div key={index} className="flex items-center justify-between p-4 rounded-2xl border border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/20 gap-4">
                         <div className="flex items-start space-x-2.5">
-                          <Sparkles className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                          <Sparkles className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
                           <span className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 leading-relaxed">{ach}</span>
                         </div>
                         <button 
                           onClick={() => handleRemoveAchievement(index)}
-                          className="p-1.5 text-slate-400 hover:text-red-500 transition-colors flex-shrink-0"
+                          className="p-1.5 text-slate-400 hover:text-green-500 transition-colors flex-shrink-0"
                           title="Удалить достижение"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -1468,7 +1468,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               
               {/* Add Member Card */}
               <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 shadow-sm space-y-6">
-                <div className="flex items-center space-x-3 text-[#0a2a5e] dark:text-blue-300">
+                <div className="flex items-center space-x-3 text-[#052e16] dark:text-emerald-300">
                   <UserPlus className="w-6 h-6" />
                   <h3 className="text-lg font-black uppercase tracking-tight">Добавить участника</h3>
                 </div>
@@ -1484,14 +1484,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     placeholder="Номер зачётки (8 цифр)"
                     value={studentRecordBookToAdd}
                     onChange={e => setStudentRecordBookToAdd(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-sm focus:outline-none focus:border-blue-500 transition-all dark:text-white font-mono"
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-sm focus:outline-none focus:border-emerald-500 transition-all dark:text-white font-mono"
                   />
                   {mgmtMessage.text && (
-                    <div className={`text-[10px] font-bold px-3 py-2 rounded-lg ${mgmtMessage.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                    <div className={`text-[10px] font-bold px-3 py-2 rounded-lg ${mgmtMessage.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-green-100 text-green-700'}`}>
                       {mgmtMessage.text}
                     </div>
                   )}
-                  <button type="submit" className="w-full py-3.5 bg-[#d4af37] text-[#0a2a5e] font-black text-xs uppercase tracking-widest rounded-xl hover:brightness-110 shadow-lg transition-all active:scale-95">
+                  <button type="submit" className="w-full py-3.5 bg-[#10b981] text-[#052e16] font-black text-xs uppercase tracking-widest rounded-xl hover:brightness-110 shadow-lg transition-all active:scale-95">
                     Добавить в состав
                   </button>
                 </form>
@@ -1500,8 +1500,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               {/* Members List */}
               <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 shadow-sm space-y-6">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-black text-[#0a2a5e] dark:text-blue-300 uppercase tracking-tight">Участники</h3>
-                  <span className="text-xs font-black bg-blue-100 dark:bg-blue-900/50 text-blue-700 px-2 py-1 rounded-lg">{mySnilMembers.length}</span>
+                  <h3 className="text-lg font-black text-[#052e16] dark:text-emerald-300 uppercase tracking-tight">Участники</h3>
+                  <span className="text-xs font-black bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 px-2 py-1 rounded-lg">{mySnilMembers.length}</span>
                 </div>
                 <div className="max-h-80 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
                   {mySnilMembers.length === 0 ? (
@@ -1521,7 +1521,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                             removeMemberFromSnil(mySnil.id, member.record_book_id);
                             onRefresh();
                           }}
-                          className="p-1.5 text-slate-300 hover:text-red-500 transition-colors"
+                          className="p-1.5 text-slate-300 hover:text-green-500 transition-colors"
                         >
                           <X className="w-3.5 h-3.5" />
                         </button>
@@ -1532,18 +1532,18 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               </div>
 
               {/* Report Generation */}
-              <div className="bg-gradient-to-br from-[#0a2a5e] to-blue-900 rounded-3xl p-8 text-white shadow-xl space-y-6 border border-[#d4af37]/30">
-                <BarChart3 className="w-10 h-10 text-[#d4af37]" />
+              <div className="bg-gradient-to-br from-[#052e16] to-emerald-900 rounded-3xl p-8 text-white shadow-xl space-y-6 border border-[#10b981]/30">
+                <BarChart3 className="w-10 h-10 text-[#10b981]" />
                 <div className="space-y-2">
                   <h3 className="text-xl font-black uppercase tracking-tight">Отчетность СНИЛ</h3>
-                  <p className="text-xs text-blue-200/70 leading-relaxed">
+                  <p className="text-xs text-emerald-200/70 leading-relaxed">
                     Сгенерируйте официальный отчет об активности вашей лаборатории за текущий период для подачи в деканат.
                   </p>
                 </div>
                 <button 
                   onClick={generateSnilReport}
                   disabled={isGeneratingReport}
-                  className="w-full py-4 bg-[#d4af37] text-[#0a2a5e] font-black text-xs uppercase tracking-[0.2em] rounded-xl hover:brightness-110 shadow-lg transition-all active:scale-95 flex items-center justify-center space-x-2"
+                  className="w-full py-4 bg-[#10b981] text-[#052e16] font-black text-xs uppercase tracking-[0.2em] rounded-xl hover:brightness-110 shadow-lg transition-all active:scale-95 flex items-center justify-center space-x-2"
                 >
                   {isGeneratingReport ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                   <span>{isGeneratingReport ? 'Подготовка...' : 'Сформировать отчет'}</span>
@@ -1557,24 +1557,24 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <div style={{ position: 'fixed', left: '-10000px', top: 0, pointerEvents: 'none' }}>
             <div ref={reportRef} className="w-[800px] p-12 bg-white text-slate-900 font-sans" style={{ backgroundColor: '#ffffff' }}>
               {/* Branded Banner */}
-              <div className="bg-[#0a2a5e] p-8 rounded-3xl text-white flex justify-between items-center mb-10 border-b-4 border-[#d4af37]">
+              <div className="bg-[#052e16] p-8 rounded-3xl text-white flex justify-between items-center mb-10 border-b-4 border-[#10b981]">
                 <div className="space-y-2">
-                  <div className="flex items-center space-x-2 text-[#d4af37] text-[10px] font-black uppercase tracking-widest">
+                  <div className="flex items-center space-x-2 text-[#10b981] text-[10px] font-black uppercase tracking-widest">
                     <FlaskConical className="w-5 h-5" />
                     <span>SSO Portal • FEM BSEU</span>
                   </div>
                   <h1 className="text-3xl font-black uppercase tracking-tighter">ОТЧЕТ АКТИВНОСТИ СНИЛ</h1>
-                  <p className="text-sm font-bold text-blue-200 opacity-80 uppercase tracking-widest">Информационно-аналитическая система SNO.PORTAL</p>
+                  <p className="text-sm font-bold text-emerald-200 opacity-80 uppercase tracking-widest">Информационно-аналитическая система SNO.PORTAL</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[40px] font-black text-[#d4af37] leading-none mb-1">2026</p>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-blue-300">Семестр II</p>
+                  <p className="text-[40px] font-black text-[#10b981] leading-none mb-1">2026</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-300">Семестр II</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-10 mb-10">
                 <div className="space-y-4">
-                  <h2 className="text-lg font-black text-[#0a2a5e] border-l-4 border-[#d4af37] pl-3 uppercase">О лаборатории</h2>
+                  <h2 className="text-lg font-black text-[#052e16] border-l-4 border-[#10b981] pl-3 uppercase">О лаборатории</h2>
                   <div className="space-y-2">
                     <p className="text-xs font-bold text-slate-400 uppercase">Наименование:</p>
                     <p className="text-lg font-black text-slate-800">СНИЛ «{mySnil.name}»</p>
@@ -1590,32 +1590,32 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 </div>
                 
                 <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 flex flex-col justify-center items-center space-y-4">
-                  <p className="text-xs font-black text-[#0a2a5e] uppercase tracking-widest">Статистика участников</p>
-                  <div className="text-5xl font-black text-[#d4af37]">{mySnilMembers.length}</div>
+                  <p className="text-xs font-black text-[#052e16] uppercase tracking-widest">Статистика участников</p>
+                  <div className="text-5xl font-black text-[#10b981]">{mySnilMembers.length}</div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase">Активных исследователей</p>
                 </div>
               </div>
 
               <div className="space-y-6 mb-10">
-                <h2 className="text-lg font-black text-[#0a2a5e] border-l-4 border-[#d4af37] pl-3 uppercase">Показатели эффективности</h2>
+                <h2 className="text-lg font-black text-[#052e16] border-l-4 border-[#10b981] pl-3 uppercase">Показатели эффективности</h2>
                 <div className="grid grid-cols-3 gap-4 text-center">
-                  <div className="p-4 rounded-2xl bg-blue-50 border border-blue-100">
-                    <p className="text-[10px] font-bold text-blue-600 uppercase mb-1">Публикации</p>
-                    <p className="text-2xl font-black text-[#0a2a5e]">14</p>
+                  <div className="p-4 rounded-2xl bg-blue-50 border border-emerald-100">
+                    <p className="text-[10px] font-bold text-emerald-600 uppercase mb-1">Публикации</p>
+                    <p className="text-2xl font-black text-[#052e16]">14</p>
                   </div>
-                  <div className="p-4 rounded-2xl bg-amber-50 border border-amber-100">
-                    <p className="text-[10px] font-bold text-amber-600 uppercase mb-1">Доклады</p>
-                    <p className="text-2xl font-black text-[#0a2a5e]">28</p>
+                  <div className="p-4 rounded-2xl bg-blue-50/50 border border-amber-100">
+                    <p className="text-[10px] font-bold text-emerald-600 uppercase mb-1">Доклады</p>
+                    <p className="text-2xl font-black text-[#052e16]">28</p>
                   </div>
                   <div className="p-4 rounded-2xl bg-green-50 border border-green-100">
                     <p className="text-[10px] font-bold text-green-600 uppercase mb-1">Проекты</p>
-                    <p className="text-2xl font-black text-[#0a2a5e]">3</p>
+                    <p className="text-2xl font-black text-[#052e16]">3</p>
                   </div>
                 </div>
               </div>
 
               <div className="space-y-6 mb-10">
-                <h2 className="text-lg font-black text-[#0a2a5e] border-l-4 border-[#d4af37] pl-3 uppercase">Недавние объявления</h2>
+                <h2 className="text-lg font-black text-[#052e16] border-l-4 border-[#10b981] pl-3 uppercase">Недавние объявления</h2>
                 <div className="space-y-3">
                   {mySnilAnnouncements.slice(0, 3).map(ann => (
                     <div key={ann.id} className="p-4 rounded-2xl border border-slate-100 bg-slate-50">
@@ -1656,13 +1656,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       {activeSubTab === 'interests' && (
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 shadow-sm space-y-6 transition-colors">
           <div>
-            <h3 className="text-lg font-bold text-[#0a2a5e] dark:text-blue-300">Теги научных интересов</h3>
+            <h3 className="text-lg font-bold text-[#052e16] dark:text-emerald-300">Теги научных интересов</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">Используются системой для персональной рекомендации конференций и подбора команд СНИЛ</p>
           </div>
 
           <div className="flex flex-wrap gap-2 pt-2">
             {user.scientific_interests.map(intr => (
-              <span key={intr} className="px-3.5 py-2 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-950 dark:text-blue-200 font-medium text-xs flex items-center space-x-2 border border-blue-100 dark:border-blue-900 shadow-sm transition-colors">
+              <span key={intr} className="px-3.5 py-2 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-950 dark:text-emerald-200 font-medium text-xs flex items-center space-x-2 border border-emerald-100 dark:border-emerald-900 shadow-sm transition-colors">
                 <span>💡 {intr}</span>
               </span>
             ))}
@@ -1676,7 +1676,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               setTempInterests([...user.scientific_interests]);
               setIsEditingProfile(true);
             }}
-            className="mt-4 px-6 py-3 bg-blue-600/10 text-blue-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-blue-600/20 transition-all"
+            className="mt-4 px-6 py-3 bg-emerald-600/10 text-emerald-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-emerald-600/20 transition-all"
           >
             Редактировать интересы
           </button>
@@ -1723,7 +1723,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             >
               <div className="flex items-center justify-between p-6 sm:p-8 border-b border-slate-100 dark:border-slate-800">
                 <div className="flex items-center gap-3 sm:gap-4">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-600 text-white rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-600 text-white rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0">
                     <UserCircle className="w-6 h-6 sm:w-7 sm:h-7" />
                   </div>
                   <div>
@@ -1742,7 +1742,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               <div className="p-6 sm:p-8 overflow-y-auto space-y-6 sm:space-y-8 flex-1 scrollbar-none">
                 {/* Academic Section */}
                 <div className="space-y-6">
-                  <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+                  <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
                     <GraduationCap className="w-5 h-5" />
                     <h3 className="font-black uppercase text-xs tracking-widest">Академические данные</h3>
                   </div>
@@ -1751,11 +1751,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     <div className="space-y-2">
                       <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Группа</label>
                       <div className="relative group">
-                        <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+                        <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-emerald-600 transition-colors" />
                         <select 
                           value={tempGroup} 
                           onChange={e => setTempGroup(e.target.value)}
-                          className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border-2 border-transparent focus:border-blue-600 focus:bg-white dark:focus:bg-slate-700 transition-all outline-none text-slate-800 dark:text-white font-bold"
+                          className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border-2 border-transparent focus:border-emerald-600 focus:bg-white dark:focus:bg-slate-700 transition-all outline-none text-slate-800 dark:text-white font-bold"
                         >
                           {GROUPS.map(g => <option key={g} value={g}>{g}</option>)}
                         </select>
@@ -1767,7 +1767,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                       <div className="flex gap-2 p-1 bg-slate-50 dark:bg-slate-800 rounded-2xl">
                         <button 
                           onClick={() => setTempGender('male')}
-                          className={`flex-1 py-3 rounded-xl font-bold transition-all ${tempGender === 'male' ? 'bg-white dark:bg-slate-700 shadow-md text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+                          className={`flex-1 py-3 rounded-xl font-bold transition-all ${tempGender === 'male' ? 'bg-white dark:bg-slate-700 shadow-md text-emerald-600' : 'text-slate-400 hover:text-slate-600'}`}
                         >
                           Мужской
                         </button>
@@ -1784,11 +1784,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   <div className="space-y-2">
                     <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Кафедра</label>
                     <div className="relative group">
-                      <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+                      <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-emerald-600 transition-colors" />
                       <select 
                         value={tempDepartment} 
                         onChange={e => setTempDepartment(e.target.value)}
-                        className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border-2 border-transparent focus:border-blue-600 focus:bg-white dark:focus:bg-slate-700 transition-all outline-none text-slate-800 dark:text-white font-bold"
+                        className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border-2 border-transparent focus:border-emerald-600 focus:bg-white dark:focus:bg-slate-700 transition-all outline-none text-slate-800 dark:text-white font-bold"
                       >
                         {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
                       </select>
@@ -1798,7 +1798,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
                 {/* Interests Section */}
                 <div className="space-y-6 pt-4 border-t border-slate-100 dark:border-slate-800">
-                  <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                  <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
                     <Sparkles className="w-5 h-5" />
                     <h3 className="font-black uppercase text-xs tracking-widest">Научные интересы</h3>
                   </div>
@@ -1811,7 +1811,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                         value={newInterest}
                         onChange={e => setNewInterest(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddInterestToTemp())}
-                        className="flex-1 px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-2xl border-2 border-transparent focus:border-blue-600 outline-none text-sm"
+                        className="flex-1 px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-2xl border-2 border-transparent focus:border-emerald-600 outline-none text-sm"
                       />
                       <button 
                         onClick={handleAddInterestToTemp}
@@ -1823,9 +1823,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
                     <div className="flex flex-wrap gap-2">
                       {tempInterests.map(interest => (
-                        <span key={interest} className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-xl text-xs font-bold flex items-center gap-2 border border-blue-100 dark:border-blue-800">
+                        <span key={interest} className="px-3 py-1.5 bg-blue-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-xl text-xs font-bold flex items-center gap-2 border border-emerald-100 dark:border-emerald-800">
                           {interest}
-                          <button onClick={() => handleRemoveInterestFromTemp(interest)} className="hover:text-red-500">
+                          <button onClick={() => handleRemoveInterestFromTemp(interest)} className="hover:text-green-500">
                             <X className="w-3.5 h-3.5" />
                           </button>
                         </span>
@@ -1863,9 +1863,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   </div>
                 </div>
 
-                <div className="bg-blue-50 dark:bg-blue-900/10 p-6 rounded-[2rem] flex gap-4 border border-blue-100 dark:border-blue-900/30">
-                  <Info className="w-6 h-6 text-blue-600 shrink-0" />
-                  <p className="text-xs leading-relaxed text-blue-800 dark:text-blue-300">
+                <div className="bg-blue-50 dark:bg-emerald-900/10 p-6 rounded-[2rem] flex gap-4 border border-emerald-100 dark:border-emerald-900/30">
+                  <Info className="w-6 h-6 text-emerald-600 shrink-0" />
+                  <p className="text-xs leading-relaxed text-emerald-800 dark:text-emerald-300">
                     Данные о вашей группе и кафедре используются для участия в командных рейтингах. Выбор пола необходим для автоматической подстановки окончаний в официальных справках («студенту»/«студентке»).
                   </p>
                 </div>
@@ -1880,7 +1880,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 </button>
                 <button 
                   onClick={handleSaveProfile}
-                  className="flex-[2] py-3 sm:py-4 bg-blue-600 text-white rounded-xl sm:rounded-2xl font-bold hover:bg-blue-700 shadow-xl shadow-blue-600/20 flex items-center justify-center gap-2 text-sm sm:text-base"
+                  className="flex-[2] py-3 sm:py-4 bg-emerald-600 text-white rounded-xl sm:rounded-2xl font-bold hover:bg-emerald-700 shadow-xl shadow-blue-600/20 flex items-center justify-center gap-2 text-sm sm:text-base"
                 >
                   <Save className="w-5 h-5" />
                   Сохранить
@@ -1898,12 +1898,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 const DashStat: React.FC<{ title: string; value: number | string; desc: string; highlight?: boolean }> = ({ title, value, desc, highlight }) => (
   <div className={`p-5 rounded-2xl border transition-all ${
     highlight 
-      ? 'bg-[#0a2a5e] dark:bg-blue-900/40 border-[#d4af37]/40 text-white' 
-      : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-blue-100 shadow-sm'
+      ? 'bg-[#052e16] dark:bg-emerald-900/40 border-[#10b981]/40 text-white' 
+      : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-emerald-100 shadow-sm'
   }`}>
-    <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${highlight ? 'text-amber-300' : 'text-slate-400 dark:text-slate-500'}`}>{title}</p>
-    <p className={`text-2xl font-black font-mono ${highlight ? 'text-white' : 'text-[#0a2a5e] dark:text-[#d4af37]'}`}>{value}</p>
-    <p className={`text-[10px] mt-1 font-medium ${highlight ? 'text-blue-200 opacity-80' : 'text-slate-400 dark:text-slate-500'}`}>{desc}</p>
+    <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${highlight ? 'text-emerald-300' : 'text-slate-400 dark:text-slate-500'}`}>{title}</p>
+    <p className={`text-2xl font-black font-mono ${highlight ? 'text-white' : 'text-[#052e16] dark:text-[#10b981]'}`}>{value}</p>
+    <p className={`text-[10px] mt-1 font-medium ${highlight ? 'text-emerald-200 opacity-80' : 'text-slate-400 dark:text-slate-500'}`}>{desc}</p>
   </div>
 );
 
@@ -1912,7 +1912,7 @@ const SubTabBtn: React.FC<{ active: boolean; onClick: () => void; icon: React.Re
     onClick={onClick}
     className={`flex items-center space-x-2.5 px-4 py-3.5 rounded-xl transition-all whitespace-nowrap min-h-[44px] ${
       active 
-        ? 'bg-[#0a2a5e] text-[#d4af37] shadow-lg scale-[1.02]' 
+        ? 'bg-[#052e16] text-[#10b981] shadow-lg scale-[1.02]' 
         : 'hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 active:scale-95'
     }`}
   >
@@ -1920,7 +1920,7 @@ const SubTabBtn: React.FC<{ active: boolean; onClick: () => void; icon: React.Re
     <span className="font-bold text-xs sm:text-sm">{label}</span>
     {count > 0 && (
       <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-        active ? 'bg-[#d4af37] text-[#0a2a5e]' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+        active ? 'bg-[#10b981] text-[#052e16]' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
       }`}>
         {count}
       </span>

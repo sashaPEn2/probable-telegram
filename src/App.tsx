@@ -239,7 +239,7 @@ export default function App() {
   const userNotifs = user ? (db.notifications || []).filter(n => n.user_record_book === user.record_book_id).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()) : [];
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden bg-[#f8fafc] dark:bg-[#030712] font-sans text-slate-900 dark:text-slate-100 selection:bg-[#d4af37]/30 transition-colors duration-200 relative z-0">
+    <div className="min-h-screen w-full overflow-x-hidden bg-[#f8fafc] dark:bg-[#030712] font-sans text-slate-900 dark:text-slate-100 selection:bg-[#10b981]/30 transition-colors duration-200 relative z-0">
       <Navbar
         user={user}
         activeTab={activeTab}
@@ -317,10 +317,10 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="space-y-3 text-center md:text-left">
             <div className="flex items-center justify-center md:justify-start space-x-2">
-              <div className="w-8 h-8 rounded-lg bg-[#0a2a5e] flex items-center justify-center">
-                <span className="text-[#d4af37] font-bold text-xs">ФЭМ</span>
+              <div className="w-8 h-8 rounded-lg bg-[#052e16] flex items-center justify-center">
+                <span className="text-[#10b981] font-bold text-xs">ФЭМ</span>
               </div>
-              <span className="font-extrabold text-lg tracking-tighter text-[#0a2a5e] dark:text-blue-400">SNO.PORTAL</span>
+              <span className="font-extrabold text-lg tracking-tighter text-[#052e16] dark:text-emerald-400">SNO.PORTAL</span>
             </div>
             <p className="text-slate-500 dark:text-slate-400 text-xs max-w-sm">
               Информационно-аналитическая платформа Студенческого научного общества Факультета экономики и менеджмента БГЭУ.
@@ -328,20 +328,20 @@ export default function App() {
           </div>
           
           <div className="flex flex-wrap justify-center gap-6 text-[11px] font-mono font-bold uppercase text-slate-400 dark:text-slate-500">
-            <a href="http://fm.bseu.by/deans_office" target="_blank" rel="noreferrer" className="hover:text-[#d4af37] transition-colors">Деканат ФЭМ</a>
-            <a href="https://nir.bseu.by/scientific/study/studentscience2.html" target="_blank" rel="noreferrer" className="hover:text-[#d4af37] transition-colors">НИРС БГЭУ</a>
-            <a href="http://edoc.bseu.by:8080/" target="_blank" rel="noreferrer" className="hover:text-[#d4af37] transition-colors">Библиотека</a>
-            <a href="https://edoc.bseu.by" target="_blank" rel="noreferrer" className="hover:text-[#d4af37] transition-colors">Репозиторий</a>
-            <a href="https://t.me/snofembseu" target="_blank" rel="noreferrer" className="px-3 py-1 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500 hover:text-white transition-all">Техподдержка</a>
+            <a href="http://fm.bseu.by/deans_office" target="_blank" rel="noreferrer" className="hover:text-[#10b981] transition-colors">Деканат ФЭМ</a>
+            <a href="https://nir.bseu.by/scientific/study/studentscience2.html" target="_blank" rel="noreferrer" className="hover:text-[#10b981] transition-colors">НИРС БГЭУ</a>
+            <a href="http://edoc.bseu.by:8080/" target="_blank" rel="noreferrer" className="hover:text-[#10b981] transition-colors">Библиотека</a>
+            <a href="https://edoc.bseu.by" target="_blank" rel="noreferrer" className="hover:text-[#10b981] transition-colors">Репозиторий</a>
+            <a href="https://t.me/snofembseu" target="_blank" rel="noreferrer" className="px-3 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500 hover:text-white transition-all">Техподдержка</a>
           </div>
 
           <div className="text-center md:text-right space-y-3">
             <button
               onClick={() => setShowDjangoModal(true)}
-              className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-[#0a2a5e] dark:hover:text-[#d4af37] transition-all text-xs font-mono font-bold shadow-sm"
+              className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-[#052e16] dark:hover:text-[#10b981] transition-all text-xs font-mono font-bold shadow-sm"
               title="Исходный код Django проекта"
             >
-              <Code2 className="w-4 h-4 text-[#d4af37]" />
+              <Code2 className="w-4 h-4 text-[#10b981]" />
               <span>Django Backend Source</span>
             </button>
             <div className="pt-2">

@@ -133,7 +133,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess, onClose 
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-      <div className="w-full max-w-md bg-slate-900 border border-[#d4af37]/40 rounded-3xl shadow-2xl relative overflow-hidden animate-fadeIn max-h-[95vh] flex flex-col">
+      <div className="w-full max-w-md bg-slate-900 border border-[#10b981]/40 rounded-3xl shadow-2xl relative overflow-hidden animate-fadeIn max-h-[95vh] flex flex-col">
         
         {/* Кнопка закрытия - теперь вне скролла */}
         {onClose && (
@@ -148,47 +148,47 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess, onClose 
 
         <div className="p-5 sm:p-6 overflow-y-auto flex-1 custom-scrollbar">
           {/* Декоративная научная сетка / свечение */}
-          <div className="absolute -top-24 -right-24 w-48 h-48 bg-[#d4af37]/10 rounded-full blur-3xl pointer-events-none"></div>
-          <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
+          <div className="absolute -top-24 -right-24 w-48 h-48 bg-[#10b981]/10 rounded-full blur-3xl pointer-events-none"></div>
+          <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
           <div className="text-center mb-4 relative z-10">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#0a2a5e] to-blue-900 border border-[#d4af37] shadow-lg mb-3">
-            <GraduationCap className="w-7 h-7 text-[#d4af37]" />
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#052e16] to-emerald-900 border border-[#10b981] shadow-lg mb-3">
+            <GraduationCap className="w-7 h-7 text-[#10b981]" />
           </div>
           <h2 className="text-xl font-bold tracking-tight text-white uppercase">
             {isRegister ? 'Регистрация' : 'Вход в портал'}
           </h2>
-          <p className="text-[10px] text-blue-200/80 mt-0.5">SNO.PORTAL — Факультет экономики и менеджмента</p>
+          <p className="text-[10px] text-emerald-200/80 mt-0.5">SNO.PORTAL — Факультет экономики и менеджмента</p>
         </div>
 
         <div className="flex bg-slate-800/50 p-1 rounded-2xl mb-4 relative z-10">
           <button 
             onClick={() => !isLoading && setIsRegister(false)}
             disabled={isLoading}
-            className={`flex-1 py-2.5 text-[10px] font-black rounded-xl transition-all ${!isRegister ? 'bg-[#d4af37] text-[#0a2a5e] shadow-lg' : 'text-slate-400 hover:text-white'} ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`flex-1 py-2.5 text-[10px] font-black rounded-xl transition-all ${!isRegister ? 'bg-[#10b981] text-[#052e16] shadow-lg' : 'text-slate-400 hover:text-white'} ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             ВХОД
           </button>
           <button 
             onClick={() => !isLoading && setIsRegister(true)}
             disabled={isLoading}
-            className={`flex-1 py-2.5 text-[10px] font-black rounded-xl transition-all ${isRegister ? 'bg-[#d4af37] text-[#0a2a5e] shadow-lg' : 'text-slate-400 hover:text-white'} ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`flex-1 py-2.5 text-[10px] font-black rounded-xl transition-all ${isRegister ? 'bg-[#10b981] text-[#052e16] shadow-lg' : 'text-slate-400 hover:text-white'} ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             РЕГИСТРАЦИЯ
           </button>
         </div>
 
         {error && (
-          <div className="mb-4 p-2.5 bg-red-950/80 border border-red-500/50 rounded-xl flex items-center space-x-2 text-red-200 text-[10px]">
-            <ShieldAlert className="w-4 h-4 text-red-400 flex-shrink-0" />
+          <div className="mb-4 p-2.5 bg-red-950/80 border border-green-500/50 rounded-xl flex items-center space-x-2 text-green-200 text-[10px]">
+            <ShieldAlert className="w-4 h-4 text-green-400 flex-shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         <form onSubmit={handleLogin} className="space-y-4 relative z-10">
           <div>
-            <label className="block text-xs font-semibold text-blue-200 uppercase mb-1.5 flex items-center space-x-1">
-              <BookOpen className="w-3.5 h-3.5 text-[#d4af37]" />
+            <label className="block text-xs font-semibold text-emerald-200 uppercase mb-1.5 flex items-center space-x-1">
+              <BookOpen className="w-3.5 h-3.5 text-[#10b981]" />
               <span>Номер студенческого (зачётки)</span>
             </label>
             <input
@@ -197,32 +197,32 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess, onClose 
               value={recordBook}
               onChange={(e) => setRecordBook(e.target.value)}
               disabled={isLoading}
-              className="w-full px-4 py-3 bg-slate-800/80 border border-blue-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] transition-all font-mono disabled:opacity-50"
+              className="w-full px-4 py-3 bg-slate-800/80 border border-emerald-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#10b981] focus:ring-1 focus:ring-[#10b981] transition-all font-mono disabled:opacity-50"
             />
           </div>
 
           {isRegister && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-blue-200 uppercase mb-1.5">Фамилия</label>
+                <label className="block text-xs font-semibold text-emerald-200 uppercase mb-1.5">Фамилия</label>
                 <input
                   type="text"
                   placeholder="Иванов"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   disabled={isLoading}
-                  className="w-full px-4 py-3 bg-slate-800/80 border border-blue-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#d4af37] transition-all disabled:opacity-50"
+                  className="w-full px-4 py-3 bg-slate-800/80 border border-emerald-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#10b981] transition-all disabled:opacity-50"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-blue-200 uppercase mb-1.5">Имя</label>
+                <label className="block text-xs font-semibold text-emerald-200 uppercase mb-1.5">Имя</label>
                 <input
                   type="text"
                   placeholder="Иван"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   disabled={isLoading}
-                  className="w-full px-4 py-3 bg-slate-800/80 border border-blue-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#d4af37] transition-all disabled:opacity-50"
+                  className="w-full px-4 py-3 bg-slate-800/80 border border-emerald-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#10b981] transition-all disabled:opacity-50"
                 />
               </div>
             </div>
@@ -230,8 +230,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess, onClose 
 
           {!isRegister && (
             <div>
-              <label className="block text-xs font-semibold text-blue-200 uppercase mb-1.5 flex items-center space-x-1">
-                <ShieldAlert className="w-3.5 h-3.5 text-[#d4af37]" />
+              <label className="block text-xs font-semibold text-emerald-200 uppercase mb-1.5 flex items-center space-x-1">
+                <ShieldAlert className="w-3.5 h-3.5 text-[#10b981]" />
                 <span>Пароль (если установлен)</span>
               </label>
               <input
@@ -240,7 +240,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess, onClose 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
-                className="w-full px-4 py-3 bg-slate-800/80 border border-blue-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#d4af37] transition-all disabled:opacity-50"
+                className="w-full px-4 py-3 bg-slate-800/80 border border-emerald-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#10b981] transition-all disabled:opacity-50"
               />
             </div>
           )}
@@ -248,15 +248,15 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess, onClose 
           {isRegister && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-blue-200 uppercase mb-1.5 flex items-center space-x-1">
-                  <School className="w-3.5 h-3.5 text-[#d4af37]" />
+                <label className="block text-xs font-semibold text-emerald-200 uppercase mb-1.5 flex items-center space-x-1">
+                  <School className="w-3.5 h-3.5 text-[#10b981]" />
                   <span>Факультет</span>
                 </label>
                 <select
                   value={faculty}
                   onChange={(e) => setFaculty(e.target.value)}
                   disabled={isLoading}
-                  className="w-full px-4 py-3 bg-slate-800/80 border border-blue-700/50 rounded-xl text-white focus:outline-none focus:border-[#d4af37] transition-all disabled:opacity-50"
+                  className="w-full px-4 py-3 bg-slate-800/80 border border-emerald-700/50 rounded-xl text-white focus:outline-none focus:border-[#10b981] transition-all disabled:opacity-50"
                 >
                   {FACULTIES.map(f => (
                     <option key={f} value={f} className="bg-slate-900 text-white">{f}</option>
@@ -264,17 +264,17 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess, onClose 
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-blue-200 uppercase mb-1.5">Учебная группа</label>
+                <label className="block text-xs font-semibold text-emerald-200 uppercase mb-1.5">Учебная группа</label>
                 <select
                   value={group}
                   onChange={(e) => setGroup(e.target.value)}
                   disabled={isLoading}
-                  className="w-full px-4 py-3 bg-slate-800/80 border border-blue-700/50 rounded-xl text-white focus:outline-none focus:border-[#d4af37] transition-all disabled:opacity-50"
+                  className="w-full px-4 py-3 bg-slate-800/80 border border-emerald-700/50 rounded-xl text-white focus:outline-none focus:border-[#10b981] transition-all disabled:opacity-50"
                   required
                 >
                   <option value="" className="bg-slate-900 text-slate-500">Выберите группу...</option>
                   {[1, 2, 3, 4].map(courseNum => (
-                    <optgroup key={courseNum} label={`${courseNum} курс`} className="bg-slate-900 text-amber-500 font-bold">
+                    <optgroup key={courseNum} label={`${courseNum} курс`} className="bg-slate-900 text-emerald-500 font-bold">
                       {GROUPS_BY_COURSE[courseNum].map(g => (
                         <option key={g} value={g} className="bg-slate-900 text-white font-normal">{g}</option>
                       ))}
@@ -288,7 +288,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess, onClose 
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 px-6 rounded-xl bg-gradient-to-r from-[#d4af37] via-amber-500 to-amber-600 text-[#0a2a5e] font-bold shadow-lg hover:brightness-110 flex items-center justify-center space-x-2 transition-all group mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 px-6 rounded-xl bg-gradient-to-r from-[#10b981] via-amber-500 to-emerald-700 text-[#052e16] font-bold shadow-lg hover:brightness-110 flex items-center justify-center space-x-2 transition-all group mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span>{isLoading ? 'Выполнение входа...' : (isRegister ? 'Зарегистрироваться' : 'Войти в систему')}</span>
               {isLoading ? (

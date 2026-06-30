@@ -235,42 +235,42 @@ requests>=2.31.0
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-blue-500/40 rounded-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden shadow-2xl">
+      <div className="bg-slate-900 border border-emerald-500/40 rounded-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden shadow-2xl">
         
         {/* Шапка окна */}
-        <div className="bg-[#0a2a5e] px-6 py-4 border-b border-blue-400/30 flex items-center justify-between flex-shrink-0">
+        <div className="bg-[#052e16] px-6 py-4 border-b border-emerald-400/30 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center space-x-3">
-            <div className="p-2 rounded-lg bg-[#d4af37]/20 border border-[#d4af37]">
-              <FileCode className="w-5 h-5 text-[#d4af37]" />
+            <div className="p-2 rounded-lg bg-[#10b981]/20 border border-[#10b981]">
+              <FileCode className="w-5 h-5 text-[#10b981]" />
             </div>
             <div>
               <h3 className="text-white font-bold text-lg leading-tight">Архитектура Django 4.x бекенда ФЭМ БГЭУ</h3>
-              <p className="text-blue-200 text-xs">Полный исходный код проекта с поддержкой PostgreSQL 14+</p>
+              <p className="text-emerald-200 text-xs">Полный исходный код проекта с поддержкой PostgreSQL 14+</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 text-blue-300 hover:text-white hover:bg-blue-800 rounded-lg transition-colors">
+          <button onClick={onClose} className="p-2 text-emerald-300 hover:text-white hover:bg-emerald-800 rounded-lg transition-colors">
             <X className="w-6 h-6" />
           </button>
         </div>
 
         {/* Навигационные вкладки файлов */}
         <div className="bg-slate-950 px-6 py-2 border-b border-slate-800 flex overflow-x-auto space-x-2 no-scrollbar text-xs">
-          <button onClick={() => setActiveTab('models')} className={`px-3 py-1.5 rounded-lg font-mono flex items-center space-x-1.5 transition-colors ${activeTab === 'models' ? 'bg-blue-600 text-white font-bold' : 'text-slate-400 hover:bg-slate-800'}`}>
+          <button onClick={() => setActiveTab('models')} className={`px-3 py-1.5 rounded-lg font-mono flex items-center space-x-1.5 transition-colors ${activeTab === 'models' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400 hover:bg-slate-800'}`}>
             <Database className="w-3.5 h-3.5" /> <span>models.py</span>
           </button>
-          <button onClick={() => setActiveTab('views')} className={`px-3 py-1.5 rounded-lg font-mono flex items-center space-x-1.5 transition-colors ${activeTab === 'views' ? 'bg-blue-600 text-white font-bold' : 'text-slate-400 hover:bg-slate-800'}`}>
+          <button onClick={() => setActiveTab('views')} className={`px-3 py-1.5 rounded-lg font-mono flex items-center space-x-1.5 transition-colors ${activeTab === 'views' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400 hover:bg-slate-800'}`}>
             <FileCode className="w-3.5 h-3.5" /> <span>views.py (CBV)</span>
           </button>
-          <button onClick={() => setActiveTab('urls')} className={`px-3 py-1.5 rounded-lg font-mono flex items-center space-x-1.5 transition-colors ${activeTab === 'urls' ? 'bg-blue-600 text-white font-bold' : 'text-slate-400 hover:bg-slate-800'}`}>
+          <button onClick={() => setActiveTab('urls')} className={`px-3 py-1.5 rounded-lg font-mono flex items-center space-x-1.5 transition-colors ${activeTab === 'urls' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400 hover:bg-slate-800'}`}>
             <Terminal className="w-3.5 h-3.5" /> <span>urls.py</span>
           </button>
-          <button onClick={() => setActiveTab('settings')} className={`px-3 py-1.5 rounded-lg font-mono flex items-center space-x-1.5 transition-colors ${activeTab === 'settings' ? 'bg-blue-600 text-white font-bold' : 'text-slate-400 hover:bg-slate-800'}`}>
+          <button onClick={() => setActiveTab('settings')} className={`px-3 py-1.5 rounded-lg font-mono flex items-center space-x-1.5 transition-colors ${activeTab === 'settings' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400 hover:bg-slate-800'}`}>
             <Shield className="w-3.5 h-3.5" /> <span>settings.py</span>
           </button>
-          <button onClick={() => setActiveTab('reqs')} className={`px-3 py-1.5 rounded-lg font-mono flex items-center space-x-1.5 transition-colors ${activeTab === 'reqs' ? 'bg-blue-600 text-white font-bold' : 'text-slate-400 hover:bg-slate-800'}`}>
+          <button onClick={() => setActiveTab('reqs')} className={`px-3 py-1.5 rounded-lg font-mono flex items-center space-x-1.5 transition-colors ${activeTab === 'reqs' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400 hover:bg-slate-800'}`}>
             <BookOpen className="w-3.5 h-3.5" /> <span>requirements.txt</span>
           </button>
-          <button onClick={() => setActiveTab('readme')} className={`px-3 py-1.5 rounded-lg font-mono flex items-center space-x-1.5 transition-colors ${activeTab === 'readme' ? 'bg-blue-600 text-white font-bold' : 'text-slate-400 hover:bg-slate-800'}`}>
+          <button onClick={() => setActiveTab('readme')} className={`px-3 py-1.5 rounded-lg font-mono flex items-center space-x-1.5 transition-colors ${activeTab === 'readme' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400 hover:bg-slate-800'}`}>
             <Download className="w-3.5 h-3.5" /> <span>README.md</span>
           </button>
         </div>
@@ -278,7 +278,7 @@ requests>=2.31.0
         {/* Блок кода */}
         <div className="flex-1 p-6 overflow-y-auto bg-[#0d1117] font-mono text-sm leading-relaxed text-slate-200 relative">
           <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-800 text-xs text-slate-400">
-            <span>Файл: <strong className="text-amber-400">{currentSnippet.title}</strong></span>
+            <span>Файл: <strong className="text-emerald-400">{currentSnippet.title}</strong></span>
             <button
               onClick={() => handleCopy(currentSnippet.content)}
               className="flex items-center space-x-1.5 px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-white transition-colors"
@@ -295,7 +295,7 @@ requests>=2.31.0
         {/* Подвал */}
         <div className="bg-slate-950 px-6 py-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
           <span>Стек: Python 3.10+ / Django 4.x / PostgreSQL 14+ / Bootstrap 5 / ORM</span>
-          <button onClick={onClose} className="px-4 py-1.5 rounded bg-blue-700 text-white hover:bg-blue-600 font-sans font-semibold">
+          <button onClick={onClose} className="px-4 py-1.5 rounded bg-emerald-700 text-white hover:bg-emerald-600 font-sans font-semibold">
             Закрыть окно
           </button>
         </div>

@@ -76,14 +76,14 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ db, user, onRefresh })
     <div className="space-y-8 pb-12">
       
       {/* Шапка галереи */}
-      <div className="bg-gradient-to-r from-[#0a2a5e] via-blue-900 to-indigo-950 rounded-3xl p-8 sm:p-10 text-white shadow-xl border border-[#d4af37]/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      <div className="bg-gradient-to-r from-[#052e16] via-emerald-900 to-indigo-950 rounded-3xl p-8 sm:p-10 text-white shadow-xl border border-[#10b981]/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="space-y-2 max-w-2xl">
-          <div className="inline-flex items-center space-x-2 text-[#d4af37] text-xs font-bold uppercase tracking-wider font-mono">
+          <div className="inline-flex items-center space-x-2 text-[#10b981] text-xs font-bold uppercase tracking-wider font-mono">
             <Camera className="w-4 h-4" />
             <span>Медиа-летопись НИРС</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Научная фото- и видеогалерея <span className="text-[#d4af37]">ФЭМ</span></h2>
-          <p className="text-blue-100 text-xs sm:text-sm leading-relaxed opacity-90">
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Научная фото- и видеогалерея <span className="text-[#10b981]">ФЭМ</span></h2>
+          <p className="text-emerald-100 text-xs sm:text-sm leading-relaxed opacity-90">
             Запечатлённые моменты заседаний СНИЛ, конференций и дискуссионных клубов. Каждый участник может добавить свой фоторепортаж!
           </p>
         </div>
@@ -93,7 +93,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ db, user, onRefresh })
             href="https://2526.snofembseu.tech"
             target="_blank"
             rel="noreferrer"
-            className="px-6 py-3.5 rounded-2xl bg-[#d4af37] text-[#0a2a5e] font-black text-xs sm:text-sm shadow-md hover:brightness-110 flex items-center justify-center space-x-2 transition-all active:scale-95"
+            className="px-6 py-3.5 rounded-2xl bg-[#10b981] text-[#052e16] font-black text-xs sm:text-sm shadow-md hover:brightness-110 flex items-center justify-center space-x-2 transition-all active:scale-95"
           >
             <span>Официальный архив СНО</span>
             <ExternalLink className="w-5 h-5" />
@@ -102,9 +102,9 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ db, user, onRefresh })
           {user && (
             <button
               onClick={() => setShowUploadModal(true)}
-              className="px-6 py-3.5 rounded-2xl bg-blue-950/80 border border-blue-400/30 text-white font-bold text-xs sm:text-sm hover:bg-blue-900 flex items-center justify-center space-x-2 transition-all active:scale-95"
+              className="px-6 py-3.5 rounded-2xl bg-blue-950/80 border border-emerald-400/30 text-white font-bold text-xs sm:text-sm hover:bg-emerald-900 flex items-center justify-center space-x-2 transition-all active:scale-95"
             >
-              <Plus className="w-5 h-5 text-[#d4af37]" />
+              <Plus className="w-5 h-5 text-[#10b981]" />
               <span>Загрузить фото</span>
             </button>
           )}
@@ -118,17 +118,17 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ db, user, onRefresh })
             <div className="relative aspect-video overflow-hidden bg-slate-900">
               <img src={item.image_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
               <div className="absolute top-3 right-3 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md text-white text-[10px] font-mono uppercase flex items-center space-x-1">
-                {item.type === 'video' ? <Video className="w-3 h-3 text-red-400" /> : <ImageIcon className="w-3 h-3 text-[#d4af37]" />}
+                {item.type === 'video' ? <Video className="w-3 h-3 text-green-400" /> : <ImageIcon className="w-3 h-3 text-[#10b981]" />}
                 <span>{item.type}</span>
               </div>
             </div>
 
             <div className="p-5 space-y-2">
               <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 uppercase tracking-wider">{item.date} • {item.event_name}</span>
-              <h3 className="font-bold text-sm text-[#0a2a5e] dark:text-blue-300 line-clamp-2 leading-snug">{item.title}</h3>
+              <h3 className="font-bold text-sm text-[#052e16] dark:text-emerald-300 line-clamp-2 leading-snug">{item.title}</h3>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between font-mono">
                 <span>Автор: {item.uploader_name}</span>
-                <span className="text-blue-600 dark:text-blue-400 font-bold">БГЭУ</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-bold">БГЭУ</span>
               </p>
             </div>
           </div>
@@ -138,13 +138,13 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ db, user, onRefresh })
       {/* Модалка загрузки */}
       {showUploadModal && createPortal(
         <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-blue-200 dark:border-blue-900 transition-colors">
-            <div className="bg-[#0a2a5e] p-6 text-white flex items-center justify-between">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-emerald-200 dark:border-emerald-900 transition-colors">
+            <div className="bg-[#052e16] p-6 text-white flex items-center justify-between">
               <h3 className="font-bold text-base flex items-center space-x-2">
-                <Upload className="w-5 h-5 text-[#d4af37]" />
+                <Upload className="w-5 h-5 text-[#10b981]" />
                 <span>Загрузка фото в архив ФЭМ</span>
               </h3>
-              <button onClick={() => setShowUploadModal(false)} className="p-2 rounded-lg text-blue-200 hover:text-white transition-colors"><X className="w-6 h-6" /></button>
+              <button onClick={() => setShowUploadModal(false)} className="p-2 rounded-lg text-emerald-200 hover:text-white transition-colors"><X className="w-6 h-6" /></button>
             </div>
 
             <form onSubmit={handleUpload} className="p-6 space-y-4">
@@ -162,7 +162,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ db, user, onRefresh })
               </div>
               <div className="pt-2 flex flex-col sm:flex-row gap-3">
                 <button type="button" onClick={() => setShowUploadModal(false)} className="px-6 py-3 text-sm font-bold border dark:border-slate-700 rounded-2xl order-2 sm:order-1 text-slate-600 dark:text-slate-400">Отмена</button>
-                <button type="submit" className="flex-1 py-3 bg-[#d4af37] text-[#0a2a5e] font-black text-sm rounded-2xl shadow-lg order-1 sm:order-2 active:scale-95">Опубликовать</button>
+                <button type="submit" className="flex-1 py-3 bg-[#10b981] text-[#052e16] font-black text-sm rounded-2xl shadow-lg order-1 sm:order-2 active:scale-95">Опубликовать</button>
               </div>
             </form>
           </div>

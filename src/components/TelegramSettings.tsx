@@ -40,7 +40,7 @@ export const TelegramSettings: React.FC<TelegramSettingsProps> = ({ user, onUpda
             <Check className="w-5 h-5" />
             <h3 className="font-bold text-slate-800 dark:text-white">Ваш Telegram успешно привязан</h3>
           </div>
-          <button onClick={() => setIsSaved(false)} className="text-xs text-blue-600 hover:underline">Изменить</button>
+          <button onClick={() => setIsSaved(false)} className="text-xs text-emerald-600 hover:underline">Изменить</button>
         </div>
         <div className="flex gap-2">
           <button 
@@ -59,18 +59,18 @@ export const TelegramSettings: React.FC<TelegramSettingsProps> = ({ user, onUpda
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
       <div className="flex items-center space-x-3">
-        <Send className="w-5 h-5 text-blue-600" />
+        <Send className="w-5 h-5 text-emerald-600" />
         <h3 className="font-bold text-slate-800 dark:text-white">Интеграция с Telegram</h3>
       </div>
       
-      <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl text-xs text-blue-700 dark:text-blue-300 space-y-2">
+      <div className="bg-blue-50 dark:bg-emerald-900/20 p-4 rounded-xl text-xs text-emerald-700 dark:text-emerald-300 space-y-2">
         <div className="flex items-start space-x-2">
           <Info className="w-4 h-4 mt-0.5 shrink-0" />
           <p>Чтобы получать уведомления, укажите ваш Telegram Chat ID. Его можно получить следующими способами:</p>
         </div>
-        <ul className="list-disc pl-6 space-y-1 text-[11px] text-blue-600 dark:text-blue-400">
-          <li>Напишите вашему боту в Telegram команду <span className="font-mono bg-blue-100 dark:bg-blue-800 px-1 rounded">/start</span> (если он запущен на сервере с поддержкой команд).</li>
-          <li><strong>Если сайт запущен на Vercel (Serverless):</strong> бот в безрежимном (Serverless) формате не принимает сообщения. Вы можете моментально узнать свой ID через публичных ботов, например: <a href="https://t.me/GetMyChatIdBot" target="_blank" rel="noopener noreferrer" className="underline font-bold hover:text-blue-800">@GetMyChatIdBot</a> или <a href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer" className="underline font-bold hover:text-blue-800">@userinfobot</a>.</li>
+        <ul className="list-disc pl-6 space-y-1 text-[11px] text-emerald-600 dark:text-emerald-400">
+          <li>Напишите вашему боту в Telegram команду <span className="font-mono bg-emerald-100 dark:bg-emerald-800 px-1 rounded">/start</span> (если он запущен на сервере с поддержкой команд).</li>
+          <li><strong>Если сайт запущен на Vercel (Serverless):</strong> бот в безрежимном (Serverless) формате не принимает сообщения. Вы можете моментально узнать свой ID через публичных ботов, например: <a href="https://t.me/GetMyChatIdBot" target="_blank" rel="noopener noreferrer" className="underline font-bold hover:text-emerald-800">@GetMyChatIdBot</a> или <a href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer" className="underline font-bold hover:text-emerald-800">@userinfobot</a>.</li>
         </ul>
       </div>
 
@@ -84,7 +84,7 @@ export const TelegramSettings: React.FC<TelegramSettingsProps> = ({ user, onUpda
         />
         <button 
           onClick={handleSave}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold flex items-center justify-center space-x-2 transition-colors"
+          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-bold flex items-center justify-center space-x-2 transition-colors"
         >
           <Check className="w-4 h-4" />
           <span>Сохранить</span>

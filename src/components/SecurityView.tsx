@@ -64,7 +64,7 @@ export const SecurityView: React.FC<SecurityViewProps> = ({ user, onRefresh }) =
         <div className="inline-flex items-center justify-center p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-2xl mb-4">
           <Shield className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
         </div>
-        <h1 className="text-3xl font-black text-[#0a2a5e] dark:text-blue-200 mb-2">Безопасность аккаунта</h1>
+        <h1 className="text-3xl font-black text-[#052e16] dark:text-emerald-200 mb-2">Безопасность аккаунта</h1>
         <p className="text-slate-500 dark:text-slate-400">
           Установите надежный пароль для дополнительной защиты вашего цифрового портфолио SNO.PORTAL.
         </p>
@@ -85,7 +85,7 @@ export const SecurityView: React.FC<SecurityViewProps> = ({ user, onRefresh }) =
                 className={`mb-6 p-4 rounded-2xl flex items-center space-x-3 ${
                   message.type === 'success' 
                     ? 'bg-emerald-50 border border-emerald-200 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-400' 
-                    : 'bg-rose-50 border border-rose-200 text-rose-700 dark:bg-rose-900/20 dark:border-rose-800 dark:text-rose-400'
+                    : 'bg-rose-50 border border-emerald-200 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-400'
                 }`}
               >
                 {message.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
@@ -166,7 +166,7 @@ export const SecurityView: React.FC<SecurityViewProps> = ({ user, onRefresh }) =
                 className={`flex items-center space-x-2 px-8 py-4 rounded-2xl font-black text-sm shadow-xl transition-all active:scale-95 ${
                   isSubmitting 
                   ? 'bg-slate-100 text-slate-400 cursor-not-allowed dark:bg-slate-800' 
-                  : 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white hover:brightness-110 shadow-indigo-200 dark:shadow-none'
+                  : 'bg-gradient-to-r from-indigo-600 to-emerald-600 text-white hover:brightness-110 shadow-indigo-200 dark:shadow-none'
                 }`}
               >
                 <Save className="w-5 h-5" />
@@ -182,7 +182,7 @@ export const SecurityView: React.FC<SecurityViewProps> = ({ user, onRefresh }) =
               <Lock className="w-5 h-5 text-indigo-500" />
             </div>
             <div>
-              <h4 className="text-sm font-bold text-[#0a2a5e] dark:text-blue-200 mb-1">Зачем устанавливать пароль?</h4>
+              <h4 className="text-sm font-bold text-[#052e16] dark:text-emerald-200 mb-1">Зачем устанавливать пароль?</h4>
               <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                 По умолчанию вход осуществляется только по номеру зачётки. Установка пароля добавит второй фактор защиты для ваших научных данных, публикаций и баланса баллов.
               </p>

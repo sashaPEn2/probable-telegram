@@ -530,25 +530,25 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fadeIn">
       {/* View Header */}
-      <div className="bg-gradient-to-r from-blue-900 to-indigo-950 rounded-3xl p-6 sm:p-10 text-white shadow-xl mb-8 relative overflow-hidden border border-yellow-500/20">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl -ml-10 -mb-10"></div>
+      <div className="bg-gradient-to-r from-emerald-900 to-indigo-950 rounded-3xl p-6 sm:p-10 text-white shadow-xl mb-8 relative overflow-hidden border border-emerald-500/20">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-600/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl -ml-10 -mb-10"></div>
         <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div>
             <div className="flex items-center space-x-3 mb-2">
-              <span className="p-2 bg-yellow-500/20 rounded-xl text-yellow-400">
+              <span className="p-2 bg-emerald-600/20 rounded-xl text-emerald-400">
                 <Trophy className="w-6 h-6" />
               </span>
-              <span className="text-xs font-black uppercase tracking-widest text-yellow-400 font-mono">Интеллектуальный Клуб</span>
+              <span className="text-xs font-black uppercase tracking-widest text-emerald-400 font-mono">Интеллектуальный Клуб</span>
             </div>
             <h1 className="text-2xl sm:text-4xl font-black tracking-tight">Викторины СНО ФЭМ</h1>
-            <p className="text-blue-200/80 mt-2 text-sm max-w-xl">Участвуйте в регулярных викторинах от куратора, отвечайте правильно быстрее всех, занимайте призовые места и получайте реальные рейтинговые баллы!</p>
+            <p className="text-emerald-200/80 mt-2 text-sm max-w-xl">Участвуйте в регулярных викторинах от куратора, отвечайте правильно быстрее всех, занимайте призовые места и получайте реальные рейтинговые баллы!</p>
           </div>
           {isAdmin && (
-            <div className="flex bg-blue-950/60 p-1.5 rounded-2xl border border-blue-800 self-stretch md:self-auto">
+            <div className="flex bg-blue-950/60 p-1.5 rounded-2xl border border-emerald-800 self-stretch md:self-auto">
               <button 
                 onClick={() => setActiveSubTab('all')}
-                className={`flex-1 md:flex-initial px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 ${activeSubTab === 'all' ? 'bg-yellow-500 text-blue-950 shadow-md' : 'text-blue-200 hover:text-white'}`}
+                className={`flex-1 md:flex-initial px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 ${activeSubTab === 'all' ? 'bg-emerald-600 text-white shadow-md' : 'text-emerald-200 hover:text-white'}`}
               >
                 <BookOpen className="w-3.5 h-3.5" />
                 <span>Все викторины</span>
@@ -562,7 +562,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                   ]);
                   setExpandedQuestionIdx(0);
                 }}
-                className={`flex-1 md:flex-initial px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 ${activeSubTab === 'create' ? 'bg-yellow-500 text-blue-950 shadow-md' : 'text-blue-200 hover:text-white'}`}
+                className={`flex-1 md:flex-initial px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 ${activeSubTab === 'create' ? 'bg-emerald-600 text-white shadow-md' : 'text-emerald-200 hover:text-white'}`}
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Создать новую</span>
@@ -576,7 +576,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
         /* Create Quiz Form Container */
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-xl mb-8">
           <div className="flex items-center space-x-3 mb-6">
-            <Sparkles className="w-5 h-5 text-yellow-500" />
+            <Sparkles className="w-5 h-5 text-emerald-500" />
             <h2 className="text-xl font-black text-slate-800 dark:text-white">Конструктор викторины</h2>
           </div>
           <form onSubmit={handleCreateQuiz} className="space-y-6">
@@ -590,7 +590,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                 placeholder="Например: Основы макроэкономики БГЭУ"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:ring-2 focus:ring-yellow-500 outline-none text-sm font-medium"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium"
               />
             </div>
 
@@ -608,7 +608,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                     key={qIdx}
                     className={`border rounded-2xl overflow-hidden transition-all duration-200 ${
                       isExpanded 
-                        ? 'border-yellow-500 ring-1 ring-yellow-500/20 bg-white dark:bg-slate-900 shadow-md' 
+                        ? 'border-emerald-500 ring-1 ring-yellow-500/20 bg-white dark:bg-slate-900 shadow-md' 
                         : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 hover:bg-slate-100/50'
                     }`}
                   >
@@ -619,7 +619,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                     >
                       <div className="flex items-center space-x-3 min-w-0">
                         <span className={`w-6 h-6 rounded-lg text-[11px] font-black flex items-center justify-center ${
-                          isExpanded ? 'bg-yellow-500 text-blue-950' : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                          isExpanded ? 'bg-emerald-600 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                         }`}>
                           {qIdx + 1}
                         </span>
@@ -635,7 +635,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                               e.stopPropagation();
                               handleRemoveQuestion(qIdx);
                             }}
-                            className="p-1.5 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg text-slate-400 hover:text-red-500 transition-colors"
+                            className="p-1.5 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg text-slate-400 hover:text-green-500 transition-colors"
                             title="Удалить вопрос"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -658,7 +658,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                               placeholder="Какая наука изучает наиболее общие законы развития природы, общества и мышления?"
                               value={q.question}
                               onChange={(e) => updateQuestion(qIdx, { question: e.target.value })}
-                              className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-white focus:ring-2 focus:ring-yellow-500 outline-none text-xs font-medium resize-none"
+                              className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none text-xs font-medium resize-none"
                             />
                           </div>
 
@@ -669,7 +669,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                                 <button
                                   type="button"
                                   onClick={() => handleAddOption(qIdx)}
-                                  className="text-[10px] font-black text-blue-600 dark:text-blue-400 hover:underline flex items-center space-x-1"
+                                  className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 hover:underline flex items-center space-x-1"
                                 >
                                   <Plus className="w-3 h-3" />
                                   <span>Добавить вариант</span>
@@ -686,7 +686,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                                       name={`correct_option_${qIdx}`}
                                       checked={q.correctOptionIndex === optIdx}
                                       onChange={() => updateQuestion(qIdx, { correctOptionIndex: optIdx })}
-                                      className="w-4 h-4 text-yellow-500 focus:ring-yellow-500"
+                                      className="w-4 h-4 text-emerald-500 focus:ring-blue-500"
                                     />
                                   </label>
                                   <input
@@ -697,7 +697,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                                     onChange={(e) => handleOptionTextChange(qIdx, optIdx, e.target.value)}
                                     className={`flex-1 px-3 py-1.5 text-xs rounded-xl border ${
                                       q.correctOptionIndex === optIdx 
-                                        ? 'border-yellow-500 bg-yellow-500/5 font-bold' 
+                                        ? 'border-emerald-500 bg-emerald-600/5 font-bold' 
                                         : 'border-slate-200 dark:border-slate-800'
                                     } bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-white outline-none`}
                                   />
@@ -705,7 +705,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                                     <button
                                       type="button"
                                       onClick={() => handleRemoveOption(qIdx, optIdx)}
-                                      className="p-1.5 text-slate-400 hover:text-red-500 transition-colors"
+                                      className="p-1.5 text-slate-400 hover:text-green-500 transition-colors"
                                     >
                                       <Trash2 className="w-3.5 h-3.5" />
                                     </button>
@@ -740,8 +740,8 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                               }}
                               className={`border-2 border-dashed rounded-2xl p-4 text-center cursor-pointer transition-all flex flex-col items-center justify-center ${
                                 dragOverIdx === qIdx 
-                                  ? 'border-yellow-500 bg-yellow-500/10' 
-                                  : 'border-slate-200 dark:border-slate-850 hover:border-yellow-500 hover:bg-slate-50 dark:hover:bg-slate-850'
+                                  ? 'border-emerald-500 bg-emerald-600/10' 
+                                  : 'border-slate-200 dark:border-slate-850 hover:border-emerald-500 hover:bg-slate-50 dark:hover:bg-slate-850'
                               }`}
                             >
                               <input 
@@ -766,7 +766,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                                   <button 
                                     type="button"
                                     onClick={() => clearQuestionMedia(qIdx)}
-                                    className="absolute top-1 right-1 p-1 bg-red-600 text-white rounded-full hover:bg-red-700 shadow-md transition-colors z-10"
+                                    className="absolute top-1 right-1 p-1 bg-green-600 text-white rounded-full hover:bg-green-700 shadow-md transition-colors z-10"
                                   >
                                     <X className="w-3 h-3" />
                                   </button>
@@ -797,7 +797,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                               placeholder="Пояснение правильного ответа для студентов"
                               value={q.clarification}
                               onChange={(e) => updateQuestion(qIdx, { clarification: e.target.value })}
-                              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-white focus:ring-2 focus:ring-yellow-500 outline-none text-xs font-medium resize-none"
+                              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none text-xs font-medium resize-none"
                             />
                           </div>
                         </div>
@@ -810,7 +810,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
               <button
                 type="button"
                 onClick={handleAddQuestion}
-                className="w-full py-3.5 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl hover:border-yellow-500 hover:bg-yellow-500/5 text-slate-500 hover:text-yellow-600 font-bold text-xs flex items-center justify-center space-x-1.5 transition-all"
+                className="w-full py-3.5 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl hover:border-emerald-500 hover:bg-emerald-600/5 text-slate-500 hover:text-emerald-600 font-bold text-xs flex items-center justify-center space-x-1.5 transition-all"
               >
                 <Plus className="w-4 h-4" />
                 <span>Добавить еще один вопрос (неограничено)</span>
@@ -831,7 +831,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                       onChange={(e) => setPlace1Points(parseInt(e.target.value) || 0)}
                       className="w-full pl-3 pr-8 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-bold text-slate-800 dark:text-white text-center"
                     />
-                    <Coins className="w-3.5 h-3.5 text-yellow-500 absolute right-3 top-3.5" />
+                    <Coins className="w-3.5 h-3.5 text-emerald-500 absolute right-3 top-3.5" />
                   </div>
                 </div>
                 <div>
@@ -857,7 +857,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                       onChange={(e) => setPlace3Points(parseInt(e.target.value) || 0)}
                       className="w-full pl-3 pr-8 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-bold text-slate-800 dark:text-white text-center"
                     />
-                    <Coins className="w-3.5 h-3.5 text-amber-600 absolute right-3 top-3.5" />
+                    <Coins className="w-3.5 h-3.5 text-emerald-600 absolute right-3 top-3.5" />
                   </div>
                 </div>
               </div>
@@ -873,7 +873,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
               </button>
               <button
                 type="submit"
-                className="px-6 py-3 rounded-xl bg-gradient-to-r from-yellow-500 to-amber-600 text-blue-950 font-black text-xs hover:brightness-110 shadow-lg transition-all flex items-center space-x-2"
+                className="px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 text-blue-950 font-black text-xs hover:brightness-110 shadow-lg transition-all flex items-center space-x-2"
               >
                 <Plus className="w-4 h-4" />
                 <span>Запустить викторину</span>
@@ -889,10 +889,10 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
           <div className="lg:col-span-2 space-y-6">
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-xl font-black text-slate-800 dark:text-white flex items-center space-x-2">
-                <Activity className="w-5 h-5 text-blue-500 animate-pulse" />
+                <Activity className="w-5 h-5 text-emerald-500 animate-pulse" />
                 <span>Актуальные викторины</span>
               </h2>
-              <span className="text-xs font-bold px-2.5 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-300 rounded-full">
+              <span className="text-xs font-bold px-2.5 py-1 bg-blue-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-300 rounded-full">
                 {db.quizzes?.length || 0} всего
               </span>
             </div>
@@ -928,7 +928,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                             />
                           ) : (
                             <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900 text-white relative">
-                              <Video className="w-8 h-8 text-yellow-400" />
+                              <Video className="w-8 h-8 text-emerald-400" />
                               <span className="text-[9px] font-bold mt-1 font-mono uppercase tracking-wider">Видео</span>
                             </div>
                           )}
@@ -945,19 +945,19 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                                 <span>Доступна</span>
                               </span>
                             ) : (
-                              <span className="inline-flex items-center space-x-1 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 bg-red-500/10 text-red-600 rounded-md">
+                              <span className="inline-flex items-center space-x-1 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 bg-green-500/10 text-green-600 rounded-md">
                                 <Lock className="w-3 h-3" />
                                 <span>Закрыта</span>
                               </span>
                             )}
 
                             {quiz.resultsPublished ? (
-                              <span className="inline-flex items-center space-x-1 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 bg-blue-500/10 text-blue-600 rounded-md">
+                              <span className="inline-flex items-center space-x-1 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 bg-emerald-500/10 text-emerald-600 rounded-md">
                                 <Trophy className="w-3 h-3" />
                                 <span>Итоги подведены</span>
                               </span>
                             ) : (
-                              <span className="inline-flex items-center space-x-1 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 bg-amber-500/10 text-amber-600 rounded-md">
+                              <span className="inline-flex items-center space-x-1 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 bg-emerald-600/10 text-emerald-600 rounded-md">
                                 <Clock className="w-3 h-3" />
                                 <span>Ожидает результатов</span>
                               </span>
@@ -1011,7 +1011,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                                       3: quiz.pointsForPlaces.find(p => p.place === 3)?.points ?? 20
                                     });
                                   }}
-                                  className="px-3.5 py-1.5 border border-blue-250 text-blue-600 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-950/20 rounded-xl text-xs font-black flex items-center space-x-1.5"
+                                  className="px-3.5 py-1.5 border border-blue-250 text-emerald-600 hover:bg-blue-50 dark:border-emerald-800 dark:text-emerald-400 dark:hover:bg-blue-950/20 rounded-xl text-xs font-black flex items-center space-x-1.5"
                                 >
                                   <Users className="w-3.5 h-3.5" />
                                   <span>Итоги и ответы</span>
@@ -1019,7 +1019,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                                 <button
                                   type="button"
                                   onClick={() => handleDeleteQuiz(quiz.id)}
-                                  className="p-2 border border-red-200 text-red-500 hover:bg-red-50 dark:border-red-900/20 dark:hover:bg-red-950/20 rounded-xl"
+                                  className="p-2 border border-green-200 text-green-500 hover:bg-red-50 dark:border-green-900/20 dark:hover:bg-red-950/20 rounded-xl"
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </button>
@@ -1031,9 +1031,9 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                                 {quiz.resultsPublished ? (
                                   <button
                                     onClick={() => handleOpenResultsModal(quiz)}
-                                    className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center space-x-1.5 shadow-md"
+                                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center space-x-1.5 shadow-md"
                                   >
-                                    <Trophy className="w-3.5 h-3.5 text-yellow-300 animate-bounce" />
+                                    <Trophy className="w-3.5 h-3.5 text-emerald-400 animate-bounce" />
                                     <span>Итоги викторины</span>
                                   </button>
                                 ) : hasAnswered ? (
@@ -1043,7 +1043,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                                 ) : quiz.status === 'open' ? (
                                   <button
                                     onClick={() => handleTakeQuiz(quiz)}
-                                    className="px-4 py-2 rounded-xl bg-yellow-500 hover:bg-yellow-600 text-blue-950 font-black text-xs flex items-center space-x-1.5 shadow-md"
+                                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center space-x-1.5 shadow-md"
                                   >
                                     <span>Пройти викторину</span>
                                     <ChevronRight className="w-3.5 h-3.5" />
@@ -1072,28 +1072,28 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
 
           {/* Right Sidebar - Info/Rules */}
           <div className="space-y-6">
-            <div className="bg-gradient-to-br from-yellow-500/10 via-amber-500/5 to-transparent rounded-3xl p-6 border border-yellow-500/20">
-              <Trophy className="w-8 h-8 text-yellow-500 mb-3" />
+            <div className="bg-gradient-to-br from-emerald-600/10 via-amber-500/5 to-transparent rounded-3xl p-6 border border-emerald-500/20">
+              <Trophy className="w-8 h-8 text-emerald-500 mb-3" />
               <h3 className="text-base font-black text-slate-800 dark:text-white">Правила участия</h3>
               <ul className="mt-3 space-y-3 text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
                 <li className="flex items-start space-x-2">
-                  <span className="text-yellow-500 font-black mt-0.5">•</span>
+                  <span className="text-emerald-500 font-black mt-0.5">•</span>
                   <span>Викторина теперь содержит <strong>несколько вопросов</strong> с мультивыбором.</span>
                 </li>
                 <li className="flex items-start space-x-2">
-                  <span className="text-yellow-500 font-black mt-0.5">•</span>
+                  <span className="text-emerald-500 font-black mt-0.5">•</span>
                   <span>Вы можете отправить ответ только <strong>один раз</strong> для каждой запущенной викторины.</span>
                 </li>
                 <li className="flex items-start space-x-2">
-                  <span className="text-yellow-500 font-black mt-0.5">•</span>
+                  <span className="text-emerald-500 font-black mt-0.5">•</span>
                   <span>Места распределяются по <strong>количеству правильных ответов</strong>, а при равном количестве - по <strong>скорости прохождения</strong>.</span>
                 </li>
                 <li className="flex items-start space-x-2">
-                  <span className="text-yellow-500 font-black mt-0.5">•</span>
+                  <span className="text-emerald-500 font-black mt-0.5">•</span>
                   <span>Победители получают официальные дипломы СНО БГЭУ ФЭМ в портфолио и весомую прибавку к рейтинговым баллам.</span>
                 </li>
                 <li className="flex items-start space-x-2">
-                  <span className="text-yellow-500 font-black mt-0.5">•</span>
+                  <span className="text-emerald-500 font-black mt-0.5">•</span>
                   <span>По окончании викторины всем участникам открывается подробный разбор и правильный ответ к каждому вопросу.</span>
                 </li>
               </ul>
@@ -1102,7 +1102,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
             {/* Winners Board */}
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-md">
               <div className="flex items-center space-x-2 mb-4">
-                <Award className="w-5 h-5 text-amber-500" />
+                <Award className="w-5 h-5 text-emerald-500" />
                 <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider">Последние призеры</h3>
               </div>
               
@@ -1136,12 +1136,12 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                           <p className="text-xs font-black text-slate-800 dark:text-white truncate">{w.name}</p>
                           <div className="flex items-center space-x-1">
                             <span className={`text-[9px] font-black px-1 rounded ${
-                              w.place === 1 ? 'bg-yellow-500/20 text-yellow-600' : 
-                              w.place === 2 ? 'bg-slate-300/30 text-slate-600' : 'bg-amber-600/10 text-amber-700'
+                              w.place === 1 ? 'bg-emerald-600/20 text-emerald-600' : 
+                              w.place === 2 ? 'bg-slate-300/30 text-slate-600' : 'bg-amber-600/10 text-emerald-700'
                             }`}>
                               {w.place}м
                             </span>
-                            <span className="text-xs font-bold text-amber-500 font-mono">+{w.points}</span>
+                            <span className="text-xs font-bold text-emerald-500 font-mono">+{w.points}</span>
                           </div>
                         </div>
                         <p className="text-[10px] text-slate-400 truncate mt-0.5">{w.quizTitle}</p>
@@ -1165,9 +1165,9 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
           <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-850 flex flex-col max-h-[90vh]">
             
             {/* Header / progress info */}
-            <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-gradient-to-r from-blue-900 to-blue-950 text-white">
+            <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-gradient-to-r from-emerald-900 to-blue-950 text-white">
               <div className="flex items-center space-x-2">
-                <ClipboardCheck className="w-5 h-5 text-yellow-400" />
+                <ClipboardCheck className="w-5 h-5 text-emerald-400" />
                 <span className="text-sm font-black uppercase tracking-wider font-mono">
                   Вопрос {currentTakeIdx + 1} из {quizQuestions.length}
                 </span>
@@ -1187,7 +1187,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
             {/* Progress bar */}
             <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5">
               <div 
-                className="bg-yellow-500 h-full transition-all duration-300" 
+                className="bg-emerald-600 h-full transition-all duration-300" 
                 style={{ width: `${((currentTakeIdx + 1) / quizQuestions.length) * 100}%` }}
               />
             </div>
@@ -1233,13 +1233,13 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                       onClick={() => handleSelectAnswer(currentQId, index)}
                       className={`w-full p-4 rounded-2xl text-left border font-medium text-sm transition-all flex items-center justify-between ${
                         isSelected 
-                          ? 'border-yellow-500 bg-yellow-500/5 text-slate-900 dark:text-white font-bold ring-2 ring-yellow-500/30' 
+                          ? 'border-emerald-500 bg-emerald-600/5 text-slate-900 dark:text-white font-bold ring-2 ring-yellow-500/30' 
                           : 'border-slate-200 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-950 dark:hover:bg-slate-850 text-slate-700 dark:text-slate-300'
                       }`}
                     >
                       <span>{option}</span>
                       <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${
-                        isSelected ? 'border-yellow-500 bg-yellow-500' : 'border-slate-300 dark:border-slate-700'
+                        isSelected ? 'border-emerald-500 bg-emerald-600' : 'border-slate-300 dark:border-slate-700'
                       }`}>
                         {isSelected && <Check className="w-3 h-3 text-blue-950 font-black" />}
                       </div>
@@ -1272,7 +1272,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                     className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 ${
                       selectedAnswers[quizQuestions[currentTakeIdx]?.id] === undefined
                         ? 'bg-slate-150 text-slate-400 cursor-not-allowed dark:bg-slate-800'
-                        : 'bg-blue-600 hover:bg-blue-700 text-white shadow-md'
+                        : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md'
                     }`}
                   >
                     <span>Далее</span>
@@ -1285,7 +1285,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                     className={`px-5 py-2.5 rounded-xl text-xs font-black transition-all flex items-center space-x-2 shadow-md ${
                       selectedAnswers[quizQuestions[currentTakeIdx]?.id] === undefined
                         ? 'bg-slate-150 text-slate-400 cursor-not-allowed dark:bg-slate-800'
-                        : 'bg-yellow-500 hover:bg-yellow-600 text-blue-950 font-black'
+                        : 'bg-emerald-600 hover:bg-emerald-700 text-white font-black'
                     }`}
                   >
                     <span>Завершить и отправить</span>
@@ -1304,9 +1304,9 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
         <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
           <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-3xl w-full overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-850 flex flex-col max-h-[92vh]">
             
-            <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-gradient-to-r from-blue-900 to-indigo-950 text-white">
+            <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-gradient-to-r from-emerald-900 to-indigo-950 text-white">
               <div className="flex items-center space-x-2">
-                <Trophy className="w-5 h-5 text-yellow-400" />
+                <Trophy className="w-5 h-5 text-emerald-400" />
                 <span className="text-sm font-black uppercase tracking-wider">Результаты викторины</span>
               </div>
               <button 
@@ -1327,8 +1327,8 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
               {user && activeResultsQuiz.winners?.some(w => w.studentRecordBook === user.record_book_id) && (() => {
                 const prize = activeResultsQuiz.winners.find(w => w.studentRecordBook === user.record_book_id);
                 return (
-                  <div className="bg-gradient-to-r from-yellow-500/20 via-amber-500/10 to-transparent p-5 rounded-2xl border border-yellow-500/30 text-center flex flex-col items-center">
-                    <Trophy className="w-10 h-10 text-yellow-500 mx-auto mb-2 animate-bounce" />
+                  <div className="bg-gradient-to-r from-emerald-600/20 via-amber-500/10 to-transparent p-5 rounded-2xl border border-emerald-500/30 text-center flex flex-col items-center">
+                    <Trophy className="w-10 h-10 text-emerald-500 mx-auto mb-2 animate-bounce" />
                     <h4 className="text-base font-black text-slate-800 dark:text-white">Поздравляем с победой в СНО!</h4>
                     <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 font-medium">
                       Вы ответили верно на наибольшее количество вопросов быстрее остальных и заняли <strong>{prize?.place}-е место</strong> с начислением <strong>+{prize?.points} рейтинговых баллов</strong>!
@@ -1353,7 +1353,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                           setViewingCert(tempCert);
                         }
                       }}
-                      className="mt-4 w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-5 py-2.5 bg-yellow-500 hover:bg-yellow-600 active:scale-95 text-blue-950 font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-md"
+                      className="mt-4 w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-blue-950 font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-md"
                     >
                       <Award className="w-4 h-4" />
                       <span>Смотреть электронный диплом</span>
@@ -1374,7 +1374,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                           <span className="font-mono text-slate-400">Дата: {new Date(attempt.answeredAt).toLocaleString()}</span>
                         </div>
                         <div className="sm:hidden text-right">
-                          <span className="font-black text-blue-600 dark:text-blue-400 text-sm block">
+                          <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm block">
                             {attempt.correctCount !== undefined ? `${attempt.correctCount}/${attempt.totalQuestions}` : (attempt.isCorrect ? '1/1' : '0/1')} верных
                           </span>
                           {attempt.timeSpentMs !== undefined && (
@@ -1383,7 +1383,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                         </div>
                       </div>
                       <div className="hidden sm:block text-right">
-                        <span className="font-black text-blue-600 dark:text-blue-400 text-sm block">
+                        <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm block">
                           {attempt.correctCount !== undefined ? `${attempt.correctCount}/${attempt.totalQuestions}` : (attempt.isCorrect ? '1/1' : '0/1')} верных
                         </span>
                         {attempt.timeSpentMs !== undefined && (
@@ -1410,7 +1410,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                             setViewingCert(tempCert);
                           }
                         }}
-                        className="px-4 py-2.5 bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold rounded-xl transition-all flex items-center justify-center space-x-1.5"
+                        className="px-4 py-2.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold rounded-xl transition-all flex items-center justify-center space-x-1.5"
                       >
                         <Award className="w-3.5 h-3.5" />
                         <span>Смотреть сертификат</span>
@@ -1442,7 +1442,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                     <div key={rq.id} className="border border-slate-150 dark:border-slate-850 rounded-2xl p-4 space-y-3 bg-slate-50/50">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex items-start space-x-2.5">
-                          <span className="w-5.5 h-5.5 rounded-lg bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400 text-xs font-black flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <span className="w-5.5 h-5.5 rounded-lg bg-emerald-100 text-emerald-700 dark:bg-blue-950 dark:text-emerald-400 text-xs font-black flex items-center justify-center flex-shrink-0 mt-0.5">
                             {rqIdx + 1}
                           </span>
                           <h4 className="text-xs font-bold text-slate-800 dark:text-white leading-snug">{rq.question}</h4>
@@ -1451,7 +1451,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                           studentSelectedIdx === rq.correctOptionIndex ? (
                             <span className="text-[10px] font-black px-2 py-0.5 bg-green-500/10 text-green-600 rounded">Верно</span>
                           ) : (
-                            <span className="text-[10px] font-black px-2 py-0.5 bg-red-500/10 text-red-600 rounded">Неверно</span>
+                            <span className="text-[10px] font-black px-2 py-0.5 bg-green-500/10 text-green-600 rounded">Неверно</span>
                           )
                         )}
                       </div>
@@ -1466,7 +1466,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                           if (isCorrect) {
                             btnStyle = "border-green-500 bg-green-500/10 text-green-800 dark:text-green-300 font-bold";
                           } else if (isStudentSelected) {
-                            btnStyle = "border-red-500 bg-red-500/10 text-red-800 dark:text-red-300 font-medium";
+                            btnStyle = "border-green-500 bg-green-500/10 text-green-800 dark:text-green-300 font-medium";
                           }
 
                           return (
@@ -1474,7 +1474,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                               <span>{opt}</span>
                               <div className="flex items-center space-x-1">
                                 {isCorrect && <Check className="w-3.5 h-3.5 text-green-600" />}
-                                {isStudentSelected && !isCorrect && <X className="w-3.5 h-3.5 text-red-600" />}
+                                {isStudentSelected && !isCorrect && <X className="w-3.5 h-3.5 text-green-600" />}
                               </div>
                             </div>
                           );
@@ -1498,7 +1498,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
               {/* Scoreboard table */}
               <div className="space-y-3">
                 <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest flex items-center space-x-1.5">
-                  <Award className="w-4 h-4 text-yellow-500" />
+                  <Award className="w-4 h-4 text-emerald-500" />
                   <span>Таблица победителей викторины</span>
                 </span>
                 
@@ -1520,11 +1520,11 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                         {activeResultsQuiz.winners.map((winner) => (
                           <tr 
                             key={winner.studentRecordBook} 
-                            className={`text-xs ${user && winner.studentRecordBook === user.record_book_id ? 'bg-yellow-500/5 font-bold' : ''}`}
+                            className={`text-xs ${user && winner.studentRecordBook === user.record_book_id ? 'bg-emerald-600/5 font-bold' : ''}`}
                           >
                             <td className="py-3 px-4 text-center">
                               <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-black ${
-                                winner.place === 1 ? 'bg-yellow-500 text-blue-950' :
+                                winner.place === 1 ? 'bg-emerald-600 text-white' :
                                 winner.place === 2 ? 'bg-slate-300 text-slate-800' :
                                 winner.place === 3 ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-600'
                               }`}>
@@ -1539,7 +1539,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                             </td>
                             <td className="py-3 px-3 text-center text-slate-500 font-mono text-[11px]">{winner.group}</td>
                             <td className="py-3 px-3 text-center text-slate-500 font-mono text-[10px] italic">{winner.score || '1/1'}</td>
-                            <td className="py-3 px-4 text-right font-black font-mono text-amber-500">+{winner.points}</td>
+                            <td className="py-3 px-4 text-right font-black font-mono text-emerald-500">+{winner.points}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -1552,7 +1552,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
             <div className="p-5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end bg-slate-50 dark:bg-slate-900/50">
               <button
                 onClick={() => setActiveResultsQuiz(null)}
-                className="px-5 py-2 rounded-xl bg-blue-900 hover:bg-blue-950 text-white font-bold text-xs"
+                className="px-5 py-2 rounded-xl bg-emerald-900 hover:bg-blue-950 text-white font-bold text-xs"
               >
                 Закрыть результаты
               </button>
@@ -1568,7 +1568,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
           <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-4xl w-full overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-850 flex flex-col max-h-[92vh]">
             <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-blue-950 text-white">
               <div className="flex items-center space-x-2">
-                <Users className="w-5 h-5 text-yellow-400" />
+                <Users className="w-5 h-5 text-emerald-400" />
                 <span className="text-sm font-black uppercase tracking-wider">Администрирование викторины</span>
               </div>
               <button 
@@ -1641,8 +1641,8 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                                       correct === total 
                                         ? 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300' 
                                         : correct > 0 
-                                          ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-350'
-                                          : 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300'
+                                          ? 'bg-yellow-100 text-emerald-800 dark:bg-blue-950 dark:text-emerald-300'
+                                          : 'bg-green-100 text-green-800 dark:bg-red-950 dark:text-green-300'
                                     }`}>
                                       {correct}/{total}
                                     </span>
@@ -1665,10 +1665,10 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
 
               {/* Points distribution allocation */}
               {!managingQuiz.resultsPublished && (
-                <div className="bg-yellow-500/5 rounded-2xl border border-yellow-500/25 p-5 space-y-4">
+                <div className="bg-emerald-600/5 rounded-2xl border border-emerald-500/25 p-5 space-y-4">
                   <div className="flex items-center space-x-2">
-                    <Trophy className="w-5 h-5 text-yellow-500" />
-                    <span className="text-xs font-black uppercase tracking-wider text-yellow-600 dark:text-yellow-400 font-mono">Публикация результатов и начисление баллов</span>
+                    <Trophy className="w-5 h-5 text-emerald-500" />
+                    <span className="text-xs font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 font-mono">Публикация результатов и начисление баллов</span>
                   </div>
                   
                   <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
@@ -1709,7 +1709,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-end pt-3 border-t border-yellow-500/10">
+                  <div className="flex items-center justify-end pt-3 border-t border-emerald-500/10">
                     <button
                       type="button"
                       onClick={() => handlePublishResults(managingQuiz)}
@@ -1723,8 +1723,8 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
               )}
 
               {managingQuiz.resultsPublished && (
-                <div className="bg-blue-500/5 rounded-2xl border border-blue-500/25 p-5">
-                  <div className="flex items-center space-x-2 text-blue-600 mb-2">
+                <div className="bg-emerald-500/5 rounded-2xl border border-emerald-500/25 p-5">
+                  <div className="flex items-center space-x-2 text-emerald-600 mb-2">
                     <CheckCircle2 className="w-5 h-5" />
                     <span className="text-xs font-black uppercase tracking-wider">Результаты викторины опубликованы</span>
                   </div>

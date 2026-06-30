@@ -8,11 +8,11 @@ interface UserAvatarProps {
 }
 
 const GRADIENTS = [
-  'from-blue-600 to-indigo-700',
+  'from-emerald-600 to-indigo-700',
   'from-emerald-600 to-teal-700',
   'from-purple-600 to-pink-700',
-  'from-amber-500 to-rose-600',
-  'from-cyan-500 to-blue-600',
+  'from-emerald-600 to-rose-600',
+  'from-cyan-500 to-emerald-600',
   'from-fuchsia-600 to-violet-800',
 ];
 

@@ -120,8 +120,8 @@ export const EventsView: React.FC<EventsViewProps> = ({
       {/* Заголовок и фильтры сетки */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-sm flex flex-col xl:flex-row xl:items-center justify-between gap-6 transition-colors">
         <div>
-          <h2 className="text-2xl font-extrabold text-[#0a2a5e] dark:text-blue-200 flex items-center space-x-2.5">
-            <Calendar className="w-7 h-7 text-[#d4af37]" />
+          <h2 className="text-2xl font-extrabold text-[#052e16] dark:text-emerald-200 flex items-center space-x-2.5">
+            <Calendar className="w-7 h-7 text-[#10b981]" />
             <span>Календарь научных мероприятий ФЭМ</span>
           </h2>
           <p className="text-slate-600 dark:text-slate-400 text-sm mt-1 font-medium">
@@ -141,8 +141,8 @@ export const EventsView: React.FC<EventsViewProps> = ({
               onClick={() => setFilterType(t.val)}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap min-h-[38px] border ${
                 filterType === t.val
-                  ? 'bg-[#0a2a5e] text-[#d4af37] border-[#0a2a5e] shadow-lg scale-105'
-                  : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-[#d4af37] dark:hover:border-[#d4af37] hover:bg-white dark:hover:bg-slate-700'
+                  ? 'bg-[#052e16] text-[#10b981] border-[#052e16] shadow-lg scale-105'
+                  : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-[#10b981] dark:hover:border-[#10b981] hover:bg-white dark:hover:bg-slate-700'
               }`}
             >
               {t.label}
@@ -160,7 +160,7 @@ export const EventsView: React.FC<EventsViewProps> = ({
           <p className="text-slate-500 dark:text-slate-400 font-bold text-lg">Мероприятия выбранного формата пока не запланированы.</p>
           <button 
             onClick={() => setFilterType('all')}
-            className="mt-4 text-[#d4af37] font-black text-xs uppercase tracking-widest hover:underline"
+            className="mt-4 text-[#10b981] font-black text-xs uppercase tracking-widest hover:underline"
           >
             Сбросить все фильтры
           </button>
@@ -174,23 +174,23 @@ export const EventsView: React.FC<EventsViewProps> = ({
             return (
               <div 
                 key={ev.id}
-                className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 hover:border-[#d4af37] dark:hover:border-[#d4af37] shadow-sm hover:shadow-2xl transition-all flex flex-col justify-between overflow-hidden group"
+                className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 hover:border-[#10b981] dark:hover:border-[#10b981] shadow-sm hover:shadow-2xl transition-all flex flex-col justify-between overflow-hidden group"
               >
                 <div className="p-6 sm:p-7 space-y-4">
                   
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-black px-3 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-[#0a2a5e] dark:text-blue-300 border border-blue-100 dark:border-blue-800 uppercase tracking-wider font-mono">
+                    <span className="text-[10px] font-black px-3 py-1 rounded-lg bg-blue-50 dark:bg-emerald-900/30 text-[#052e16] dark:text-emerald-300 border border-emerald-100 dark:border-emerald-800 uppercase tracking-wider font-mono">
                       {ev.type.replace('_', ' ')}
                     </span>
                     <div className="flex items-center space-x-1.5">
-                      <div className={`w-2 h-2 rounded-full ${ev.is_active ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
-                      <span className={`text-[10px] font-black uppercase tracking-widest ${ev.is_active ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                      <div className={`w-2 h-2 rounded-full ${ev.is_active ? 'bg-green-500 animate-pulse' : 'bg-green-500'}`}></div>
+                      <span className={`text-[10px] font-black uppercase tracking-widest ${ev.is_active ? 'text-green-600 dark:text-green-400' : 'text-green-600 dark:text-green-400'}`}>
                         {ev.is_active ? 'Регистрация открыта' : 'Завершена'}
                       </span>
                     </div>
                   </div>
 
-                  <h3 className="text-lg font-black text-[#0a2a5e] dark:text-white group-hover:text-blue-700 dark:group-hover:text-[#d4af37] transition-colors leading-tight">
+                  <h3 className="text-lg font-black text-[#052e16] dark:text-white group-hover:text-emerald-700 dark:group-hover:text-[#10b981] transition-colors leading-tight">
                     {ev.title}
                   </h3>
 
@@ -200,14 +200,14 @@ export const EventsView: React.FC<EventsViewProps> = ({
 
                   <div className="pt-4 space-y-3 text-xs text-slate-500 dark:text-slate-400 font-bold border-t border-slate-100 dark:border-slate-800">
                     <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center flex-shrink-0">
-                        <Clock className="w-4 h-4 text-[#d4af37]" />
+                      <div className="w-8 h-8 rounded-lg bg-blue-50/50 dark:bg-emerald-900/20 flex items-center justify-center flex-shrink-0">
+                        <Clock className="w-4 h-4 text-[#10b981]" />
                       </div>
                       <span>Даты: <strong className="text-slate-800 dark:text-slate-200">{new Date(ev.start_date).toLocaleDateString()} — {new Date(ev.end_date).toLocaleDateString()}</strong></span>
                     </div>
                     <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center flex-shrink-0">
-                        <MapPin className="w-4 h-4 text-blue-500" />
+                      <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-emerald-900/20 flex items-center justify-center flex-shrink-0">
+                        <MapPin className="w-4 h-4 text-emerald-500" />
                       </div>
                       <span className="truncate">{ev.location}</span>
                     </div>
@@ -225,7 +225,7 @@ export const EventsView: React.FC<EventsViewProps> = ({
                         <a 
                           key={i} 
                           href={mat.url} 
-                          className="inline-flex items-center space-x-1.5 text-[10px] bg-slate-100 dark:bg-slate-800 hover:bg-[#d4af37] dark:hover:bg-[#d4af37] text-slate-700 dark:text-slate-300 hover:text-[#0a2a5e] dark:hover:text-[#0a2a5e] px-3 py-1.5 rounded-lg transition-all font-black uppercase tracking-wider border border-transparent hover:border-[#d4af37]"
+                          className="inline-flex items-center space-x-1.5 text-[10px] bg-slate-100 dark:bg-slate-800 hover:bg-[#10b981] dark:hover:bg-[#10b981] text-slate-700 dark:text-slate-300 hover:text-[#052e16] dark:hover:text-[#052e16] px-3 py-1.5 rounded-lg transition-all font-black uppercase tracking-wider border border-transparent hover:border-[#10b981]"
                         >
                           <FileText className="w-3.5 h-3.5" />
                           <span>{mat.title}</span>
@@ -239,7 +239,7 @@ export const EventsView: React.FC<EventsViewProps> = ({
                 <div className="p-6 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
                   <button
                     onClick={() => generateIcsCalendar(ev)}
-                    className="p-3 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-[#d4af37] transition-all flex items-center justify-center min-w-[44px]"
+                    className="p-3 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-[#10b981] transition-all flex items-center justify-center min-w-[44px]"
                     title="Скачать .ics в календарь"
                   >
                     <Download className="w-5 h-5" />
@@ -253,7 +253,7 @@ export const EventsView: React.FC<EventsViewProps> = ({
                   ) : ev.is_active ? (
                     <button
                       onClick={() => handleOpenRegistration(ev)}
-                      className="flex-1 py-3 px-4 rounded-xl bg-[#0a2a5e] dark:bg-blue-600 hover:bg-blue-900 dark:hover:bg-blue-500 text-[#d4af37] dark:text-white font-black text-[11px] uppercase tracking-widest shadow-md hover:shadow-xl transition-all text-center min-h-[44px] active:scale-95"
+                      className="flex-1 py-3 px-4 rounded-xl bg-[#052e16] dark:bg-emerald-600 hover:bg-emerald-900 dark:hover:bg-emerald-500 text-[#10b981] dark:text-white font-black text-[11px] uppercase tracking-widest shadow-md hover:shadow-xl transition-all text-center min-h-[44px] active:scale-95"
                     >
                       Регистрация доклада
                     </button>
@@ -271,19 +271,19 @@ export const EventsView: React.FC<EventsViewProps> = ({
       {/* Модальное окно подачи тезисов доклада */}
       {activeModalEvent && createPortal(
         <div className="fixed inset-0 z-[110] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] max-w-lg w-full overflow-hidden shadow-2xl border border-[#d4af37]/30 flex flex-col max-h-[90vh]">
+          <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] max-w-lg w-full overflow-hidden shadow-2xl border border-[#10b981]/30 flex flex-col max-h-[90vh]">
             
-            <div className="bg-gradient-to-r from-[#0a2a5e] to-blue-900 p-6 text-white flex items-center justify-between border-b border-[#d4af37]/20">
+            <div className="bg-gradient-to-r from-[#052e16] to-emerald-900 p-6 text-white flex items-center justify-between border-b border-[#10b981]/20">
               <div>
                 <div className="flex items-center space-x-2">
-                  <Sparkles className="w-4 h-4 text-[#d4af37]" />
-                  <span className="text-[10px] uppercase tracking-[0.2em] text-[#d4af37] font-black">Научная регистрация БГЭУ</span>
+                  <Sparkles className="w-4 h-4 text-[#10b981]" />
+                  <span className="text-[10px] uppercase tracking-[0.2em] text-[#10b981] font-black">Научная регистрация БГЭУ</span>
                 </div>
                 <h3 className="font-black text-lg mt-1 line-clamp-1">{activeModalEvent.title}</h3>
               </div>
               <button 
                 onClick={() => { setActiveModalEvent(null); onClearSelectedEvent(); }}
-                className="p-2 rounded-xl text-blue-200 hover:text-white hover:bg-white/10 transition-colors"
+                className="p-2 rounded-xl text-emerald-200 hover:text-white hover:bg-white/10 transition-colors"
               >
                 <X className="w-6 h-6" />
               </button>
@@ -296,14 +296,14 @@ export const EventsView: React.FC<EventsViewProps> = ({
                     <CheckCircle className="w-12 h-12" />
                   </div>
                   <div>
-                    <h4 className="text-2xl font-black text-[#0a2a5e] dark:text-white uppercase tracking-tight">Заявка отправлена!</h4>
+                    <h4 className="text-2xl font-black text-[#052e16] dark:text-white uppercase tracking-tight">Заявка отправлена!</h4>
                     <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mt-3 font-medium px-4">
                       Ваши тезисы направлены координатору научной работы ФЭМ. Отслеживать изменение статуса можно в личном портфолио исследователя.
                     </p>
                   </div>
                   <button
                     onClick={() => { setActiveModalEvent(null); onClearSelectedEvent(); }}
-                    className="w-full py-4 rounded-2xl bg-[#0a2a5e] dark:bg-blue-600 text-[#d4af37] dark:text-white font-black text-sm uppercase tracking-widest shadow-lg hover:brightness-110 transition-all"
+                    className="w-full py-4 rounded-2xl bg-[#052e16] dark:bg-emerald-600 text-[#10b981] dark:text-white font-black text-sm uppercase tracking-widest shadow-lg hover:brightness-110 transition-all"
                   >
                     Вернуться в календарь
                   </button>
@@ -311,8 +311,8 @@ export const EventsView: React.FC<EventsViewProps> = ({
               ) : (
                 <form onSubmit={handleSubmitApplication} className="p-8 space-y-5">
                   {!user && (
-                    <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl text-[11px] text-amber-900 dark:text-amber-200 font-bold flex items-center space-x-3 mb-2">
-                      <ShieldAlert className="w-5 h-5 text-amber-500 flex-shrink-0" />
+                    <div className="p-4 bg-blue-50/50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-amber-800 rounded-2xl text-[11px] text-amber-900 dark:text-amber-200 font-bold flex items-center space-x-3 mb-2">
+                      <ShieldAlert className="w-5 h-5 text-emerald-500 flex-shrink-0" />
                       <span>Для подачи докладов необходимо войти в систему по номеру зачётки.</span>
                     </div>
                   )}
@@ -333,7 +333,7 @@ export const EventsView: React.FC<EventsViewProps> = ({
                         placeholder="Введите полное название вашей научной работы..."
                         value={topic}
                         onChange={(e) => setTopic(e.target.value)}
-                        className="w-full px-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-sm font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#d4af37]/50 focus:border-[#d4af37] transition-all"
+                        className="w-full px-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-sm font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#10b981]/50 focus:border-[#10b981] transition-all"
                       />
                     </div>
 
@@ -345,16 +345,16 @@ export const EventsView: React.FC<EventsViewProps> = ({
                         placeholder="Кратко изложите актуальность, цель исследования и ожидаемые выводы..."
                         value={abstract}
                         onChange={(e) => setAbstract(e.target.value)}
-                        className="w-full px-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-sm font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#d4af37]/50 focus:border-[#d4af37] transition-all resize-none"
+                        className="w-full px-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-sm font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#10b981]/50 focus:border-[#10b981] transition-all resize-none"
                       />
                     </div>
 
                     <div className="space-y-1.5">
                       <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Файл работы (PDF / DOCX)</label>
                       <div className="relative">
-                        <label className="flex items-center justify-between px-4 py-4 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 hover:border-[#d4af37] dark:hover:border-[#d4af37] cursor-pointer bg-slate-50 dark:bg-slate-800/50 transition-all group">
+                        <label className="flex items-center justify-between px-4 py-4 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 hover:border-[#10b981] dark:hover:border-[#10b981] cursor-pointer bg-slate-50 dark:bg-slate-800/50 transition-all group">
                           <div className="flex items-center space-x-3 overflow-hidden">
-                            <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 flex-shrink-0 group-hover:scale-110 transition-transform">
+                            <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 flex-shrink-0 group-hover:scale-110 transition-transform">
                               <Upload className="w-5 h-5" />
                             </div>
                             <div className="text-left overflow-hidden">
@@ -386,11 +386,11 @@ export const EventsView: React.FC<EventsViewProps> = ({
                     <button
                       type="submit"
                       disabled={!user || isSubmitting}
-                      className="flex-1 py-4 px-8 rounded-2xl bg-gradient-to-r from-[#0a2a5e] via-blue-900 to-blue-800 text-[#d4af37] font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:brightness-125 flex items-center justify-center space-x-3 transition-all order-1 sm:order-2 disabled:opacity-50 disabled:grayscale"
+                      className="flex-1 py-4 px-8 rounded-2xl bg-gradient-to-r from-[#052e16] via-emerald-900 to-emerald-800 text-[#10b981] font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:brightness-125 flex items-center justify-center space-x-3 transition-all order-1 sm:order-2 disabled:opacity-50 disabled:grayscale"
                     >
                       {isSubmitting ? (
                         <div className="flex items-center space-x-2">
-                          <div className="w-4 h-4 border-2 border-[#d4af37] border-t-transparent rounded-full animate-spin"></div>
+                          <div className="w-4 h-4 border-2 border-[#10b981] border-t-transparent rounded-full animate-spin"></div>
                           <span>Отправка...</span>
                         </div>
                       ) : (

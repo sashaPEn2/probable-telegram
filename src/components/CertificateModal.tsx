@@ -72,14 +72,14 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
     switch (certificate.type) {
       case 'диплом_1_степени':
         return {
-          bgGradient: 'from-amber-500/5 to-yellow-600/5',
-          borderColor: 'border-amber-500',
-          badgeBg: 'bg-amber-100 text-amber-800 border-amber-300',
-          titleColor: 'text-amber-600 dark:text-amber-400',
-          sealColor: 'text-amber-600',
-          sealBg: 'bg-amber-100',
-          ribbonColor: 'bg-amber-500',
-          accentBorder: '#d4af37',
+          bgGradient: 'from-emerald-600/5 to-emerald-700/5',
+          borderColor: 'border-emerald-500',
+          badgeBg: 'bg-emerald-100/50 text-amber-800 border-emerald-300',
+          titleColor: 'text-emerald-600 dark:text-emerald-400',
+          sealColor: 'text-emerald-600',
+          sealBg: 'bg-emerald-100/50',
+          ribbonColor: 'bg-emerald-600',
+          accentBorder: '#10b981',
           ribbonStyle: 'linear-gradient(135deg, #f59e0b, #b45309)',
         };
       case 'диплом_2_степени':
@@ -98,10 +98,10 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
         return {
           bgGradient: 'from-amber-700/5 to-amber-900/5',
           borderColor: 'border-amber-700',
-          badgeBg: 'bg-amber-100 text-amber-950 border-amber-600/30',
-          titleColor: 'text-amber-800 dark:text-amber-600',
-          sealColor: 'text-amber-700',
-          sealBg: 'bg-amber-100',
+          badgeBg: 'bg-emerald-100/50 text-amber-950 border-emerald-500/30',
+          titleColor: 'text-amber-800 dark:text-emerald-600',
+          sealColor: 'text-emerald-700',
+          sealBg: 'bg-emerald-100/50',
           ribbonColor: 'bg-amber-700',
           accentBorder: '#b45309',
           ribbonStyle: 'linear-gradient(135deg, #d97706, #78350f)',
@@ -109,27 +109,27 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
       case 'грамота':
         return {
           bgGradient: 'from-red-500/5 to-rose-600/5',
-          borderColor: 'border-red-500',
-          badgeBg: 'bg-red-100 text-red-800 border-red-300',
-          titleColor: 'text-red-600 dark:text-red-400',
-          sealColor: 'text-red-600',
-          sealBg: 'bg-red-100',
-          ribbonColor: 'bg-red-500',
-          accentBorder: '#ef4444',
-          ribbonStyle: 'linear-gradient(135deg, #f43f5e, #be123c)',
+          borderColor: 'border-green-500',
+          badgeBg: 'bg-green-100 text-green-800 border-green-300',
+          titleColor: 'text-green-600 dark:text-green-400',
+          sealColor: 'text-green-600',
+          sealBg: 'bg-green-100',
+          ribbonColor: 'bg-green-500',
+          accentBorder: '#10b981',
+          ribbonStyle: 'linear-gradient(135deg, #10b981, #be123c)',
         };
       case 'сертификат_участника':
       default:
         return {
-          bgGradient: 'from-blue-500/5 to-indigo-600/5',
-          borderColor: 'border-blue-500',
-          badgeBg: 'bg-blue-100 text-blue-800 border-blue-300',
-          titleColor: 'text-blue-700 dark:text-blue-400',
-          sealColor: 'text-blue-700',
-          sealBg: 'bg-blue-100',
-          ribbonColor: 'bg-blue-500',
-          accentBorder: '#3b82f6',
-          ribbonStyle: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+          bgGradient: 'from-emerald-500/5 to-indigo-600/5',
+          borderColor: 'border-emerald-500',
+          badgeBg: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+          titleColor: 'text-emerald-700 dark:text-emerald-400',
+          sealColor: 'text-emerald-700',
+          sealBg: 'bg-emerald-100',
+          ribbonColor: 'bg-emerald-500',
+          accentBorder: '#10b981',
+          ribbonStyle: 'linear-gradient(135deg, #10b981, #1d4ed8)',
         };
     }
   };
@@ -497,7 +497,7 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
         <button
           onClick={handleExportPDF}
           disabled={isExporting !== null}
-          className="p-3.5 bg-yellow-500 hover:bg-yellow-600 text-blue-950 rounded-full shadow-2xl transition-all hover:scale-110 active:scale-90 disabled:opacity-50 flex items-center justify-center border border-yellow-400"
+          className="p-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-2xl transition-all hover:scale-110 active:scale-90 disabled:opacity-50 flex items-center justify-center border border-emerald-400"
           title="Скачать PDF (A4)"
         >
           {isExporting === 'pdf' ? (
@@ -558,7 +558,7 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
             <button
               onClick={handleExportPDF}
               disabled={isExporting !== null}
-              className="px-5 py-2.5 bg-yellow-500 hover:bg-yellow-600 text-blue-950 rounded-xl text-xs font-black transition-all flex items-center space-x-1.5 shadow-md disabled:opacity-50"
+              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black transition-all flex items-center space-x-1.5 shadow-md disabled:opacity-50"
             >
               {isExporting === 'pdf' ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -591,7 +591,7 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
             }}
           >
             {/* Background elegant watermarked circle pattern */}
-            <div className="absolute inset-0 bg-[radial-gradient(#d4af37_1px,transparent_1px)] [background-size:16px_16px] opacity-[0.03] pointer-events-none"></div>
+            <div className="absolute inset-0 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:16px_16px] opacity-[0.03] pointer-events-none"></div>
             
             {/* Elegant corner decorative framing lines using absolute positioning */}
             <div className="absolute top-4 left-4 right-4 bottom-4 border-2 border-dashed opacity-25 pointer-events-none" style={{ borderColor: theme.accentBorder }}></div>
@@ -611,7 +611,7 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
               <div className="text-xs font-extrabold tracking-[0.15em] text-slate-700 uppercase">
                 Белорусский государственный экономический университет
               </div>
-              <div className="text-[11px] font-bold tracking-[0.1em] text-blue-900 uppercase">
+              <div className="text-[11px] font-bold tracking-[0.1em] text-emerald-900 uppercase">
                 Студенческое научное общество ФЭМ БГЭУ
               </div>
               <div className="w-48 h-0.5 mx-auto my-3" style={{ background: theme.ribbonStyle }}></div>
@@ -658,7 +658,7 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
                   «{certificate.title.replace(/Победитель викторины\s*["«]|["»]\s*\(\d-е место\)/g, '').trim()}»
                 </div>
                 {certificate.custom_points && certificate.custom_points > 0 && (
-                  <div className="text-xs font-black text-amber-600 uppercase tracking-wider mt-1 flex items-center justify-center space-x-1">
+                  <div className="text-xs font-black text-emerald-600 uppercase tracking-wider mt-1 flex items-center justify-center space-x-1">
                     <span>С начислением {certificate.custom_points} рейтинговых баллов</span>
                   </div>
                 )}
@@ -686,10 +686,10 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
                 </div>
 
                 {/* SNO Circular Stamp Visual */}
-                <div className="w-16 h-16 rounded-full border-2 border-dashed border-red-500/40 p-0.5 relative z-10 bg-transparent flex items-center justify-center -mb-2 rotate-12 select-none opacity-85">
-                  <div className="w-full h-full rounded-full border border-red-500/40 flex flex-col items-center justify-center text-center text-[5px] font-bold uppercase text-red-500/70 p-1 relative">
+                <div className="w-16 h-16 rounded-full border-2 border-dashed border-green-500/40 p-0.5 relative z-10 bg-transparent flex items-center justify-center -mb-2 rotate-12 select-none opacity-85">
+                  <div className="w-full h-full rounded-full border border-green-500/40 flex flex-col items-center justify-center text-center text-[5px] font-bold uppercase text-green-500/70 p-1 relative">
                     <span className="scale-[0.8] leading-none absolute top-1.5 font-black">БГЭУ * БГЭУ</span>
-                    <span className="scale-[0.8] font-serif tracking-widest font-black text-[7px] my-auto leading-none text-red-500">СНО ФЭМ</span>
+                    <span className="scale-[0.8] font-serif tracking-widest font-black text-[7px] my-auto leading-none text-green-500">СНО ФЭМ</span>
                     <span className="scale-[0.8] leading-none absolute bottom-1.5 font-black">ДЛЯ ДОКУМЕНТОВ</span>
                   </div>
                 </div>
@@ -701,7 +701,7 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
                 {/* Signature 1 */}
                 <div className="relative">
                   {/* Handwritten vector signature simulation */}
-                  <span className="absolute right-12 -top-2.5 font-serif italic text-blue-800/60 font-black text-xl select-none -rotate-6 pointer-events-none tracking-widest font-mono">
+                  <span className="absolute right-12 -top-2.5 font-serif italic text-emerald-800/60 font-black text-xl select-none -rotate-6 pointer-events-none tracking-widest font-mono">
                     Terro.A.V
                   </span>
                   <div className="flex items-end justify-end text-[10px] font-bold text-slate-500">
@@ -734,7 +734,7 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
         
         {/* Help tooltip (hidden in print) */}
         <div className="text-xs text-slate-400 text-center flex items-center space-x-1.5 bg-slate-900/40 px-4 py-2 rounded-2xl print:hidden max-w-lg">
-          <Clock className="w-3.5 h-3.5 text-blue-400" />
+          <Clock className="w-3.5 h-3.5 text-emerald-400" />
           <span>Электронный оригинал выдан бессрочно и хранится в вашем цифровом портфолио СНО ФЭМ.</span>
         </div>
 

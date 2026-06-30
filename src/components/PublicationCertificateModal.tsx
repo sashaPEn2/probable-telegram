@@ -58,12 +58,12 @@ export const PublicationCertificateModal: React.FC<PublicationCertificateModalPr
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
-          <h2 className="text-xl font-bold text-slate-800 dark:text-blue-100">Справка о наличии публикации</h2>
+          <h2 className="text-xl font-bold text-slate-800 dark:text-emerald-100">Справка о наличии публикации</h2>
           <div className="flex items-center gap-2">
             {certificate && (
               <button 
                 onClick={handleRegenerate}
-                className="p-2 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 rounded-lg transition-colors text-xs font-bold flex items-center gap-1"
+                className="p-2 bg-blue-50/50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100/50 dark:hover:bg-emerald-900/30 rounded-lg transition-colors text-xs font-bold flex items-center gap-1"
                 title="Перегенерировать данные"
               >
                 <Sparkles className="w-3 h-3" />
@@ -79,7 +79,7 @@ export const PublicationCertificateModal: React.FC<PublicationCertificateModalPr
         <div className="p-4 sm:p-6 overflow-y-auto flex-1 flex flex-col items-center bg-slate-50 dark:bg-slate-950/20 scrollbar-thin">
           {!certificate ? (
             <div className="text-center space-y-6 py-12 max-w-lg mx-auto w-full">
-              <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <FileText className="w-8 h-8" />
               </div>
               <h3 className="text-2xl font-black text-slate-800 dark:text-white">Регистрация справки</h3>
@@ -89,18 +89,18 @@ export const PublicationCertificateModal: React.FC<PublicationCertificateModalPr
               </p>
 
               {!user.gender && !selectedGender && (
-                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-6 rounded-2xl space-y-4 text-left">
-                  <div className="flex items-center space-x-2 text-amber-800 dark:text-amber-300 font-bold">
+                <div className="bg-blue-50/50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-amber-800 p-6 rounded-2xl space-y-4 text-left">
+                  <div className="flex items-center space-x-2 text-amber-800 dark:text-emerald-300 font-bold">
                     <AlertCircle className="w-5 h-5" />
                     <span>Требуется уточнение данных</span>
                   </div>
-                  <p className="text-sm text-amber-700 dark:text-amber-400">
+                  <p className="text-sm text-emerald-700 dark:text-emerald-400">
                     Для корректного формирования текста справки («выдана студенту» или «выдана студентке»), пожалуйста, укажите ваш пол:
                   </p>
                   <div className="flex gap-3">
                     <button 
                       onClick={() => setSelectedGender('male')}
-                      className={`flex-1 py-3 rounded-xl font-bold border-2 transition-all ${selectedGender === 'male' ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/20' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
+                      className={`flex-1 py-3 rounded-xl font-bold border-2 transition-all ${selectedGender === 'male' ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-blue-500/20' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}
                     >
                       Мужской
                     </button>
@@ -116,7 +116,7 @@ export const PublicationCertificateModal: React.FC<PublicationCertificateModalPr
 
               <button 
                 onClick={handleGenerate}
-                className="w-full px-6 py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 shadow-xl shadow-blue-600/20 transition-all transform active:scale-95 disabled:opacity-50"
+                className="w-full px-6 py-4 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 shadow-xl shadow-blue-600/20 transition-all transform active:scale-95 disabled:opacity-50"
                 disabled={!selectedGender && !user.gender}
               >
                 Сгенерировать и зарегистрировать
@@ -188,7 +188,7 @@ export const PublicationCertificateModal: React.FC<PublicationCertificateModalPr
                     <div className="text-sm text-slate-600 leading-relaxed print:text-black">
                       <p className="font-bold mb-1">Верификация публикации:</p>
                       <p>Работа размещена в электронном репозитории / открытом доступе по адресу:</p>
-                      <p className="font-mono text-[10px] mt-1 break-all text-blue-700 underline print:text-black">{publication.link || `https://edoc.bseu.by/pubs/${publication.id}`}</p>
+                      <p className="font-mono text-[10px] mt-1 break-all text-emerald-700 underline print:text-black">{publication.link || `https://edoc.bseu.by/pubs/${publication.id}`}</p>
                       <p className="mt-2 text-[10px] italic">Используйте QR-код для быстрого перехода к тексту работы.</p>
                     </div>
                   </div>
@@ -205,9 +205,9 @@ export const PublicationCertificateModal: React.FC<PublicationCertificateModalPr
                   
                   <div className="w-1/3 flex flex-col items-center relative">
                     {/* Mock Stamp */}
-                    <div className="absolute -top-16 -left-12 w-40 h-40 border-8 border-blue-900/10 rounded-full flex items-center justify-center opacity-40 transform -rotate-12 pointer-events-none">
-                      <div className="border-4 border-blue-900/10 rounded-full w-[90%] h-[90%] flex items-center justify-center">
-                        <div className="text-center text-blue-900/60 text-[9px] font-bold uppercase leading-[1.1]">
+                    <div className="absolute -top-16 -left-12 w-40 h-40 border-8 border-emerald-900/10 rounded-full flex items-center justify-center opacity-40 transform -rotate-12 pointer-events-none">
+                      <div className="border-4 border-emerald-900/10 rounded-full w-[90%] h-[90%] flex items-center justify-center">
+                        <div className="text-center text-emerald-900/60 text-[9px] font-bold uppercase leading-[1.1]">
                           МИНИСТЕРСТВО<br/>ОБРАЗОВАНИЯ<br/>ФЭМ БГЭУ<br/>ДЛЯ СПРАВОК
                         </div>
                       </div>
