@@ -31,6 +31,7 @@ interface FeedViewProps {
   user: CustomUser | null;
   onSelectEvent: (eventId: string) => void;
   onSelectSnil: (snilId: string) => void;
+  onNavigate: (tab: string) => void;
   onRefresh: () => void;
 }
 
@@ -39,6 +40,7 @@ export const FeedView: React.FC<FeedViewProps> = ({
   user,
   onSelectEvent,
   onSelectSnil,
+  onNavigate,
   onRefresh
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -291,6 +293,23 @@ export const FeedView: React.FC<FeedViewProps> = ({
             </motion.div>
           )}
         </AnimatePresence>
+      </div>
+
+      {/* Баннер реестра достижений */}
+      <div 
+        onClick={() => window.open('https://reestr.snofembseu.tech', '_blank')}
+        className="rounded-xl p-2.5 bg-gradient-to-r from-emerald-600/90 to-teal-500/90 text-white shadow-md flex items-center justify-between cursor-pointer hover:brightness-110 transition-all border border-emerald-400/20"
+      >
+        <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+              <Award className="w-4 h-4" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold leading-tight">Реестр достижений факультета</h2>
+              <p className="text-emerald-100 text-[10px] opacity-80">Перейти на официальный портал научных успехов</p>
+            </div>
+        </div>
+        <ArrowRight className="w-4 h-4 opacity-70 mr-1" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

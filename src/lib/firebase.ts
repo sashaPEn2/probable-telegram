@@ -1,15 +1,16 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
+import firebaseConfigLocal from '../../firebase-applet-config.json';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCqP2qw2yuOomLsooorB1XPdoDOT8-I3kg",
-  authDomain: "reference-option-b5xj8.firebaseapp.com",
-  projectId: "reference-option-b5xj8",
-  storageBucket: "reference-option-b5xj8.firebasestorage.app",
-  messagingSenderId: "1026829066533",
-  appId: "1:1026829066533:web:ae730370b9c802e529facc",
-  databaseId: "ai-studio-b620a1b8-816f-4f4d-8d4c-58202429cb3b"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || firebaseConfigLocal.apiKey,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || firebaseConfigLocal.authDomain,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || firebaseConfigLocal.projectId,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || firebaseConfigLocal.storageBucket,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseConfigLocal.messagingSenderId,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || firebaseConfigLocal.appId,
+  databaseId: import.meta.env.VITE_FIREBASE_DATABASE_ID || firebaseConfigLocal.firestoreDatabaseId
 };
 
 const app = initializeApp(firebaseConfig);

@@ -23,8 +23,77 @@ import {
   UserRole,
   Notification
 } from '../types';
-import { doc, getDoc, setDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, deleteDoc, writeBatch, onSnapshot } from 'firebase/firestore';
 import { db as firestoreDb, auth } from '../lib/firebase';
+
+export type DBSubscriber = (db: PortalDatabase) => void;
+const subscribers: Set<DBSubscriber> = new Set();
+let isListening = false;
+
+export function subscribeToPortalDB(callback: DBSubscriber): () => void {
+  subscribers.add(callback);
+  
+  if (!isListening) {
+    startFirestoreListeners();
+  }
+  
+  return () => {
+    subscribers.delete(callback);
+  };
+}
+
+function notifySubscribers() {
+  subscribers.forEach(cb => cb({ ...memoryDb }));
+}
+
+function startFirestoreListeners() {
+  if (isListening) return;
+  isListening = true;
+
+  const collections: (keyof PortalDatabase)[] = [
+    'users', 'news', 'publications', 'certificates', 'snils', 'projects', 
+    'merch', 'orders', 'announcements', 'snil_applications', 'quizzes', 'quizAttempts'
+  ];
+
+  collections.forEach(colKey => {
+    onSnapshot(collection(firestoreDb, colKey as string), (snapshot) => {
+      const col = memoryDb[colKey] as any[];
+      let changed = false;
+
+      snapshot.docChanges().forEach((change) => {
+        const data = change.doc.data();
+        const id = change.doc.id;
+
+        if (change.type === "added" || change.type === "modified") {
+          const idx = col.findIndex((item: any) => (item.id || item.record_book_id) === id);
+          if (idx !== -1) {
+            if (JSON.stringify(col[idx]) !== JSON.stringify(data)) {
+              col[idx] = { ...data };
+              changed = true;
+            }
+          } else {
+            col.push({ ...data });
+            changed = true;
+          }
+        }
+        if (change.type === "removed") {
+          const idx = col.findIndex((item: any) => (item.id || item.record_book_id) === id);
+          if (idx !== -1) {
+            col.splice(idx, 1);
+            changed = true;
+          }
+        }
+      });
+
+      if (changed) {
+        referenceDb[colKey] = JSON.parse(JSON.stringify(memoryDb[colKey]));
+        notifySubscribers();
+      }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, colKey as string);
+    });
+  });
+}
 
 export function cleanUndefinedFields(obj: any): any {
   if (obj === null || obj === undefined) return null;
@@ -107,7 +176,7 @@ export async function fetchPortalDBFromFirestore(): Promise<PortalDatabase> {
       const querySnapshot = await getDocs(collection(firestoreDb, col));
       db[col] = querySnapshot.docs.map(doc => doc.data());
     } catch (e) {
-      console.error(`Error reading collection ${col}:`, e);
+      handleFirestoreError(e, OperationType.LIST, col);
       db[col] = [];
     }
   }));
@@ -307,6 +376,7 @@ const savedDbData = localStorage.getItem(STORAGE_KEY);
 let memoryDb: PortalDatabase = savedDbData ? { ...INITIAL_DB, ...JSON.parse(savedDbData) } : { ...INITIAL_DB };
 let referenceDb: PortalDatabase = JSON.parse(JSON.stringify(memoryDb));
 let hasSeeded = false;
+let lastFirestoreSync = 0;
 
 export function getPortalDB(): PortalDatabase {
   if (!hasSeeded) {
@@ -318,52 +388,99 @@ export function getPortalDB(): PortalDatabase {
   return memoryDb;
 }
 
-export function savePortalDB(db: PortalDatabase): void {
-  const collections: (keyof PortalDatabase)[] = [
-    'users', 'publications', 'certificates', 'publication_certificates', 'projects', 'snils', 'events', 
-    'applications', 'news', 'tasks', 'gallery', 'notifications', 'reports', 
-    'merch', 'orders', 'announcements', 'snil_applications', 'quizzes', 'quizAttempts'
-  ];
+export function updateReferenceDB(db: PortalDatabase): void {
+  referenceDb = JSON.parse(JSON.stringify(db));
+}
 
-  collections.forEach(colKey => {
-    const oldItems = (referenceDb[colKey] as any[]) || [];
-    const newItems = (db[colKey] as any[]) || [];
+export function savePortalDB(db: PortalDatabase, skipSync: boolean = false): void {
+  const now = Date.now();
+  const shouldSyncToFirestore = !skipSync && (now - lastFirestoreSync) > 10000; // 10 seconds
 
-    // Find added or updated items
-    newItems.forEach((newItem: any) => {
-      if (!newItem) return;
-      const id = newItem.id || newItem.record_book_id;
-      if (!id) return;
-      
-      const oldItem = oldItems.find((o: any) => (o.id || o.record_book_id) === id);
-      if (!oldItem || JSON.stringify(oldItem) !== JSON.stringify(newItem)) {
-        // Item was added or modified, write to Firestore!
-        const docRef = doc(firestoreDb, colKey as string, id);
-        const cleanedItem = cleanUndefinedFields(newItem);
-        setDoc(docRef, cleanedItem, { merge: true }).catch(err => {
-          console.error(`Error syncing ${colKey}/${id} to Firestore:`, err);
-        });
+  if (shouldSyncToFirestore) {
+    lastFirestoreSync = now;
+    const collections: (keyof PortalDatabase)[] = [
+      'users', 'publications', 'certificates', 'publication_certificates', 'projects', 'snils', 'events', 
+      'applications', 'news', 'tasks', 'gallery', 'notifications', 'reports', 
+      'merch', 'orders', 'announcements', 'snil_applications', 'quizzes', 'quizAttempts'
+    ];
+
+    const batch = writeBatch(firestoreDb);
+    let operationCount = 0;
+    
+    // We will create a list of changes and only update referenceDb for what we actually sync
+    const syncedChanges: { col: string, id: string, data: any, type: 'set' | 'delete' }[] = [];
+
+    for (const colKey of collections) {
+      if (operationCount >= 450) break;
+
+      const oldItems = (referenceDb[colKey] as any[]) || [];
+      const newItems = (db[colKey] as any[]) || [];
+
+      // Find added or updated items
+      for (const newItem of newItems) {
+        if (!newItem || operationCount >= 450) break;
+        const id = newItem.id || newItem.record_book_id;
+        if (!id) continue;
+        
+        const oldItem = oldItems.find((o: any) => (o.id || o.record_book_id) === id);
+        if (!oldItem || JSON.stringify(oldItem) !== JSON.stringify(newItem)) {
+          const docRef = doc(firestoreDb, colKey as string, id);
+          const cleanedItem = cleanUndefinedFields(newItem);
+          batch.set(docRef, cleanedItem, { merge: true });
+          syncedChanges.push({ col: colKey, id, data: JSON.parse(JSON.stringify(newItem)), type: 'set' });
+          operationCount++;
+        }
       }
-    });
 
-    // Find deleted items
-    oldItems.forEach((oldItem: any) => {
-      if (!oldItem) return;
-      const id = oldItem.id || oldItem.record_book_id;
-      if (!id) return;
-      const stillExists = newItems.some((n: any) => (n.id || n.record_book_id) === id);
-      if (!stillExists) {
-        // Item was deleted, delete from Firestore!
-        const docRef = doc(firestoreDb, colKey as string, id);
-        deleteDoc(docRef).catch(err => {
-          console.error(`Error deleting ${colKey}/${id} from Firestore:`, err);
-        });
+      // Find deleted items
+      if (operationCount < 450) {
+        for (const oldItem of oldItems) {
+          if (!oldItem || operationCount >= 450) break;
+          const id = oldItem.id || oldItem.record_book_id;
+          if (!id) continue;
+          const stillExists = newItems.some((n: any) => (n.id || n.record_book_id) === id);
+          if (!stillExists) {
+            const docRef = doc(firestoreDb, colKey as string, id);
+            batch.delete(docRef);
+            syncedChanges.push({ col: colKey, id, data: null, type: 'delete' });
+            operationCount++;
+          }
+        }
       }
-    });
-  });
+    }
+
+    if (operationCount > 0) {
+      console.log(`Syncing ${operationCount} changes to Firestore in a batch...`);
+      batch.commit().then(() => {
+        console.log('Firestore sync successful');
+        // Update referenceDb ONLY for the items we actually synced
+        syncedChanges.forEach(change => {
+          const col = referenceDb[change.col as keyof PortalDatabase] as any[];
+          if (change.type === 'set') {
+            const idx = col.findIndex((item: any) => (item.id || item.record_book_id) === change.id);
+            if (idx !== -1) {
+              col[idx] = change.data;
+            } else {
+              col.push(change.data);
+            }
+          } else {
+            const idx = col.findIndex((item: any) => (item.id || item.record_book_id) === change.id);
+            if (idx !== -1) {
+              col.splice(idx, 1);
+            }
+          }
+        });
+      }).catch(err => {
+        handleFirestoreError(err, OperationType.WRITE, 'batch_sync');
+        // If it's a quota error, back off further
+        if (err.message?.includes('Quota exceeded') || err.message?.includes('Rate exceeded')) {
+          lastFirestoreSync = now + 600000; // Wait 10 more minutes
+        }
+      });
+    }
+  }
 
   memoryDb = { ...db };
-  referenceDb = JSON.parse(JSON.stringify(db));
   localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
 }
 
@@ -443,15 +560,7 @@ export function loginUser(
     savePortalDB(db);
   }
 
-  // Also write to Firestore directly to make sure we persist it and support real-time across devices!
-  try {
-    const userRef = doc(firestoreDb, 'users', user.record_book_id);
-    setDoc(userRef, cleanUndefinedFields(user), { merge: true }).catch(err => {
-      console.error("Error writing registered user to Firestore:", err);
-    });
-  } catch (error) {
-    console.error("Firestore error in loginUser:", error);
-  }
+  // rely on savePortalDB for persistence
 
   setCurrentUser(user);
   return user;
@@ -604,15 +713,6 @@ export function seedFacultyStarterTemplate(): void {
       password: 'админ'
     };
     db.users.push(adminUser);
-
-    try {
-      const adminRef = doc(firestoreDb, 'users', adminUser.record_book_id);
-      setDoc(adminRef, cleanUndefinedFields(adminUser), { merge: true }).catch(err => {
-        console.error("Error writing admin account to Firestore during seeding:", err);
-      });
-    } catch (err) {
-      console.error("Firestore seeding error:", err);
-    }
   }
 
   let systemAdmin = db.users.find(u => u.record_book_id === 'admin');
@@ -631,15 +731,6 @@ export function seedFacultyStarterTemplate(): void {
       password: 'admin'
     };
     db.users.push(systemAdmin);
-
-    try {
-      const sysAdminRef = doc(firestoreDb, 'users', systemAdmin.record_book_id);
-      setDoc(sysAdminRef, cleanUndefinedFields(systemAdmin), { merge: true }).catch(err => {
-        console.error("Error writing system admin to Firestore:", err);
-      });
-    } catch (err) {
-      console.error("Firestore seeding error:", err);
-    }
   }
 
   if (db.merch.length === 0) {

@@ -65,6 +65,7 @@ export interface PublicationCertificate {
 export interface Certificate {
   id: string;
   user_record_book: string;
+  author_name: string;
   title: string;
   event_name: string;
   issue_date: string;

@@ -468,6 +468,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
         const newCert: Certificate = {
           id: 'cert_quiz_' + quiz.id + '_' + Date.now() + '_' + attempt.userRecordBook,
           user_record_book: attempt.userRecordBook,
+          author_name: attempt.userName,
           title: `Победитель викторины "${quiz.title}" (${place}-е место)`,
           event_name: 'Викторины СНО ФЭМ',
           issue_date: new Date().toISOString().split('T')[0],
@@ -1344,6 +1345,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                           const tempCert: Certificate = {
                             id: `cert_quiz_${activeResultsQuiz.id}_temp_${user.record_book_id}`,
                             user_record_book: user.record_book_id,
+                            author_name: `${user.first_name} ${user.last_name}`,
                             title: `Победитель викторины "${activeResultsQuiz.title}" (${prize?.place}-е место)`,
                             event_name: 'Викторины СНО ФЭМ',
                             issue_date: new Date().toISOString().split('T')[0],
@@ -1401,6 +1403,7 @@ export const QuizzesView: React.FC<QuizzesViewProps> = ({ db, user, onRefresh })
                             const tempCert: Certificate = {
                               id: `cert_quiz_${activeResultsQuiz.id}_temp_${user.record_book_id}`,
                               user_record_book: user.record_book_id,
+                              author_name: `${user.first_name} ${user.last_name}`,
                               title: `Участник викторины "${activeResultsQuiz.title}"`,
                               event_name: 'Викторины СНО ФЭМ',
                               issue_date: new Date().toISOString().split('T')[0],

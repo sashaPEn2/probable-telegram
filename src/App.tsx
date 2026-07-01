@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { getPortalDB, savePortalDB, fetchPortalDBFromFirestore, PortalDatabase, canAccessAdmin, cleanUndefinedFields } from './services/storage';
+import { getPortalDB, savePortalDB, fetchPortalDBFromFirestore, PortalDatabase, canAccessAdmin, cleanUndefinedFields, updateReferenceDB, subscribeToPortalDB } from './services/storage';
 import { migrateLocalStorageToFirestore } from './services/migration';
 import { CustomUser } from './types';
 import { Navbar } from './components/Navbar';
@@ -42,71 +42,27 @@ export default function App() {
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
 
-  // Восстанавливаем данные из Firestore и сессию из localStorage
+  // Подписываемся на изменения в Firestore для синхронизации в реальном времени
   useEffect(() => {
-    fetchPortalDBFromFirestore().then(firestoreDbData => {
-      if (firestoreDbData && Object.keys(firestoreDbData).length > 0) {
-        setDb(firestoreDbData);
-        savePortalDB(firestoreDbData);
+    const unsubscribe = subscribeToPortalDB((updatedDb) => {
+      setDb(updatedDb);
+      
+      // Если текущий пользователь изменился в базе (например, роль или доп. данные), обновим его
+      if (user) {
+        const currentUserInDb = updatedDb.users.find(u => u.record_book_id === user.record_book_id);
+        if (currentUserInDb && JSON.stringify(currentUserInDb) !== JSON.stringify(user)) {
+          setUser(currentUserInDb);
+          localStorage.setItem('fem_bseu_user', JSON.stringify(currentUserInDb));
+        }
       }
-    }).catch(console.error);
+    });
 
     const savedUser = localStorage.getItem('fem_bseu_user');
     if (savedUser) {
       setUser(JSON.parse(savedUser));
     }
-  }, []);
 
-  // Синхронизация списка аккаунтов (пользователей) с Firestore в реальном времени
-  useEffect(() => {
-    try {
-      const usersColRef = collection(firestoreDb, 'users');
-      const unsubscribe = onSnapshot(usersColRef, (snapshot) => {
-        const firestoreUsers: CustomUser[] = [];
-        snapshot.forEach((doc) => {
-          firestoreUsers.push(doc.data() as CustomUser);
-        });
-        
-        if (firestoreUsers.length > 0) {
-          setDb(prevDb => {
-            const updatedDb = { ...prevDb };
-            const mergedUsers = [...(updatedDb.users || [])];
-            
-            firestoreUsers.forEach(fUser => {
-              const index = mergedUsers.findIndex(u => u.record_book_id === fUser.record_book_id);
-              if (index !== -1) {
-                mergedUsers[index] = { ...mergedUsers[index], ...fUser };
-              } else {
-                mergedUsers.push(fUser);
-              }
-            });
-            
-            updatedDb.users = mergedUsers;
-            savePortalDB(updatedDb);
-            
-            // Если текущий вошедший пользователь есть в списке, обновим его локально при изменениях
-            if (user) {
-              const currentUpdated = firestoreUsers.find(u => u.record_book_id === user.record_book_id);
-              if (currentUpdated) {
-                const hasChanged = JSON.stringify(currentUpdated) !== JSON.stringify(user);
-                if (hasChanged) {
-                  setUser(currentUpdated);
-                  localStorage.setItem('fem_bseu_user', JSON.stringify(currentUpdated));
-                }
-              }
-            }
-            
-            return updatedDb;
-          });
-        }
-      }, (error) => {
-        console.error("Error listening to users in real-time:", error);
-      });
-
-      return () => unsubscribe();
-    } catch (e) {
-      console.error("Failed to initialize real-time users sync:", e);
-    }
+    return () => unsubscribe();
   }, [user]);
 
   // Управление темной темой
@@ -147,7 +103,7 @@ export default function App() {
             localStorage.setItem('fem_bseu_user', JSON.stringify(latestUser));
         } else {
             // First time user registers, make sure they are persistently created in Firestore!
-            await setDoc(userRef, cleanUndefinedFields(u), { merge: true });
+            // rely on savePortalDB for persistence
 
             // Sync with local database as well
             const localDb = getPortalDB();
@@ -192,12 +148,7 @@ export default function App() {
     }
 
     // Update Firestore
-    try {
-        const userRef = doc(firestoreDb, 'users', updatedUser.record_book_id);
-        await setDoc(userRef, cleanUndefinedFields(updatedUser), { merge: true });
-    } catch (error) {
-        console.error("Error updating user in Firestore:", error);
-    }
+    // rely on savePortalDB for persistence
   };
 
   const handleLogout = () => {
@@ -276,6 +227,7 @@ export default function App() {
                   setSelectedSnilId(id);
                   setActiveTab('snil');
                 }} 
+                onNavigate={(tab) => setActiveTab(tab)}
               />
             )}
             {activeTab === 'events' && <EventsView db={db} user={user} onRefresh={refreshDB} />}

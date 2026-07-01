@@ -4,6 +4,7 @@ import { PublicationCertificateModal } from './PublicationCertificateModal';
 import { isInIframe } from '../lib/iframeUtils';
 import { CustomUser, Publication, ResearchApplication, ResearchTask, MerchOrder, PublicationCertificate, SnilApplication } from '../types';
 import { UserAvatar } from './UserAvatar';
+import { importAchievements } from '../services/importAchievements';
 import { 
   Shield, 
   CheckCircle2, 
@@ -1483,6 +1484,12 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
                 >
                   <Plus className="w-4 h-4" />
                   <span>Добавить</span>
+                </button>
+                <button
+                  onClick={() => { importAchievements(db); onRefresh(); }}
+                  className="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-white rounded-xl text-sm font-bold hover:opacity-90 transition-all shadow-md"
+                >
+                  Импорт
                 </button>
               </div>
             </div>

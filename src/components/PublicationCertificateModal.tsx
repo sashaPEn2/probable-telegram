@@ -61,7 +61,8 @@ export const PublicationCertificateModal: React.FC<PublicationCertificateModalPr
     window.print();
   };
 
-  const handleExportPDF = async () => {
+  const handleExportPDF = async (e: React.MouseEvent) => {
+    e.preventDefault();
     if (!certificateRef.current) return;
     setIsExporting(true);
     try {
@@ -336,11 +337,8 @@ export const PublicationCertificateModal: React.FC<PublicationCertificateModalPr
           body * {
             visibility: hidden;
           }
-          #root {
-            display: none;
-          }
           .printable-certificate, .printable-certificate * {
-            visibility: visible;
+            visibility: visible !important;
           }
           .printable-certificate {
             position: absolute !important;
@@ -353,7 +351,6 @@ export const PublicationCertificateModal: React.FC<PublicationCertificateModalPr
             box-shadow: none !important;
             transform: none !important;
             background: white !important;
-            visibility: visible !important;
           }
         }
       `}} />
