@@ -346,13 +346,14 @@ export const PublicationCertificateModal: React.FC<PublicationCertificateModalPr
             position: absolute !important;
             left: 0 !important;
             top: 0 !important;
-            width: 210mm !important;
-            height: 297mm !important;
-            padding: 20mm !important;
+            width: 100% !important;
+            height: auto !important;
+            padding: 0 !important;
             margin: 0 !important;
             box-shadow: none !important;
             transform: none !important;
             background: white !important;
+            visibility: visible !important;
           }
         }
       `}} />
