@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { PortalDatabase, generateIcsCalendar, addNotificationAndNotifyTelegram } from '../services/storage';
+import { PortalDatabase, generateIcsCalendar, addNotificationAndNotifyTelegram, savePortalDB } from '../services/storage';
 import { CustomUser, ScientificEvent, EventType } from '../types';
 import { 
   Calendar, 
@@ -107,7 +107,7 @@ export const EventsView: React.FC<EventsViewProps> = ({
         created_at: new Date().toISOString()
       });
 
-      localStorage.setItem('fem_bseu_portal_db_v1', JSON.stringify(db));
+      savePortalDB(db);
       setIsSubmitting(false);
       setSubmittedSuccess(true);
       onRefresh();

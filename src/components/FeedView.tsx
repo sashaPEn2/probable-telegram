@@ -566,6 +566,11 @@ export const FeedView: React.FC<FeedViewProps> = ({
                         <p className="text-[10px] text-[#64748b] font-medium mb-1">
                           <span className="font-bold uppercase mr-1" style={{ color: '#475569' }}>Издание:</span> {p.journal}
                         </p>
+                        {p.supervisor_name && (
+                          <p className="text-[10px] text-[#64748b] font-medium mb-2">
+                            <span className="font-bold uppercase mr-1" style={{ color: '#475569' }}>Руководитель:</span> {p.supervisor_name} {p.supervisor_position && `(${p.supervisor_position})`}
+                          </p>
+                        )}
                         <div className="flex items-center space-x-2">
                           <span className="text-[9px] px-1.5 py-0.5 rounded font-bold uppercase" style={{ backgroundColor: '#dbeafe', color: '#1e40af' }}>{p.type}</span>
                           {p.is_confirmed && (

@@ -19,6 +19,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess, onClose 
   const [faculty, setFaculty] = useState(FACULTIES[0]);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [consentGiven, setConsentGiven] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -104,6 +105,12 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess, onClose 
 
       if (isRegister && !group) {
         setError('Пожалуйста, выберите вашу учебную группу');
+        setIsLoading(false);
+        return;
+      }
+
+      if (isRegister && !consentGiven) {
+        setError('Необходимо согласие на обработку персональных данных для ведения портала и реестра научных публикаций.');
         setIsLoading(false);
         return;
       }
@@ -282,6 +289,24 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess, onClose 
                   ))}
                 </select>
               </div>
+            </div>
+          )}
+
+          {isRegister && (
+            <div className="flex items-start space-x-3 mt-4">
+              <div className="flex items-center h-5">
+                <input
+                  id="consent"
+                  type="checkbox"
+                  checked={consentGiven}
+                  onChange={(e) => setConsentGiven(e.target.checked)}
+                  disabled={isLoading}
+                  className="w-4 h-4 rounded border-emerald-700/50 bg-slate-800/80 text-[#10b981] focus:ring-[#10b981] focus:ring-offset-slate-900"
+                />
+              </div>
+              <label htmlFor="consent" className="text-xs text-emerald-200/80 cursor-pointer leading-tight">
+                Я даю согласие на обработку персональных данных для ведения портала и реестра научных публикаций.
+              </label>
             </div>
           )}
 

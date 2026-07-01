@@ -20,6 +20,14 @@ async function startServer() {
     const TelegramBotClass = (TelegramBot as any).default || TelegramBot;
     bot = new TelegramBotClass(botToken, { polling: true });
     
+    // Suppress Telegram polling conflict logs caused by multiple server reloads
+    bot.on('polling_error', (error: any) => {
+      if (error.message?.includes('409 Conflict')) {
+        return;
+      }
+      console.error("Telegram polling error:", error);
+    });
+    
     bot.onText(/\/start/, (msg) => {
       bot?.sendMessage(msg.chat.id, `Привет! Ваш Telegram ID: ${msg.chat.id}. Используйте его для привязки к порталу.`);
     });

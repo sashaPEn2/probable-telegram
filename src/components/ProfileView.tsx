@@ -48,7 +48,8 @@ import {
   Settings,
   ChevronRight,
   UserCircle,
-  Info
+  Info,
+  Upload
 } from 'lucide-react';
 import {
   AreaChart,
@@ -63,12 +64,12 @@ import {
   Bar,
   Cell
 } from 'recharts';
-import { addAnnouncement, deleteAnnouncement, deletePublication, addMemberToSnil, removeMemberFromSnil, addAchievementToSnil, removeAchievementFromSnil, getPortalDB, savePortalDB, savePublicationCertificateToFirestore } from '../services/storage';
+import { addAnnouncement, deleteAnnouncement, deletePublication, addMemberToSnil, removeMemberFromSnil, addAchievementToSnil, removeAchievementFromSnil, getPortalDB, savePortalDB, savePublicationCertificateToFirestore, triggerCertificateGeneration } from '../services/storage';
 
 interface ProfileViewProps {
   db: PortalDatabase;
   user: CustomUser;
-  onUpdateUser: (updated: CustomUser) => void;
+  onUpdateUser: (updated: CustomUser) => Promise<void> | void;
   onRefresh: () => void;
   onLogout: () => void;
 }
@@ -96,12 +97,32 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
+  // Photo / Avatar settings states
+  const [tempAvatarUrl, setTempAvatarUrl] = useState(user.avatar_url || '');
+  const [isUploadingSettingsPhoto, setIsUploadingSettingsPhoto] = useState(false);
+  const [settingsPhotoError, setSettingsPhotoError] = useState<string | null>(null);
+  const settingsFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Synchronize edit profile modal fields when it's opened
+  useEffect(() => {
+    if (isEditingProfile) {
+      setTempGroup(user.group);
+      setTempDepartment(user.department);
+      setTempIsPrivate(user.is_private || false);
+      setTempGender(user.gender);
+      setTempInterests(user.scientific_interests || []);
+      setTempAvatarUrl(user.avatar_url || '');
+      setSettingsPhotoError(null);
+    }
+  }, [isEditingProfile, user]);
+
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToast({ message, type });
     setTimeout(() => {
       setToast(null);
     }, 4000);
   };
+  const [justSubmittedPub, setJustSubmittedPub] = useState<string | null>(null);
   const [newInterest, setNewInterest] = useState('');
   const [viewingCert, setViewingCert] = useState<Certificate | null>(null);
   const [viewingPubCert, setViewingPubCert] = useState<{pub: Publication, cert: PublicationCertificate | null} | null>(null);
@@ -114,7 +135,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       department: tempDepartment, 
       is_private: tempIsPrivate, 
       gender: tempGender,
-      scientific_interests: tempInterests
+      scientific_interests: tempInterests,
+      avatar_url: tempAvatarUrl
     };
     
     // Update in local DB
@@ -125,12 +147,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         dbUser.is_private = tempIsPrivate;
         dbUser.gender = tempGender;
         dbUser.scientific_interests = tempInterests;
+        dbUser.avatar_url = tempAvatarUrl;
     }
-    localStorage.setItem('fem_bseu_portal_db_v1', JSON.stringify(db));
+    savePortalDB(db);
     
     onUpdateUser(updated);
     setIsEditingProfile(false);
     onRefresh();
+    showToast('Настройки профиля успешно сохранены', 'success');
   };
 
   const handleAddInterestToTemp = () => {
@@ -148,14 +172,86 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   };
 
   const handleSaveAvatar = (newAvatarUrl: string) => {
+    if (isEditingProfile) {
+      setTempAvatarUrl(newAvatarUrl);
+      setShowAvatarModal(false);
+      return;
+    }
+
     const updated = { ...user, avatar_url: newAvatarUrl };
     const dbUser = db.users.find(u => u.record_book_id === user.record_book_id);
     if (dbUser) {
         dbUser.avatar_url = newAvatarUrl;
     }
-    localStorage.setItem('fem_bseu_portal_db_v1', JSON.stringify(db));
+    savePortalDB(db);
     onUpdateUser(updated);
     setShowAvatarModal(false);
+    showToast('Аватар успешно обновлен', 'success');
+  };
+
+  const handleSettingsPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    const file = files[0];
+    if (!file.type.startsWith('image/')) {
+      setSettingsPhotoError('Пожалуйста, выберите файл изображения');
+      return;
+    }
+    
+    setIsUploadingSettingsPhoto(true);
+    setSettingsPhotoError(null);
+    try {
+      const resizedBase64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+            const maxWidth = 256;
+            const maxHeight = 256;
+
+            if (width > height) {
+              if (width > maxWidth) {
+                height = Math.round((height * maxWidth) / width);
+                width = maxWidth;
+              }
+            } else {
+              if (height > maxHeight) {
+                width = Math.round((width * maxHeight) / height);
+                height = maxHeight;
+              }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+              resolve(event.target?.result as string);
+              return;
+            }
+
+            ctx.drawImage(img, 0, 0, width, height);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+            resolve(dataUrl);
+          };
+          img.onerror = () => reject(new Error('Invalid image file'));
+          img.src = event.target?.result as string;
+        };
+        reader.onerror = () => reject(new Error('File reading failed'));
+        reader.readAsDataURL(file);
+      });
+      
+      setTempAvatarUrl(resizedBase64);
+    } catch (err) {
+      console.error(err);
+      setSettingsPhotoError('Не удалось обработать изображение. Попробуйте другой файл.');
+    } finally {
+      setIsUploadingSettingsPhoto(false);
+    }
   };
 
   // SNIL Management State
@@ -176,48 +272,24 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     setViewingPubCert({ pub, cert: existingCert || null });
   };
 
-  const handleGeneratePubCert = async (pubId: string, gender?: 'male' | 'female') => {
+  const handleGeneratePubCert = async (pubId: string, gender?: 'male' | 'female', middleName?: string) => {
     if (!viewingPubCert || !viewingPubCert.pub) return;
     
-    // Update user gender if provided during generation
-    if (gender && !user.gender) {
-      onUpdateUser({ ...user, gender });
+    // Update user gender or middle name if provided during generation
+    if ((gender && !user.gender) || (middleName && !user.middle_name)) {
+      await onUpdateUser({ ...user, gender: gender || user.gender, middle_name: middleName || user.middle_name });
     }
 
-    // Generate a unique number
-    const certNumber = Math.floor(10000 + Math.random() * 90000).toString();
-    
-    const newCert: PublicationCertificate = {
-      id: 'pub_cert_' + Date.now(),
-      number: certNumber,
-      user_record_book: user.record_book_id,
-      user_name: `${user.last_name} ${user.first_name}${user.middle_name ? ' ' + user.middle_name : ''}`,
-      publication_id: pubId,
-      publication_title: viewingPubCert.pub.title,
-      publication_type: viewingPubCert.pub.type,
-      publication_journal: viewingPubCert.pub.journal,
-      publication_year: viewingPubCert.pub.year,
-      issue_date: new Date().toISOString(),
-      status: 'issued'
-    };
-    
-    const portalDb = getPortalDB();
-    if (!portalDb.publication_certificates) {
-      portalDb.publication_certificates = [];
-    }
-    
-    // Support regeneration by removing old certificate for this publication
-    portalDb.publication_certificates = portalDb.publication_certificates.filter(c => c.publication_id !== pubId);
-    portalDb.publication_certificates.push(newCert);
-    savePortalDB(portalDb);
-    
+    let generatedCert: PublicationCertificate | null = null;
     try {
-      await savePublicationCertificateToFirestore(newCert);
+      generatedCert = await triggerCertificateGeneration(pubId);
     } catch (error) {
-      console.error(error);
+      console.error("Error generating certificate in handleGeneratePubCert:", error);
     }
     
-    setViewingPubCert({ pub: viewingPubCert.pub, cert: newCert });
+    if (generatedCert) {
+      setViewingPubCert({ pub: viewingPubCert.pub, cert: generatedCert });
+    }
     onRefresh();
   };
   const mySnilMembership = useMemo(() => (db.snils || []).find(s => s.member_record_books.includes(user.record_book_id)), [db.snils, user.record_book_id]);
@@ -259,6 +331,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [pubJournal, setPubJournal] = useState('');
   const [pubYear, setPubYear] = useState(new Date().getFullYear());
   const [pubLink, setPubLink] = useState('');
+  const [pubSupervisor, setPubSupervisor] = useState('');
+  const [pubSupervisorPosition, setPubSupervisorPosition] = useState('');
 
   const myTasks = useMemo(() => (db.tasks || []).filter(t => t.assigned_to_record_book === user.record_book_id), [db.tasks, user.record_book_id]);
   const stats = calculateResearcherStats(user.record_book_id);
@@ -278,7 +352,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       link: pubLink || undefined,
       file_name: 'Статья_БГЭУ_ФЭМ.pdf',
       is_confirmed: false, // Требует подтверждения координатора науки
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      supervisor_name: pubSupervisor.trim() || undefined,
+      supervisor_position: pubSupervisorPosition.trim() || undefined
     };
 
     db.publications.unshift(newP);
@@ -294,12 +370,20 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       created_at: new Date().toISOString()
     });
 
-    localStorage.setItem('fem_bseu_portal_db_v1', JSON.stringify(db));
+    savePortalDB(db);
+    setJustSubmittedPub(pubTitle);
+    setTimeout(() => {
+      setJustSubmittedPub(null);
+    }, 12000); // Показываем 12 секунд или до закрытия пользователем
+
     setPubTitle('');
     setPubJournal('');
     setPubLink('');
+    setPubSupervisor('');
+    setPubSupervisorPosition('');
     setShowAddPub(false);
     onRefresh();
+    showToast('Заявка на верификацию публикации успешно отправлена координатору науки ФЭМ!', 'success');
   };
 
   const mySnil = useMemo(() => {
@@ -481,7 +565,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         is_read: false,
         created_at: new Date().toISOString()
       });
-      localStorage.setItem('fem_bseu_portal_db_v1', JSON.stringify(db));
+      savePortalDB(db);
       onRefresh();
 
       showToast('Заявление успешно сгенерировано и скачано! Координатор СНО уведомлен.', 'success');
@@ -790,6 +874,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   <p className="text-[10px] text-[#64748b] font-medium mb-1">
                     <span className="font-bold uppercase mr-1" style={{ color: '#475569' }}>Издание:</span> {p.journal}
                   </p>
+                  {p.supervisor_name && (
+                    <p className="text-[10px] text-[#64748b] font-medium mb-2">
+                      <span className="font-bold uppercase mr-1" style={{ color: '#475569' }}>Руководитель:</span> {p.supervisor_name} {p.supervisor_position && `(${p.supervisor_position})`}
+                    </p>
+                  )}
                   <div className="flex items-center space-x-2">
                     <span className="text-[9px] px-1.5 py-0.5 rounded font-bold uppercase" style={{ backgroundColor: '#dbeafe', color: '#1e40af' }}>{p.type}</span>
                     {p.is_confirmed && (
@@ -1054,6 +1143,24 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       {/* Вкладка 1: Публикации портфолио */}
       {activeSubTab === 'overview' && (
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-sm space-y-6 transition-colors">
+          {justSubmittedPub && (
+            <div className="bg-emerald-50 dark:bg-emerald-950/20 border-2 border-emerald-500/30 rounded-2xl p-5 flex items-start gap-4 text-emerald-800 dark:text-emerald-300 animate-fadeIn relative">
+              <CheckCircle2 className="w-6 h-6 shrink-0 text-emerald-600 dark:text-emerald-400 mt-0.5" />
+              <div className="flex-1 pr-6">
+                <p className="font-bold text-sm">Заявка отправлена на рассмотрение!</p>
+                <p className="text-xs mt-1 leading-relaxed opacity-95">
+                  Ваша научная работа <strong>«{justSubmittedPub}»</strong> успешно добавлена в электронный реестр публикаций исследователя и направлена координатору науки ФЭМ для верификации.
+                </p>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setJustSubmittedPub(null)}
+                className="absolute top-4 right-4 text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
             <div>
               <h3 className="text-xl font-bold text-[#052e16] dark:text-emerald-300 flex items-center space-x-2">
@@ -1106,11 +1213,33 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 <input type="url" placeholder="https://edoc.bseu.by/..." value={pubLink} onChange={e => setPubLink(e.target.value)} className="w-full px-3 py-2 bg-white dark:bg-slate-800 dark:text-slate-100 rounded-xl border dark:border-slate-700 text-xs font-mono focus:outline-none" />
               </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 border-t border-slate-100 dark:border-slate-800 pt-3">
+                <div>
+                  <label className="block text-[10px] font-mono uppercase text-slate-600 dark:text-slate-400 mb-1">Научный руководитель</label>
+                  <input type="text" placeholder="Например: д.э.н., профессор Иванов И.И." value={pubSupervisor} onChange={e => setPubSupervisor(e.target.value)} className="w-full px-3 py-2 bg-white dark:bg-slate-800 dark:text-slate-100 rounded-xl border dark:border-slate-700 text-sm focus:outline-none" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-mono uppercase text-slate-600 dark:text-slate-400 mb-1">Должность / степень руководителя</label>
+                  <input type="text" placeholder="Например: профессор кафедры национальной экономики" value={pubSupervisorPosition} onChange={e => setPubSupervisorPosition(e.target.value)} className="w-full px-3 py-2 bg-white dark:bg-slate-800 dark:text-slate-100 rounded-xl border dark:border-slate-700 text-sm focus:outline-none" />
+                </div>
+              </div>
+
               <div className="flex flex-col sm:flex-row justify-end gap-3 pt-2">
                 <button type="button" onClick={() => setShowAddPub(false)} className="px-5 py-2.5 text-sm text-slate-600 dark:text-slate-400 font-semibold order-2 sm:order-1">Отмена</button>
                 <button type="submit" className="px-6 py-3 bg-[#10b981] text-[#052e16] font-bold text-sm rounded-xl shadow hover:brightness-105 transition-all order-1 sm:order-2">Сохранить в портфолио</button>
               </div>
             </form>
+          )}
+
+          {/* Warning banner if there are any pending/unconfirmed publications */}
+          {myPubs.some(p => !p.is_confirmed) && (
+            <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 rounded-2xl p-4 flex gap-3 text-xs text-amber-800 dark:text-amber-300 animate-fadeIn">
+              <Clock className="w-5 h-5 shrink-0 text-amber-600 dark:text-amber-500 mt-0.5" />
+              <div>
+                <p className="font-bold">Труды отправлены на рассмотрение («На рассмотрении координатора»)</p>
+                <p className="mt-0.5 opacity-90">Ваши новые научные труды успешно зарегистрированы и направлены координатору науки ФЭМ для верификации. Сразу после подтверждения статус изменится на «Верифицировано СНО», и вам будут автоматически начислены рейтинговые баллы.</p>
+              </div>
+            </div>
           )}
 
           {myPubs.length === 0 ? (
@@ -1139,6 +1268,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     </div>
                     <h4 className="font-bold text-base text-[#052e16] dark:text-emerald-200 leading-snug">{pb.title}</h4>
                     <p className="text-xs text-slate-600 dark:text-slate-400">📖 Издание: <strong>{pb.journal}</strong></p>
+                    {pb.supervisor_name && (
+                      <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
+                        <span>🎓 Руководитель:</span> 
+                        <strong className="text-slate-700 dark:text-slate-300">{pb.supervisor_name}</strong>
+                        {pb.supervisor_position && <span className="text-slate-400">({pb.supervisor_position})</span>}
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex items-center space-x-2 self-end sm:self-center">
@@ -1740,6 +1876,77 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               </div>
 
               <div className="p-6 sm:p-8 overflow-y-auto space-y-6 sm:space-y-8 flex-1 scrollbar-none">
+                {/* Photo / Avatar Section */}
+                <div className="space-y-6">
+                  <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+                    <User className="w-5 h-5" />
+                    <h3 className="font-black uppercase text-xs tracking-widest">Фото профиля</h3>
+                  </div>
+                  
+                  <div className="flex flex-col sm:flex-row items-center gap-6 bg-slate-50 dark:bg-slate-800/40 p-5 rounded-2xl border border-slate-100 dark:border-slate-800">
+                    <div className="relative group shrink-0">
+                      <UserAvatar size="2xl" user={{ ...user, avatar_url: tempAvatarUrl }} className="w-20 h-20 sm:w-24 sm:h-24 object-cover" />
+                      {tempAvatarUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setTempAvatarUrl('')}
+                          className="absolute -top-1 -right-1 p-1 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-md transition-colors"
+                          title="Удалить фото"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                    
+                    <div className="flex-1 space-y-3 w-full text-center sm:text-left">
+                      <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                        Добавьте или измените ваше фото
+                      </h4>
+                      <p className="text-xs text-slate-500 max-w-sm mx-auto sm:mx-0">
+                        Загрузите фотографию со своего устройства или сконструируйте уникальный научный аватар. Изменения вступят в силу после нажатия кнопки «Сохранить».
+                      </p>
+                      
+                      <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setShowAvatarModal(true)}
+                          className="px-4 py-2 bg-[#052e16] hover:bg-emerald-800 text-white font-bold text-xs rounded-xl shadow transition-all flex items-center space-x-1.5"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>Конструктор аватаров</span>
+                        </button>
+                        
+                        <button
+                          type="button"
+                          onClick={() => settingsFileInputRef.current?.click()}
+                          className="px-4 py-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-bold text-xs rounded-xl shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all flex items-center space-x-1.5"
+                        >
+                          {isUploadingSettingsPhoto ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Upload className="w-3.5 h-3.5" />
+                          )}
+                          <span>Загрузить фото</span>
+                        </button>
+                        
+                        <input
+                          type="file"
+                          ref={settingsFileInputRef}
+                          className="hidden"
+                          accept="image/*"
+                          onChange={handleSettingsPhotoUpload}
+                        />
+                      </div>
+                      
+                      {settingsPhotoError && (
+                        <p className="text-xs text-rose-500 font-bold">
+                          {settingsPhotoError}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
                 {/* Academic Section */}
                 <div className="space-y-6">
                   <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">

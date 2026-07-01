@@ -26,6 +26,24 @@ import {
 import { doc, getDoc, setDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
 import { db as firestoreDb, auth } from '../lib/firebase';
 
+export function cleanUndefinedFields(obj: any): any {
+  if (obj === null || obj === undefined) return null;
+  if (Array.isArray(obj)) {
+    return obj.map(item => cleanUndefinedFields(item));
+  }
+  if (typeof obj === 'object') {
+    const cleaned: any = {};
+    for (const key of Object.keys(obj)) {
+      const val = obj[key];
+      if (val !== undefined) {
+        cleaned[key] = cleanUndefinedFields(val);
+      }
+    }
+    return cleaned;
+  }
+  return obj;
+}
+
 export enum OperationType {
   CREATE = 'create',
   UPDATE = 'update',
@@ -77,13 +95,14 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
 
 export async function fetchPortalDBFromFirestore(): Promise<PortalDatabase> {
   const collections: (keyof PortalDatabase)[] = [
-    'users', 'publications', 'certificates', 'projects', 'snils', 'events', 
+    'users', 'publications', 'certificates', 'publication_certificates', 'projects', 'snils', 'events', 
     'applications', 'news', 'tasks', 'gallery', 'notifications', 'reports', 
     'merch', 'orders', 'announcements', 'snil_applications', 'quizzes', 'quizAttempts'
   ];
 
   const db: any = {};
-  for (const col of collections) {
+  
+  await Promise.all(collections.map(async (col) => {
     try {
       const querySnapshot = await getDocs(collection(firestoreDb, col));
       db[col] = querySnapshot.docs.map(doc => doc.data());
@@ -91,26 +110,14 @@ export async function fetchPortalDBFromFirestore(): Promise<PortalDatabase> {
       console.error(`Error reading collection ${col}:`, e);
       db[col] = [];
     }
-  }
+  }));
 
-  // Ensure only the administrator account exists in the user list!
+  // Ensure all registered users are kept and not deleted!
   const users = (db.users || []) as CustomUser[];
-  const hasAdmin = users.some(u => u.record_book_id === '00000001');
 
-  // Delete all users in Firestore except the admin!
-  for (const u of users) {
-    if (u.record_book_id !== '00000001') {
-      try {
-        await deleteDoc(doc(firestoreDb, 'users', u.record_book_id));
-      } catch (err) {
-        console.error("Error deleting old account:", err);
-      }
-    }
-  }
-
-  // Ensure the admin account is in Firestore
-  if (!hasAdmin) {
-    const adminUser: CustomUser = {
+  // Define administrators that we need to ensure exist
+  const adminsToEnsure: CustomUser[] = [
+    {
       record_book_id: '00000001',
       last_name: 'Администратор',
       first_name: 'СНО',
@@ -121,20 +128,78 @@ export async function fetchPortalDBFromFirestore(): Promise<PortalDatabase> {
       department: 'Деканат',
       scientific_interests: ['Управление СНО', 'Информационные технологии в науке'],
       created_at: new Date().toISOString(),
+      password: 'админ'
+    },
+    {
+      record_book_id: '0001',
+      last_name: 'Администратор',
+      first_name: 'Системный',
+      role: 'admin',
+      group: 'Система',
+      course: 4,
+      faculty: 'ФЭМ',
+      department: 'Деканат',
+      scientific_interests: ['Управление СНО', 'Информационные технологии в науке'],
+      created_at: new Date().toISOString(),
+      password: 'админ'
+    },
+    {
+      record_book_id: 'админ',
+      last_name: 'Администратор',
+      first_name: 'Главный',
+      role: 'admin',
+      group: 'Система',
+      course: 4,
+      faculty: 'ФЭМ',
+      department: 'Деканат',
+      scientific_interests: ['Управление СНО', 'Информационные технологии в науке'],
+      created_at: new Date().toISOString(),
+      password: 'админ'
+    },
+    {
+      record_book_id: 'admin',
+      last_name: 'Администратор',
+      first_name: 'Системы',
+      role: 'admin',
+      group: 'СИСТ-1',
+      course: 4,
+      faculty: 'ФЭМ',
+      department: 'Деканат',
+      scientific_interests: ['Управление системой'],
+      created_at: new Date().toISOString(),
       password: 'admin'
-    };
-    try {
-      await setDoc(doc(firestoreDb, 'users', '00000001'), adminUser);
-      db.users = [adminUser];
-    } catch (err) {
-      console.error("Error creating admin account:", err);
     }
-  } else {
-    db.users = users.filter(u => u.record_book_id === '00000001');
+  ];
+
+  for (const adminUser of adminsToEnsure) {
+    const existingAdminIndex = users.findIndex(u => u.record_book_id === adminUser.record_book_id);
+    if (existingAdminIndex === -1) {
+      try {
+        await setDoc(doc(firestoreDb, 'users', adminUser.record_book_id), cleanUndefinedFields(adminUser));
+        users.push(adminUser);
+      } catch (err) {
+        console.error(`Error creating admin account ${adminUser.record_book_id}:`, err);
+      }
+    } else {
+      // Ensure existing admin account has admin role and expected password
+      const existingAdmin = users[existingAdminIndex];
+      if (existingAdmin.role !== 'admin' || existingAdmin.password !== adminUser.password) {
+        existingAdmin.role = 'admin';
+        existingAdmin.password = adminUser.password;
+        try {
+          await setDoc(doc(firestoreDb, 'users', adminUser.record_book_id), cleanUndefinedFields(existingAdmin), { merge: true });
+        } catch (err) {
+          console.error(`Error updating admin role/password for ${adminUser.record_book_id}:`, err);
+        }
+      }
+    }
   }
+
+  db.users = users;
 
   // Also update our memory cache
   memoryDb = { ...memoryDb, ...db };
+  referenceDb = JSON.parse(JSON.stringify(memoryDb));
 
   // Run the seeding check to auto-fill any empty collections and sync back to Firestore
   seedFacultyStarterTemplate();
@@ -173,7 +238,21 @@ export interface PortalDatabase {
 }
 
 const INITIAL_DB: PortalDatabase = {
-  users: [],
+  users: [
+    {
+      record_book_id: 'admin',
+      last_name: 'Администратор',
+      first_name: 'Системы',
+      role: 'admin',
+      group: 'СИСТ-1',
+      course: 4,
+      faculty: 'ФЭМ',
+      department: 'Деканат',
+      scientific_interests: ['Управление системой'],
+      created_at: new Date().toISOString(),
+      password: 'admin'
+    }
+  ],
   publications: [],
   certificates: [],
   publication_certificates: [],
@@ -224,12 +303,16 @@ export const GROUPS_BY_COURSE: Record<number, string[]> = {
 
 export const GROUPS = Object.values(GROUPS_BY_COURSE).flat();
 
-let memoryDb: PortalDatabase = { ...INITIAL_DB };
+const savedDbData = localStorage.getItem(STORAGE_KEY);
+let memoryDb: PortalDatabase = savedDbData ? { ...INITIAL_DB, ...JSON.parse(savedDbData) } : { ...INITIAL_DB };
+let referenceDb: PortalDatabase = JSON.parse(JSON.stringify(memoryDb));
 let hasSeeded = false;
 
 export function getPortalDB(): PortalDatabase {
   if (!hasSeeded) {
-    seedFacultyStarterTemplate();
+    if (!savedDbData) {
+      seedFacultyStarterTemplate();
+    }
     hasSeeded = true;
   }
   return memoryDb;
@@ -243,7 +326,7 @@ export function savePortalDB(db: PortalDatabase): void {
   ];
 
   collections.forEach(colKey => {
-    const oldItems = (memoryDb[colKey] as any[]) || [];
+    const oldItems = (referenceDb[colKey] as any[]) || [];
     const newItems = (db[colKey] as any[]) || [];
 
     // Find added or updated items
@@ -256,7 +339,8 @@ export function savePortalDB(db: PortalDatabase): void {
       if (!oldItem || JSON.stringify(oldItem) !== JSON.stringify(newItem)) {
         // Item was added or modified, write to Firestore!
         const docRef = doc(firestoreDb, colKey as string, id);
-        setDoc(docRef, { ...newItem }, { merge: true }).catch(err => {
+        const cleanedItem = cleanUndefinedFields(newItem);
+        setDoc(docRef, cleanedItem, { merge: true }).catch(err => {
           console.error(`Error syncing ${colKey}/${id} to Firestore:`, err);
         });
       }
@@ -279,6 +363,8 @@ export function savePortalDB(db: PortalDatabase): void {
   });
 
   memoryDb = { ...db };
+  referenceDb = JSON.parse(JSON.stringify(db));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
 }
 
 export function getCurrentUser(): CustomUser | null {
@@ -360,7 +446,7 @@ export function loginUser(
   // Also write to Firestore directly to make sure we persist it and support real-time across devices!
   try {
     const userRef = doc(firestoreDb, 'users', user.record_book_id);
-    setDoc(userRef, { ...user }, { merge: true }).catch(err => {
+    setDoc(userRef, cleanUndefinedFields(user), { merge: true }).catch(err => {
       console.error("Error writing registered user to Firestore:", err);
     });
   } catch (error) {
@@ -515,14 +601,41 @@ export function seedFacultyStarterTemplate(): void {
       department: 'Деканат',
       scientific_interests: ['Управление СНО', 'Информационные технологии в науке'],
       created_at: new Date().toISOString(),
-      password: 'admin'
+      password: 'админ'
     };
     db.users.push(adminUser);
 
     try {
       const adminRef = doc(firestoreDb, 'users', adminUser.record_book_id);
-      setDoc(adminRef, adminUser, { merge: true }).catch(err => {
+      setDoc(adminRef, cleanUndefinedFields(adminUser), { merge: true }).catch(err => {
         console.error("Error writing admin account to Firestore during seeding:", err);
+      });
+    } catch (err) {
+      console.error("Firestore seeding error:", err);
+    }
+  }
+
+  let systemAdmin = db.users.find(u => u.record_book_id === 'admin');
+  if (!systemAdmin) {
+    systemAdmin = {
+      record_book_id: 'admin',
+      last_name: 'Администратор',
+      first_name: 'Системы',
+      role: 'admin',
+      group: 'СИСТ-1',
+      course: 4,
+      faculty: 'ФЭМ',
+      department: 'Деканат',
+      scientific_interests: ['Управление системой'],
+      created_at: new Date().toISOString(),
+      password: 'admin'
+    };
+    db.users.push(systemAdmin);
+
+    try {
+      const sysAdminRef = doc(firestoreDb, 'users', systemAdmin.record_book_id);
+      setDoc(sysAdminRef, cleanUndefinedFields(systemAdmin), { merge: true }).catch(err => {
+        console.error("Error writing system admin to Firestore:", err);
       });
     } catch (err) {
       console.error("Firestore seeding error:", err);
@@ -787,14 +900,80 @@ export function addAnnouncement(announcement: Omit<Announcement, 'id' | 'created
   savePortalDB(db);
 }
 
+export async function triggerCertificateGeneration(pubId: string): Promise<PublicationCertificate | null> {
+  const db = getPortalDB();
+  const pub = db.publications.find(p => p.id === pubId);
+  if (!pub) {
+    console.error(`Publication not found for certificate generation: ${pubId}`);
+    return null;
+  }
+
+  // Ensure publication is confirmed
+  if (!pub.is_confirmed) {
+    console.warn(`Publication is not confirmed, skipping certificate generation: ${pubId}`);
+    return null;
+  }
+
+  const studentUser = db.users.find(u => u.record_book_id === pub.user_record_book);
+  if (!studentUser) {
+    console.error(`Student user not found for record book: ${pub.user_record_book}`);
+    return null;
+  }
+
+  if (!db.publication_certificates) {
+    db.publication_certificates = [];
+  }
+
+  // Check if already exists
+  const existingCert = db.publication_certificates.find(c => c.publication_id === pub.id);
+  if (existingCert) {
+    return existingCert;
+  }
+
+  const certNumber = Math.floor(10000 + Math.random() * 90000).toString();
+  const newCert: PublicationCertificate = {
+    id: 'pub_cert_' + Date.now(),
+    number: certNumber,
+    user_record_book: studentUser.record_book_id,
+    user_name: `${studentUser.last_name} ${studentUser.first_name}${studentUser.middle_name ? ' ' + studentUser.middle_name : ''}`,
+    publication_id: pub.id,
+    publication_title: pub.title,
+    publication_type: pub.type,
+    publication_journal: pub.journal,
+    publication_year: pub.year,
+    issue_date: new Date().toISOString(),
+    status: 'issued'
+  };
+
+  db.publication_certificates.push(newCert);
+  savePortalDB(db);
+
+  try {
+    await savePublicationCertificateToFirestore(newCert);
+  } catch (err) {
+    console.error("Error saving auto-generated certificate to Firestore:", err);
+  }
+
+  return newCert;
+}
+
 export async function savePublicationToFirestore(pub: Publication): Promise<void> {
   const docRef = doc(firestoreDb, 'publications', pub.id);
-  await setDoc(docRef, pub, { merge: true });
+  await setDoc(docRef, cleanUndefinedFields(pub), { merge: true });
+
+  // Automatically trigger certificate generation if confirmed
+  if (pub.is_confirmed) {
+    try {
+      await triggerCertificateGeneration(pub.id);
+    } catch (err) {
+      console.error('Failed to trigger certificate generation inside savePublicationToFirestore:', err);
+    }
+  }
 }
 
 export async function savePublicationCertificateToFirestore(cert: PublicationCertificate): Promise<void> {
   const docRef = doc(firestoreDb, 'publication_certificates', cert.id);
-  await setDoc(docRef, cert, { merge: true });
+  await setDoc(docRef, cleanUndefinedFields(cert), { merge: true });
 }
 
 export async function deletePublication(id: string): Promise<void> {
@@ -825,12 +1004,12 @@ export async function deleteAnnouncement(id: string): Promise<void> {
 
 export async function saveNewsToFirestore(news: SNONews): Promise<void> {
   const docRef = doc(firestoreDb, 'news', news.id);
-  await setDoc(docRef, news, { merge: true });
+  await setDoc(docRef, cleanUndefinedFields(news), { merge: true });
 }
 
 export async function saveEventToFirestore(event: ScientificEvent): Promise<void> {
   const docRef = doc(firestoreDb, 'events', event.id);
-  await setDoc(docRef, event, { merge: true });
+  await setDoc(docRef, cleanUndefinedFields(event), { merge: true });
 }
 
 export async function deleteNews(id: string): Promise<{ success: boolean; message: string }> {

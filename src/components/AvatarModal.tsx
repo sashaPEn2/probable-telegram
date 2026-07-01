@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, 
   Sparkles, 
@@ -16,7 +16,8 @@ import {
   FlaskConical,
   HelpCircle,
   HelpCircle as Globe,
-  Check
+  Check,
+  Upload
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -26,6 +27,51 @@ interface AvatarModalProps {
   onClose: () => void;
   onSave: (avatarUrl: string) => void;
 }
+
+// Helper to downscale and optimize selected images to web-optimized Base64
+const resizeImage = (file: File, maxWidth: number, maxHeight: number): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(event.target?.result as string);
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+        // Compressed JPEG is smaller and faster
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        resolve(dataUrl);
+      };
+      img.onerror = () => reject(new Error('Invalid image file'));
+      img.src = event.target?.result as string;
+    };
+    reader.onerror = () => reject(new Error('File reading failed'));
+    reader.readAsDataURL(file);
+  });
+};
 
 // Pre-defined icons for the Gradients & Icons tab
 const ICON_TEMPLATES = [
@@ -56,7 +102,7 @@ export const AvatarModal: React.FC<AvatarModalProps> = ({
   onClose,
   onSave,
 }) => {
-  const [activeTab, setActiveTab] = useState<'icons' | 'seed'>('icons');
+  const [activeTab, setActiveTab] = useState<'icons' | 'seed' | 'upload'>('icons');
   const [previewAvatar, setPreviewAvatar] = useState<string>(currentAvatar);
   
   // Icon & Gradient state
@@ -66,6 +112,30 @@ export const AvatarModal: React.FC<AvatarModalProps> = ({
   // Seed-based state
   const [seedText, setSeedText] = useState<string>(userName || 'FE_User');
   const [seedType, setSeedType] = useState<'cats' | 'robots' | 'monsters'>('cats');
+
+  // Upload Photo state
+  const [isDragging, setIsDragging] = useState(false);
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePhotoFile = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      setImageError('Пожалуйста, выберите файл изображения (картинку)');
+      return;
+    }
+    setIsProcessingImage(true);
+    setImageError(null);
+    try {
+      const resizedBase64 = await resizeImage(file, 256, 256);
+      setPreviewAvatar(resizedBase64);
+    } catch (err: any) {
+      console.error(err);
+      setImageError('Не удалось обработать изображение. Попробуйте другой файл.');
+    } finally {
+      setIsProcessingImage(false);
+    }
+  };
 
   // Generate Icon SVG manually on the client based on selected icon & gradient
   const generateIconSvg = () => {
@@ -270,6 +340,17 @@ export const AvatarModal: React.FC<AvatarModalProps> = ({
               <Shuffle className="w-3.5 h-3.5" />
               <span>Сид-Генератор</span>
             </button>
+            <button
+              onClick={() => setActiveTab('upload')}
+              className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center space-x-1.5 ${
+                activeTab === 'upload' 
+                  ? 'bg-white dark:bg-slate-900 text-[#052e16] dark:text-emerald-300 shadow' 
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+              }`}
+            >
+              <Upload className="w-3.5 h-3.5" />
+              <span>Загрузить фото</span>
+            </button>
           </div>
 
           {/* Tab Contents - Scrollable */}
@@ -369,6 +450,75 @@ export const AvatarModal: React.FC<AvatarModalProps> = ({
                     ))}
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* UPLOAD PHOTO TAB */}
+            {activeTab === 'upload' && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 font-mono">
+                    Загрузка изображения профиля
+                  </label>
+                  
+                  <div 
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setIsDragging(true);
+                    }}
+                    onDragLeave={() => setIsDragging(false)}
+                    onDrop={async (e) => {
+                      e.preventDefault();
+                      setIsDragging(false);
+                      const files = e.dataTransfer.files;
+                      if (files && files.length > 0) {
+                        await handlePhotoFile(files[0]);
+                      }
+                    }}
+                    className={`border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
+                      isDragging 
+                        ? 'border-emerald-500 bg-emerald-500/10' 
+                        : 'border-slate-300 dark:border-slate-700 hover:border-emerald-500 dark:hover:border-emerald-500 bg-slate-50 dark:bg-slate-800/40'
+                    }`}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <input 
+                      type="file" 
+                      ref={fileInputRef} 
+                      className="hidden" 
+                      accept="image/*" 
+                      onChange={async (e) => {
+                        const files = e.target.files;
+                        if (files && files.length > 0) {
+                          await handlePhotoFile(files[0]);
+                        }
+                      }}
+                    />
+                    
+                    {isProcessingImage ? (
+                      <div className="flex flex-col items-center space-y-2">
+                        <Loader2 className="w-10 h-10 text-emerald-500 animate-spin" />
+                        <p className="text-xs text-slate-500">Обработка и сжатие...</p>
+                      </div>
+                    ) : (
+                      <>
+                        <Upload className="w-10 h-10 text-slate-400 dark:text-slate-500 mb-2 group-hover:scale-110 transition-transform" />
+                        <p className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                          Перетащите фото сюда или нажмите для выбора
+                        </p>
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
+                          Поддерживаются PNG, JPG, WEBP. Сжатие происходит автоматически.
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </div>
+                
+                {imageError && (
+                  <p className="text-xs text-rose-500 font-bold text-center">
+                    {imageError}
+                  </p>
+                )}
               </div>
             )}
           </div>

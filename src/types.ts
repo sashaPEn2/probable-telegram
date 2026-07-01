@@ -44,6 +44,8 @@ export interface Publication {
   file_name?: string;
   is_confirmed: boolean;
   created_at: string;
+  supervisor_name?: string;
+  supervisor_position?: string;
 }
 
 export interface PublicationCertificate {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { PortalDatabase, savePortalDB, getPortalDB, addNotificationAndNotifyTelegram, deleteNews, deleteEvent, saveNewsToFirestore, saveEventToFirestore, deletePublication, savePublicationToFirestore, updateUserRole, getRoleTitle, canAccessAdmin, updateSnilApplicationStatus } from '../services/storage';
+import { PortalDatabase, savePortalDB, getPortalDB, addNotificationAndNotifyTelegram, deleteNews, deleteEvent, saveNewsToFirestore, saveEventToFirestore, deletePublication, savePublicationToFirestore, updateUserRole, getRoleTitle, canAccessAdmin, updateSnilApplicationStatus, savePublicationCertificateToFirestore, triggerCertificateGeneration } from '../services/storage';
 import { PublicationCertificateModal } from './PublicationCertificateModal';
+import { isInIframe } from '../lib/iframeUtils';
 import { CustomUser, Publication, ResearchApplication, ResearchTask, MerchOrder, PublicationCertificate, SnilApplication } from '../types';
 import { UserAvatar } from './UserAvatar';
 import { 
@@ -37,6 +38,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
   const [userSearch, setUserSearch] = useState('');
   const [editingNewsId, setEditingNewsId] = useState<string | null>(null);
   const [adminViewingPubCert, setAdminViewingPubCert] = useState<PublicationCertificate | null>(null);
+  const [iframeWarning, setIframeWarning] = useState(false);
   const [certFilterMonth, setCertFilterMonth] = useState<string>('all');
   const [certFilterYear, setCertFilterYear] = useState<string>('all');
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
@@ -53,14 +55,20 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
     password: ''
   });
   
-  const [confirmModalState, setConfirmModalState] = useState<{isOpen: boolean, message: string, onConfirm: () => void}>({
+  const [confirmModalState, setConfirmModalState] = useState<{
+    isOpen: boolean;
+    message: string;
+    onConfirm: () => void;
+    confirmText?: string;
+  }>({
     isOpen: false,
     message: '',
-    onConfirm: () => {}
+    onConfirm: () => {},
+    confirmText: 'Да'
   });
 
-  const showConfirm = (message: string, onConfirm: () => void) => {
-    setConfirmModalState({ isOpen: true, message, onConfirm });
+  const showConfirm = (message: string, onConfirm: () => void, confirmText: string = 'Да') => {
+    setConfirmModalState({ isOpen: true, message, onConfirm, confirmText });
   };
   
   useEffect(() => console.log('User role:', user.role), [user]);
@@ -148,7 +156,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
   const handleSaveBanner = () => {
     db.feed_banner = { ...bannerForm };
     db.secondary_banner = { ...secondaryBannerForm };
-    localStorage.setItem('fem_bseu_portal_db_v1', JSON.stringify(db));
+    savePortalDB(db);
     onRefresh();
     alert('Баннеры успешно обновлены');
   };
@@ -166,28 +174,35 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
       created_at: new Date().toISOString()
     });
     
-    const dbCopy = { ...db, publications: [...db.publications] };
-    const pubIdx = dbCopy.publications.findIndex(p => p.id === pub.id);
+    const db = getPortalDB();
+    const pubIdx = db.publications.findIndex(p => p.id === pub.id);
     if (pubIdx !== -1) {
-      dbCopy.publications[pubIdx] = { ...dbCopy.publications[pubIdx], is_confirmed: true };
+      db.publications[pubIdx].is_confirmed = true;
+      savePortalDB(db);
     }
-    
-    localStorage.setItem('fem_bseu_portal_db_v1', JSON.stringify(dbCopy));
-    onRefresh();
+
+    // Also auto-generate and register the publication certificate so the student immediately receives it
+    try {
+      await triggerCertificateGeneration(pub.id);
+    } catch (err) {
+      console.error("Error auto-generating certificate in handleApprovePub:", err);
+    }
 
     try {
       await savePublicationToFirestore({ ...pub, is_confirmed: true });
     } catch (e) {
       console.error(e);
-    } finally {
-      setTimeout(() => {
-        setProcessingIds(prev => {
-          const next = new Set(prev);
-          next.delete(pub.id);
-          return next;
-        });
-      }, 500);
     }
+    
+    onRefresh();
+
+    setTimeout(() => {
+      setProcessingIds(prev => {
+        const next = new Set(prev);
+        next.delete(pub.id);
+        return next;
+      });
+    }, 500);
   };
 
   const handleRejectPub = async (pubId: string, studentRecord: string, title: string) => {
@@ -225,7 +240,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
       is_read: false,
       created_at: new Date().toISOString()
     });
-    localStorage.setItem('fem_bseu_portal_db_v1', JSON.stringify(db));
+    savePortalDB(db);
     onRefresh();
   };
 
@@ -264,7 +279,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
       });
     });
 
-    localStorage.setItem('fem_bseu_portal_db_v1', JSON.stringify(db));
+    savePortalDB(db);
     setBroadcastTitle('');
     setBroadcastMessage('');
     alert('Уведомление успешно отправлено всем студентам ФЭМ!');
@@ -415,7 +430,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
         console.error(error);
         alert('Ошибка при удалении новости: ' + (error instanceof Error ? error.message : String(error)));
       }
-    });
+    }, 'Удалить');
   };
 
   const handleAddEvent = async () => {
@@ -471,7 +486,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
         console.error(error);
         alert('Ошибка при удалении мероприятия: ' + (error instanceof Error ? error.message : String(error)));
       }
-    });
+    }, 'Удалить');
   };
 
   return (
@@ -617,18 +632,23 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
                       </div>
                       <h4 className="font-extrabold text-base text-[#052e16] mt-1">{pb.title} ({pb.type}, {pb.year} г.)</h4>
                       <p className="text-xs text-slate-700">Издание / Журнал: <strong>{pb.journal}</strong></p>
+                      {pb.supervisor_name && (
+                        <p className="text-xs text-slate-600">
+                          🎓 Научный руководитель: <strong>{pb.supervisor_name}</strong> {pb.supervisor_position && `(${pb.supervisor_position})`}
+                        </p>
+                      )}
                       {pb.link && <a href={pb.link} target="_blank" rel="noreferrer" className="text-emerald-600 underline text-xs font-mono inline-block mt-1">Ссылка на публикацию в репозитории →</a>}
                     </div>
 
                     <div className="flex space-x-2 self-end sm:self-center">
                       <button
-                        onClick={() => handleApprovePub(pb)}
+                        onClick={() => showConfirm(`Вы действительно хотите подтвердить и верифицировать публикацию «${pb.title}»? Студенту будут начислены рейтинговые баллы.`, () => handleApprovePub(pb), 'Подтвердить')}
                         className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-bold text-xs rounded-xl shadow flex items-center space-x-1"
                       >
                         <CheckCircle2 className="w-4 h-4" /> <span>Подтвердить</span>
                       </button>
                       <button
-                        onClick={() => handleRejectPub(pb.id, pb.user_record_book, pb.title)}
+                        onClick={() => showConfirm(`Вы действительно хотите отклонить и удалить публикацию «${pb.title}»?`, () => handleRejectPub(pb.id, pb.user_record_book, pb.title), 'Отклонить')}
                         className="px-4 py-2 bg-green-100 hover:bg-green-200 text-green-800 font-bold text-xs rounded-xl flex items-center space-x-1"
                       >
                         <XCircle className="w-4 h-4" /> <span>Отклонить</span>
@@ -1342,6 +1362,19 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
             </div>
           </div>
 
+          {iframeWarning && (
+            <div className="mb-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4 rounded-xl text-amber-800 dark:text-amber-400 text-sm print:hidden">
+              <div className="flex items-center space-x-2 font-bold mb-1">
+                <AlertCircle className="w-4 h-4" />
+                <span>Ограничения предпросмотра</span>
+              </div>
+              <p>
+                В режиме предпросмотра скачивание и печать могут быть заблокированы. 
+                Пожалуйста, откройте приложение в новой вкладке браузера (кнопка в правом верхнем углу окна), чтобы распечатать журнал.
+              </p>
+            </div>
+          )}
+
           <div className="overflow-x-auto print:overflow-visible">
             <table className="w-full text-left text-sm text-slate-600">
               <thead className="bg-slate-50 text-slate-700 text-xs uppercase font-bold border-b border-slate-200">
@@ -1413,7 +1446,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ db, user, onRefresh }) => 
                 }}
                 className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium shadow-sm hover:shadow-md"
               >
-                Удалить
+                {confirmModalState.confirmText || 'Да'}
               </button>
             </div>
           </div>

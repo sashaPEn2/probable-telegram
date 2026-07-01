@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { getPortalDB, savePortalDB, fetchPortalDBFromFirestore, PortalDatabase, canAccessAdmin } from './services/storage';
+import { getPortalDB, savePortalDB, fetchPortalDBFromFirestore, PortalDatabase, canAccessAdmin, cleanUndefinedFields } from './services/storage';
 import { migrateLocalStorageToFirestore } from './services/migration';
 import { CustomUser } from './types';
 import { Navbar } from './components/Navbar';
@@ -141,13 +141,13 @@ export default function App() {
               localDb.users.push(latestUser);
             }
             savePortalDB(localDb);
-            setDb(localDb);
+            setDb({ ...localDb });
 
             setUser(latestUser);
             localStorage.setItem('fem_bseu_user', JSON.stringify(latestUser));
         } else {
             // First time user registers, make sure they are persistently created in Firestore!
-            await setDoc(userRef, u, { merge: true });
+            await setDoc(userRef, cleanUndefinedFields(u), { merge: true });
 
             // Sync with local database as well
             const localDb = getPortalDB();
@@ -158,7 +158,7 @@ export default function App() {
               localDb.users.push(u);
             }
             savePortalDB(localDb);
-            setDb(localDb);
+            setDb({ ...localDb });
 
             setUser(u);
             localStorage.setItem('fem_bseu_user', JSON.stringify(u));
@@ -186,7 +186,7 @@ export default function App() {
         localDb.users.push(updatedUser);
       }
       savePortalDB(localDb);
-      setDb(localDb);
+      setDb({ ...localDb });
     } catch (error) {
       console.error("Error updating local db users list:", error);
     }
@@ -194,7 +194,7 @@ export default function App() {
     // Update Firestore
     try {
         const userRef = doc(firestoreDb, 'users', updatedUser.record_book_id);
-        await setDoc(userRef, { ...updatedUser }, { merge: true });
+        await setDoc(userRef, cleanUndefinedFields(updatedUser), { merge: true });
     } catch (error) {
         console.error("Error updating user in Firestore:", error);
     }
@@ -207,7 +207,7 @@ export default function App() {
   };
 
   const refreshDB = () => {
-    setDb(getPortalDB());
+    setDb({ ...getPortalDB() });
   };
 
   const handleMarkRead = (id?: string) => {

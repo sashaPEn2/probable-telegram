@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { PortalDatabase } from '../services/storage';
+import { PortalDatabase, savePortalDB } from '../services/storage';
 import { CustomUser, GalleryItem } from '../types';
 import { Image as ImageIcon, Video, Upload, ExternalLink, Plus, Camera, Sparkles, X } from 'lucide-react';
 
@@ -64,7 +64,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ db, user, onRefresh })
     };
 
     db.gallery.unshift(newItem);
-    localStorage.setItem('fem_bseu_portal_db_v1', JSON.stringify(db));
+    savePortalDB(db);
     setTitle('');
     setEventName('');
     setImageUrl('');

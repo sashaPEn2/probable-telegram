@@ -73,6 +73,11 @@ export const ResearcherPublicProfileModal: React.FC<ResearcherPublicProfileModal
                           <div className="space-y-1">
                             <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200 leading-snug">{pub.title}</h4>
                             <p className="text-xs text-slate-500">{pub.journal}, {pub.year}</p>
+                            {pub.supervisor_name && (
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                <span className="font-semibold">Руководитель:</span> {pub.supervisor_name} {pub.supervisor_position && `(${pub.supervisor_position})`}
+                              </p>
+                            )}
                             <div className="flex flex-wrap gap-2 pt-1">
                               <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-emerald-100 dark:bg-blue-950 text-emerald-800 dark:text-emerald-300">
                                 {pub.type}

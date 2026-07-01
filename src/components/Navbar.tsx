@@ -90,10 +90,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <>
       <header className="bg-[#052e16] text-white sticky top-0 z-[60] shadow-lg border-b border-[#10b981]/30 backdrop-blur-md bg-opacity-95 h-16 sm:h-24 flex flex-col justify-center transition-all">
-        {/* Mobile secondary branding bar */}
-        <div className="lg:hidden w-full bg-blue-950/50 border-b border-emerald-900/30 py-1 px-4">
-          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#10b981] text-center">Цифровой портал студента-исследователя</p>
-        </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           <div className="flex items-center justify-between">
             
@@ -110,7 +106,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <div className="h-4 w-[1px] bg-white/20 hidden md:block mx-1"></div>
                   <span className="text-[10px] px-2 py-1 rounded-lg bg-[#10b981] text-[#052e16] font-black hidden md:inline shadow-sm">SNO / FMGL</span>
                 </div>
-                <p className="text-[10px] sm:text-[12px] text-emerald-200 font-bold tracking-wide mt-1 hidden sm:block opacity-90">Цифровой портал студента-исследователя</p>
               </div>
             </div>
 
